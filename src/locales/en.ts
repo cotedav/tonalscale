@@ -67,6 +67,77 @@ export default {
       },
     },
   },
+  tonal_builder: {
+    meta: {
+      title: 'Tonal Builder | Tailwind + Headless UI',
+      description:
+        'Responsive tonal palette workspace with room for pickers, blend controls, scale previews, and accessibility helpers.',
+    },
+    hero: {
+      kicker: 'Color automation shell',
+      title: 'Tonal builder workspace',
+      description:
+        'Layout scaffolding for base + blend pickers, controls, overlays, and accessibility rails without clipping future popovers.',
+      actions_label: 'Builder actions',
+      import_export: 'Import/Export modal',
+      copy_svg: 'Copy SVG',
+      view_demo: 'View scaffolding demo',
+    },
+    regions: {
+      pickers_label: 'Color pickers and control rail',
+      accessibility_label: 'Accessibility helpers and overlays',
+    },
+    pickers: {
+      base: {
+        title: 'Base color picker',
+        description: 'Primary hue selector with synchronized text inputs.',
+        badge: 'Base',
+        placeholder: 'Slot for the base color picker and linked input field.',
+      },
+      blend: {
+        title: 'Blend color picker',
+        description: 'Secondary hue selector for blending and hover previews.',
+        badge: 'Blend',
+        placeholder: 'Slot for the blend color picker and chip previews.',
+      },
+    },
+    controls: {
+      title: 'Blend + saturation controls',
+      description: 'Blend mode select, strength sliders, peaks, spread, and saturation hooks.',
+      blend_mode: 'Blend mode select + labels',
+      sliders: 'Strength, peak, and spread sliders',
+      saturation: 'Saturation tuning controls',
+    },
+    scales: {
+      title: 'Scale previews',
+      description: 'Full, extended, and key strips with safe spacing for hover zoom.',
+      badge: 'Always-on',
+      full: 'Full scale strip',
+      extended: 'Extended key strip',
+      key: 'Key strip',
+    },
+    overlays: {
+      title: 'Interactive overlays',
+      description: 'Space for hover zoom, popovers, context menus, and blend previews.',
+      badge: 'No overflow clipping',
+      hover: 'Hover zoom + preview popovers',
+      menus: 'Context menu and quick actions',
+    },
+    accessibility: {
+      title: 'Accessibility helpers',
+      description: 'Contrast, WCAG, and card previews anchored in the right rail.',
+      contrast_cards: 'Contrast preview cards',
+      preview_links: 'Linked previews and badge metadata',
+    },
+    modals: {
+      title: 'Modal + snackbar staging',
+      description: 'Reserved stacking context for dialogs, clipboard helpers, and toasts.',
+      badge: 'Stacked',
+      dialogs: 'Dialog surface placeholder',
+      clipboard: 'Clipboard and share affordances',
+      toast_area: 'Toast and alert lane',
+    },
+  },
   validation: {
     sample: {
       title: 'Reusable validation form',

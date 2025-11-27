@@ -25,7 +25,7 @@ This backlog tracks foundational user stories for the new SaaS platform scaffold
 | Pending   | [E2-F3](./E2-F3.md) | [E2](./E2.md) | Authentication and feature-flag guardrails with Statsig.    |
 | Pending   | [E2-F4](./E2-F4.md) | [E2](./E2.md) | Delivery health instrumentation.                            |
 | Pending   | [E2-F5](./E2-F5.md) | [E2](./E2.md) | Sentry monitoring for errors, releases, and performance.    |
-| Pending   | [E3-F1](./E3-F1.md) | [E3](./E3.md) | Tailwind/Headless UI foundation for the tonal builder page. |
+| Completed | [E3-F1](./E3-F1.md) | [E3](./E3.md) | Tailwind/Headless UI foundation for the tonal builder page. |
 | Pending   | [E3-F2](./E3-F2.md) | [E3](./E3.md) | Color input and blending control surfaces.                  |
 | Pending   | [E3-F3](./E3-F3.md) | [E3](./E3.md) | Tonal generation and color math engine.                     |
 | Pending   | [E3-F4](./E3-F4.md) | [E3](./E3.md) | Scale visualization and interaction patterns.               |
@@ -59,7 +59,7 @@ This backlog tracks foundational user stories for the new SaaS platform scaffold
 | Completed | [E3-F1-S1](./E3-F1-S1.md) | [E3-F1](./E3-F1.md) | [E3](./E3.md) | Configure Tailwind CSS and Headless UI while removing Vuetify usage.                      |
 | Completed | [E3-F1-S2](./E3-F1-S2.md) | [E3-F1](./E3-F1.md) | [E3](./E3.md) | Move the Vuetify index demo to a dedicated scaffolding-demo route.                        |
 | Completed | [E3-F1-S3](./E3-F1-S3.md) | [E3-F1](./E3-F1.md) | [E3](./E3.md) | Rewrite the scaffolding demo with Tailwind/Headless UI and repair tests.                  |
-| Pending   | [E3-F1-S4](./E3-F1-S4.md) | [E3-F1](./E3-F1.md) | [E3](./E3.md) | Build the tonal builder home page shell and layout scaffolding.                           |
+| Completed | [E3-F1-S4](./E3-F1-S4.md) | [E3-F1](./E3-F1.md) | [E3](./E3.md) | Build the tonal builder home page shell and layout scaffolding.                           |
 | Pending   | [E3-F2-S1](./E3-F2-S1.md) | [E3-F2](./E3-F2.md) | [E3](./E3.md) | Base and blend color pickers with synchronized inputs.                                    |
 | Pending   | [E3-F2-S2](./E3-F2-S2.md) | [E3-F2](./E3-F2.md) | [E3](./E3.md) | Blend mode, strength, and saturation controls wired to reactive state.                    |
 | Pending   | [E3-F3-S1](./E3-F3-S1.md) | [E3-F3](./E3-F3.md) | [E3](./E3.md) | Port LAB-based tonal generation, easing, and blending utilities to TypeScript with tests. |

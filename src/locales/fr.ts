@@ -71,6 +71,77 @@ export default {
       },
     },
   },
+  tonal_builder: {
+    meta: {
+      title: 'Constructeur tonal | Tailwind + Headless UI',
+      description:
+        'Espace de travail réactif pour palettes tonales avec place pour les sélecteurs, les contrôles de mélange, les aperçus et les aides accessibilité.',
+    },
+    hero: {
+      kicker: "Coquille d'automatisation des couleurs",
+      title: 'Espace de travail du constructeur tonal',
+      description:
+        'Squelette de mise en page pour les sélecteurs de base et de mélange, les contrôles, les superpositions et les rails accessibilité sans couper les popovers.',
+      actions_label: 'Actions du constructeur',
+      import_export: 'Modal Import/Export',
+      copy_svg: 'Copier le SVG',
+      view_demo: 'Voir la démo de structure',
+    },
+    regions: {
+      pickers_label: 'Sélecteurs de couleur et rail de contrôle',
+      accessibility_label: 'Aides accessibilité et superpositions',
+    },
+    pickers: {
+      base: {
+        title: 'Sélecteur de couleur de base',
+        description: 'Sélection de teinte principale avec champs texte synchronisés.',
+        badge: 'Base',
+        placeholder: 'Emplacement pour le sélecteur de base et son champ lié.',
+      },
+      blend: {
+        title: 'Sélecteur de couleur de mélange',
+        description: 'Sélecteur secondaire pour le mélange et les aperçus au survol.',
+        badge: 'Mélange',
+        placeholder: 'Emplacement pour le sélecteur de mélange et les pastilles.',
+      },
+    },
+    controls: {
+      title: 'Contrôles de mélange et saturation',
+      description: 'Sélecteur de mode, curseurs de force, pics, étendue et réglages de saturation.',
+      blend_mode: 'Sélecteur de mode de mélange + libellés',
+      sliders: 'Curseurs de force, pic et étendue',
+      saturation: 'Réglages de saturation',
+    },
+    scales: {
+      title: 'Aperçus des gammes',
+      description: 'Gamme complète, étendue et clé avec marge pour le zoom au survol.',
+      badge: 'Toujours visible',
+      full: 'Bande de gamme complète',
+      extended: 'Bande clé étendue',
+      key: 'Bande clé',
+    },
+    overlays: {
+      title: 'Superpositions interactives',
+      description: 'Espace pour zoom au survol, popovers, menus contextuels et aperçus de mélange.',
+      badge: 'Sans découpe de dépassement',
+      hover: 'Zoom au survol + popovers',
+      menus: 'Menu contextuel et actions rapides',
+    },
+    accessibility: {
+      title: 'Aides accessibilité',
+      description: 'Cartes de contraste, WCAG et aperçus arrimés au rail droit.',
+      contrast_cards: 'Cartes d’aperçu de contraste',
+      preview_links: 'Aperçus liés et métadonnées',
+    },
+    modals: {
+      title: 'Zone modale et notifications',
+      description: 'Contexte réservé pour les boîtes de dialogue, le presse-papiers et les toasts.',
+      badge: 'Empilé',
+      dialogs: 'Emplacement pour la boîte de dialogue',
+      clipboard: 'Commandes de presse-papiers et partage',
+      toast_area: 'Couloir toast/alerte',
+    },
+  },
   validation: {
     sample: {
       title: 'Formulaire de validation réutilisable',
