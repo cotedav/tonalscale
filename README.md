@@ -28,8 +28,7 @@ npm install
 npm run watch
 ```
 
-The legacy scaffolding demo now lives at `/scaffolding-demo`. The root path currently redirects there until the tonal builder ow
-ns the home experience.
+The legacy scaffolding demo now lives at `/scaffolding-demo`. The root path currently redirects there until the tonal builder owns the home experience. The page now showcases Tailwind utility surfaces and Headless UI primitives instead of the previous Vuetify sample.
 
 ## Scripts
 
