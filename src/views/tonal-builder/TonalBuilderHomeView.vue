@@ -3,10 +3,40 @@
   import { computed, watchEffect } from 'vue';
   import { useI18n } from 'vue-i18n';
 
+  import ColorPickerCard from '@/components/tonal-builder/ColorPickerCard.vue';
+  import { useTonalBuilderColors } from '@/composables/useTonalBuilderColors';
+
   const { t } = useI18n();
 
   const pageTitle = computed(() => t('tonal_builder.meta.title'));
   const pageDescription = computed(() => t('tonal_builder.meta.description'));
+
+  const { baseHex, blendHex, sliderMode, updateBase, updateBlend, setSliderMode } =
+    useTonalBuilderColors();
+
+  const baseHexModel = computed({
+    get: () => baseHex.value,
+    set: (value: string) => {
+      updateBase(value);
+    },
+  });
+
+  const blendHexModel = computed({
+    get: () => blendHex.value,
+    set: (value: string) => {
+      updateBlend(value);
+    },
+  });
+
+  const sliderModeModel = computed({
+    get: () => sliderMode.value,
+    set: (value: typeof sliderMode.value) => {
+      setSliderMode(value);
+    },
+  });
+
+  const baseSwatchStyle = computed(() => ({ backgroundColor: baseHex.value }));
+  const blendSwatchStyle = computed(() => ({ backgroundColor: blendHex.value }));
 
   const blendModes = computed(() => [
     { label: t('tonal_builder.controls.blend_modes.darken'), value: 'darken' },
@@ -93,20 +123,41 @@
         id="toolbar"
         class="flex flex-wrap items-center justify-between gap-4"
       >
-        <div
-          id="baseColorPickerInput"
-          class="flex items-center gap-3 rounded-2xl border border-dashed border-accent-soft/40 bg-surface-soft/80 px-4 py-3 shadow-card"
-        >
+        <div class="flex flex-wrap items-center gap-3">
           <div
-            class="h-10 w-10 rounded-full bg-gradient-to-br from-accent via-accent-soft to-white/40"
-          />
-          <div class="space-y-1">
-            <p class="text-sm font-semibold text-slate-100">
-              {{ t('tonal_builder.pickers.base.title') }}
-            </p>
-            <p class="text-xs text-slate-400">
-              {{ t('tonal_builder.pickers.base.input_helper') }}
-            </p>
+            id="baseColorPickerInput"
+            class="flex items-center gap-3 rounded-2xl border border-dashed border-accent-soft/40 bg-surface-soft/80 px-4 py-3 shadow-card"
+          >
+            <div
+              class="h-10 w-10 rounded-full border border-white/10"
+              :style="baseSwatchStyle"
+            />
+            <div class="space-y-1">
+              <p class="text-sm font-semibold text-slate-100">
+                {{ t('tonal_builder.pickers.base.title') }}
+              </p>
+              <p class="text-xs text-slate-400">
+                {{ baseHex }}
+              </p>
+            </div>
+          </div>
+
+          <div
+            id="blendColorPickerInput"
+            class="flex items-center gap-3 rounded-2xl border border-dashed border-accent-soft/40 bg-surface-soft/80 px-4 py-3 shadow-card"
+          >
+            <div
+              class="h-10 w-10 rounded-full border border-white/10"
+              :style="blendSwatchStyle"
+            />
+            <div class="space-y-1">
+              <p class="text-sm font-semibold text-slate-100">
+                {{ t('tonal_builder.pickers.blend.title') }}
+              </p>
+              <p class="text-xs text-slate-400">
+                {{ blendHex }}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -147,19 +198,25 @@
         </div>
       </div>
 
-      <div
-        id="baseColorPicker"
-        class="relative overflow-visible rounded-3xl border border-dashed border-accent-soft/40 bg-surface-soft/80 p-6"
-        :aria-label="t('tonal_builder.pickers.base.title')"
-        data-cy="base-color-picker"
-      >
-        <div
-          class="flex h-64 items-center justify-center rounded-2xl border border-white/10 bg-surface/60"
-        >
-          <p class="text-sm text-slate-400">
-            {{ t('tonal_builder.pickers.base.placeholder') }}
-          </p>
-        </div>
+      <div class="grid gap-4 lg:grid-cols-2">
+        <ColorPickerCard
+          id="baseColorPicker"
+          v-model="baseHexModel"
+          v-model:sliderMode="sliderModeModel"
+          :label="t('tonal_builder.pickers.base.title')"
+          :description="t('tonal_builder.pickers.base.description')"
+          :swatch-label="t('tonal_builder.pickers.base.badge')"
+          data-cy="base-color-picker"
+        />
+        <ColorPickerCard
+          id="blendColorPicker"
+          v-model="blendHexModel"
+          v-model:sliderMode="sliderModeModel"
+          :label="t('tonal_builder.pickers.blend.title')"
+          :description="t('tonal_builder.pickers.blend.description')"
+          :swatch-label="t('tonal_builder.pickers.blend.badge')"
+          data-cy="blend-color-picker"
+        />
       </div>
     </section>
 
