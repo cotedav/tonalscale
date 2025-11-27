@@ -51,7 +51,8 @@ npm run watch
 ## Linting
 
 The project uses Airbnb-flavored ESLint with Vue 3 + TypeScript support and Prettier compatibility, plus Stylelint for CSS and
-Vue single-file components.
+Vue single-file components. Run `npm install` first so ESLint can resolve dependencies like `@headlessui/vue` and `@heroicons/vue`
+referenced in the UI samples.
 
 ```bash
 # Check code quality
