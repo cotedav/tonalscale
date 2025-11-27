@@ -1,22 +1,20 @@
 import './commands';
 import { mount } from 'cypress/vue';
-import { createVuetify } from 'vuetify';
-import { md3 } from 'vuetify/blueprints';
-import 'vuetify/styles';
-import '@mdi/font/css/materialdesignicons.css';
-import '@/styles/main.scss';
 import type { MountingOptions } from 'cypress/vue';
+import i18n from '@/plugins/i18n';
+import setupValidation from '@/plugins/validation';
+import '@/styles/main.css';
 
 Cypress.Commands.add(
   'mount',
   (component: Parameters<typeof mount>[0], options: MountingOptions = {}) => {
-    const vuetify = createVuetify({ blueprint: md3 });
+    setupValidation();
 
     return mount(component, {
       ...options,
       global: {
         ...options.global,
-        plugins: [vuetify, ...(options.global?.plugins ?? [])],
+        plugins: [i18n, ...(options.global?.plugins ?? [])],
       },
     });
   },

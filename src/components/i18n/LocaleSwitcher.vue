@@ -17,48 +17,53 @@
   const onUpdate = async (locale: SupportedLocale) => {
     await switchLocale(locale);
   };
+
+  const updateLocale = async (event: Event) => {
+    const value = (event.target as HTMLSelectElement).value as SupportedLocale;
+    await onUpdate(value);
+  };
 </script>
 
 <template>
   <div
-    class="d-flex flex-column gap-2"
+    class="space-y-2"
     data-cy="locale-switcher"
   >
-    <div class="d-flex align-center justify-space-between">
-      <div class="text-subtitle-2 font-weight-medium">
+    <div class="flex items-center justify-between">
+      <div class="text-sm font-semibold text-slate-100">
         {{ t('i18n.switcher.label') }}
       </div>
-      <v-chip
-        color="primary"
-        variant="tonal"
-        density="comfortable"
-        size="small"
+      <span
+        class="rounded-full bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-200"
         data-cy="current-locale"
       >
         {{ t(`i18n.locales.${currentLocale}`) }}
-      </v-chip>
+      </span>
     </div>
 
-    <v-select
-      :model-value="currentLocale"
-      :items="options"
-      density="comfortable"
-      variant="outlined"
-      hide-details="auto"
-      @update:model-value="onUpdate"
-    >
-      <template #prepend-inner>
-        <v-icon
-          icon="mdi-translate"
-          size="18"
-          class="me-2"
-        />
-      </template>
-      <template #message>
-        <span class="text-body-2 text-medium-emphasis">
-          {{ t('i18n.switcher.helper') }}
-        </span>
-      </template>
-    </v-select>
+    <label class="flex flex-col gap-2 text-xs text-slate-400">
+      <span>{{ t('i18n.switcher.helper') }}</span>
+      <div class="relative">
+        <select
+          :value="currentLocale"
+          class="w-full appearance-none rounded-lg border border-slate-700 bg-surface-soft px-3 py-2 text-sm font-medium text-slate-100 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent-strong/30"
+          data-cy="locale-select"
+          @change="updateLocale"
+        >
+          <option
+            v-for="option in options"
+            :key="option.value"
+            :value="option.value"
+            class="bg-surface-strong text-slate-100"
+          >
+            {{ option.title }}
+          </option>
+        </select>
+        <span
+          class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-500"
+          >⌄</span
+        >
+      </div>
+    </label>
   </div>
 </template>

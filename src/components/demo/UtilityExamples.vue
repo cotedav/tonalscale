@@ -1,4 +1,11 @@
 <script setup lang="ts">
+  import { Dialog, DialogPanel, TransitionChild, TransitionRoot } from '@headlessui/vue';
+  import {
+    CalendarDaysIcon,
+    ClockIcon,
+    SparklesIcon,
+    Squares2X2Icon,
+  } from '@heroicons/vue/24/solid';
   import { computed, ref } from 'vue';
   import { useI18n } from 'vue-i18n';
   import useLiveNow from '@/composables/useLiveNow';
@@ -29,137 +36,215 @@
 
     isPaused.value = !isPaused.value;
   };
+
+  const isDialogOpen = ref(false);
+
+  const openDialog = () => {
+    isDialogOpen.value = true;
+  };
+
+  const closeDialog = () => {
+    isDialogOpen.value = false;
+  };
 </script>
 
 <template>
-  <section class="d-flex flex-column gap-4">
-    <v-card variant="outlined">
-      <v-card-title class="text-subtitle-1 font-weight-medium d-flex align-center gap-2">
-        <v-icon
-          icon="mdi-clock-outline"
-          color="primary"
-        />
+  <section class="space-y-4">
+    <div class="card-surface space-y-3">
+      <div class="flex items-center gap-2 text-sm font-semibold text-slate-100">
+        <ClockIcon class="h-5 w-5 text-accent-strong" />
         {{ t('home.utilities.clock.title') }}
-      </v-card-title>
-      <v-card-text class="d-flex flex-column gap-3">
-        <div class="text-body-2 text-medium-emphasis">
-          {{ t('home.utilities.clock.description') }}
-        </div>
+      </div>
+      <p class="text-sm text-slate-400">
+        {{ t('home.utilities.clock.description') }}
+      </p>
 
-        <div class="d-flex align-center justify-space-between">
-          <div
-            class="text-h6"
-            data-cy="live-clock"
-          >
-            {{ liveLabel }}
-          </div>
-          <v-btn
-            color="primary"
-            variant="tonal"
-            data-cy="live-clock-toggle"
-            @click="toggleClock"
-          >
-            {{ isPaused ? t('home.utilities.clock.resume') : t('home.utilities.clock.pause') }}
-          </v-btn>
+      <div
+        class="flex items-center justify-between gap-4 rounded-xl border border-slate-800 bg-surface-soft/60 px-4 py-3"
+      >
+        <div
+          class="text-2xl font-semibold tracking-tight"
+          data-cy="live-clock"
+        >
+          {{ liveLabel }}
         </div>
-      </v-card-text>
-    </v-card>
+        <button
+          type="button"
+          class="rounded-lg bg-accent-strong px-4 py-2 text-sm font-semibold text-white shadow-glow transition hover:bg-accent"
+          data-cy="live-clock-toggle"
+          @click="toggleClock"
+        >
+          {{ isPaused ? t('home.utilities.clock.resume') : t('home.utilities.clock.pause') }}
+        </button>
+      </div>
+    </div>
 
-    <v-card variant="outlined">
-      <v-card-title class="text-subtitle-1 font-weight-medium d-flex align-center gap-2">
-        <v-icon
-          icon="mdi-apps"
-          color="primary"
-        />
+    <div class="card-surface space-y-4">
+      <div class="flex items-center gap-2 text-sm font-semibold text-slate-100">
+        <Squares2X2Icon class="h-5 w-5 text-accent-strong" />
         {{ t('home.utilities.collections.title') }}
-      </v-card-title>
-      <v-card-text class="d-flex flex-column gap-4">
-        <div class="text-body-2 text-medium-emphasis">
-          {{ t('home.utilities.collections.description') }}
+      </div>
+      <p class="text-sm text-slate-400">
+        {{ t('home.utilities.collections.description') }}
+      </p>
+
+      <div class="space-y-3">
+        <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+          {{ t('home.utilities.collections.chunkedLabel') }}
         </div>
-
-        <div class="d-flex flex-column gap-2">
-          <div class="text-caption text-uppercase font-weight-medium text-medium-emphasis">
-            {{ t('home.utilities.collections.chunkedLabel') }}
-          </div>
-          <div class="d-flex flex-column gap-2">
-            <v-row
-              v-for="(row, index) in chunkedNumbers"
-              :key="`chunk-row-${index}`"
-              dense
-            >
-              <v-col
-                v-for="number in row"
-                :key="`chunk-item-${number}`"
-                cols="4"
-                class="py-1"
-              >
-                <v-chip
-                  color="primary"
-                  label
-                  variant="tonal"
-                  class="w-100 justify-center"
-                >
-                  {{ number }}
-                </v-chip>
-              </v-col>
-            </v-row>
-          </div>
-        </div>
-
-        <v-divider />
-
-        <div class="d-flex flex-column gap-2">
-          <div class="text-caption text-uppercase font-weight-medium text-medium-emphasis">
-            {{ t('home.utilities.collections.uniqueLabel') }}
-          </div>
-          <div class="d-flex flex-wrap gap-2">
-            <v-chip
-              v-for="name in dedupedNames"
-              :key="`name-${name}`"
-              color="secondary"
-              label
-              variant="tonal"
-            >
-              {{ name }}
-            </v-chip>
-          </div>
-        </div>
-      </v-card-text>
-    </v-card>
-
-    <v-card variant="outlined">
-      <v-card-title class="text-subtitle-1 font-weight-medium d-flex align-center gap-2">
-        <v-icon
-          icon="mdi-calendar-clock"
-          color="primary"
-        />
-        {{ t('home.utilities.dates.title') }}
-      </v-card-title>
-      <v-card-text class="d-flex flex-column gap-3">
-        <div class="text-body-2 text-medium-emphasis">
-          {{ t('home.utilities.dates.description') }}
-        </div>
-
-        <div class="d-flex flex-column gap-1">
-          <div class="text-caption text-uppercase font-weight-medium text-medium-emphasis">
-            {{ t('home.utilities.dates.formattedLabel') }}
-          </div>
-          <div class="text-body-1">{{ formattedLaunchDate }}</div>
-        </div>
-
-        <div class="d-flex flex-column gap-1">
-          <div class="text-caption text-uppercase font-weight-medium text-medium-emphasis">
-            {{ t('home.utilities.dates.utcLabel') }}
-          </div>
+        <div class="space-y-2">
           <div
-            class="text-body-1"
-            data-cy="utc-timestamp"
+            v-for="(row, index) in chunkedNumbers"
+            :key="`chunk-row-${index}`"
+            class="grid grid-cols-3 gap-2"
           >
-            {{ utcLaunchTimestamp }}
+            <div
+              v-for="number in row"
+              :key="`chunk-item-${number}`"
+              class="rounded-xl border border-slate-800 bg-surface-soft px-3 py-2 text-center text-sm font-semibold text-slate-100"
+            >
+              {{ number }}
+            </div>
           </div>
         </div>
-      </v-card-text>
-    </v-card>
+      </div>
+
+      <div class="h-px bg-slate-800" />
+
+      <div class="space-y-3">
+        <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+          {{ t('home.utilities.collections.uniqueLabel') }}
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <span
+            v-for="name in dedupedNames"
+            :key="`name-${name}`"
+            class="inline-flex items-center gap-2 rounded-full border border-accent-strong/40 bg-accent-strong/15 px-3 py-1 text-xs font-semibold text-accent-soft"
+          >
+            <span class="h-2 w-2 rounded-full bg-accent-soft" />
+            {{ name }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-surface space-y-4">
+      <div class="flex items-center gap-2 text-sm font-semibold text-slate-100">
+        <CalendarDaysIcon class="h-5 w-5 text-accent-strong" />
+        {{ t('home.utilities.dates.title') }}
+      </div>
+      <p class="text-sm text-slate-400">
+        {{ t('home.utilities.dates.description') }}
+      </p>
+
+      <div class="space-y-3">
+        <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+          {{ t('home.utilities.dates.formattedLabel') }}
+        </div>
+        <div
+          class="rounded-xl border border-slate-800 bg-surface-soft px-3 py-2 text-sm text-slate-100"
+        >
+          {{ formattedLaunchDate }}
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+          {{ t('home.utilities.dates.utcLabel') }}
+        </div>
+        <div
+          class="rounded-xl border border-slate-800 bg-surface-soft px-3 py-2 text-sm text-slate-100"
+          data-cy="utc-timestamp"
+        >
+          {{ utcLaunchTimestamp }}
+        </div>
+      </div>
+    </div>
+
+    <div class="card-surface space-y-3">
+      <div class="flex items-center gap-2 text-sm font-semibold text-slate-100">
+        <SparklesIcon class="h-5 w-5 text-accent-strong" />
+        {{ t('home.utilities.dialog.title') }}
+      </div>
+      <p class="text-sm text-slate-400">
+        {{ t('home.utilities.dialog.description') }}
+      </p>
+
+      <div class="flex flex-wrap gap-3">
+        <button
+          type="button"
+          class="rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-slate-100 ring-1 ring-inset ring-slate-700 transition hover:bg-white/15"
+          data-cy="sample-dialog-trigger"
+          @click="openDialog"
+        >
+          {{ t('home.utilities.dialog.open') }}
+        </button>
+      </div>
+
+      <TransitionRoot
+        as="template"
+        :show="isDialogOpen"
+      >
+        <Dialog
+          as="div"
+          class="relative z-10"
+          @close="closeDialog"
+        >
+          <TransitionChild
+            as="template"
+            enter="ease-out duration-200"
+            enter-from="opacity-0"
+            enter-to="opacity-100"
+            leave="ease-in duration-150"
+            leave-from="opacity-100"
+            leave-to="opacity-0"
+          >
+            <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" />
+          </TransitionChild>
+
+          <div class="fixed inset-0 z-10 overflow-y-auto p-4">
+            <div class="flex min-h-full items-center justify-center">
+              <TransitionChild
+                as="template"
+                enter="ease-out duration-200"
+                enter-from="opacity-0 translate-y-4 scale-95"
+                enter-to="opacity-100 translate-y-0 scale-100"
+                leave="ease-in duration-150"
+                leave-from="opacity-100 translate-y-0 scale-100"
+                leave-to="opacity-0 translate-y-2 scale-95"
+              >
+                <DialogPanel
+                  class="w-full max-w-lg rounded-2xl border border-slate-800 bg-surface-soft p-6 shadow-2xl"
+                >
+                  <div class="flex items-start justify-between gap-4">
+                    <div class="space-y-2">
+                      <Dialog.Title class="text-lg font-semibold text-slate-50">
+                        {{ t('home.utilities.dialog.title') }}
+                      </Dialog.Title>
+                      <Dialog.Description class="text-sm text-slate-400">
+                        {{ t('home.utilities.dialog.body') }}
+                      </Dialog.Description>
+                    </div>
+                    <button
+                      type="button"
+                      class="rounded-full bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:bg-slate-700"
+                      @click="closeDialog"
+                    >
+                      {{ t('home.utilities.dialog.close') }}
+                    </button>
+                  </div>
+
+                  <div
+                    class="mt-4 rounded-xl border border-slate-800 bg-surface-soft px-4 py-3 text-sm text-slate-200"
+                  >
+                    {{ t('home.utilities.dialog.helper') }}
+                  </div>
+                </DialogPanel>
+              </TransitionChild>
+            </div>
+          </div>
+        </Dialog>
+      </TransitionRoot>
+    </div>
   </section>
 </template>

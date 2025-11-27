@@ -1,23 +1,9 @@
 <template>
-  <v-app>
-    <v-main class="bg-surface">
-      <v-container class="py-10">
-        <v-row justify="center">
-          <v-col
-            cols="12"
-            md="8"
-            lg="6"
-          >
-            <v-sheet
-              rounded="lg"
-              elevation="8"
-              class="pa-8"
-            >
-              <router-view />
-            </v-sheet>
-          </v-col>
-        </v-row>
-      </v-container>
-    </v-main>
-  </v-app>
+  <div class="min-h-screen bg-surface-strong text-slate-100">
+    <main class="mx-auto flex min-h-screen w-full max-w-screen-xl px-6 py-10">
+      <div class="w-full">
+        <router-view />
+      </div>
+    </main>
+  </div>
 </template>

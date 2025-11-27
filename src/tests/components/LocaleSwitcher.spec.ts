@@ -17,8 +17,8 @@ describe('LocaleSwitcher', () => {
 
     expect(wrapper.text()).toContain('Language');
 
-    const select = wrapper.getComponent({ name: 'VSelect' });
-    await select.vm.$emit('update:modelValue', 'fr');
+    const select = wrapper.get('[data-cy="locale-select"]');
+    await select.setValue('fr');
     await flushPromises();
 
     expect(i18n.global.locale.value).toBe('fr');

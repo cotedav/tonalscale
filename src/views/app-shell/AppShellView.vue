@@ -3,14 +3,10 @@
 </script>
 
 <template>
-  <v-app>
-    <v-main>
-      <v-container
-        class="py-8"
-        data-cy="app-shell"
-      >
-        <router-view />
-      </v-container>
-    </v-main>
-  </v-app>
+  <div
+    class="w-full"
+    data-cy="app-shell"
+  >
+    <router-view />
+  </div>
 </template>

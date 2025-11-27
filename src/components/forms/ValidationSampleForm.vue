@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import { ShieldCheckIcon } from '@heroicons/vue/24/solid';
   import { computed, ref } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { useField, useForm } from 'vee-validate';
@@ -86,111 +87,112 @@
 </script>
 
 <template>
-  <v-card
-    variant="tonal"
-    class="validation-sample"
-  >
-    <v-card-title class="text-subtitle-1 font-weight-medium d-flex align-center gap-2">
-      <v-icon icon="mdi-shield-check" />
+  <div class="card-surface space-y-4">
+    <div class="flex items-center gap-2 text-sm font-semibold text-slate-100">
+      <ShieldCheckIcon class="h-5 w-5 text-accent-strong" />
       <span>{{ t('validation.sample.title') }}</span>
-    </v-card-title>
+    </div>
 
-    <v-card-text class="d-flex flex-column gap-4">
-      <p class="text-body-2 text-medium-emphasis mb-0">
-        {{ t('validation.sample.description') }}
-      </p>
+    <p class="text-sm text-slate-400">
+      {{ t('validation.sample.description') }}
+    </p>
 
-      <v-alert
-        type="info"
-        density="comfortable"
-        variant="tonal"
-        border="start"
-        class="mb-0"
-        data-cy="validation-helper"
-      >
-        <div class="text-body-2">{{ t('validation.sample.helper_copy') }}</div>
-      </v-alert>
+    <div
+      class="rounded-xl border border-accent-strong/30 bg-accent-strong/10 px-4 py-3 text-sm text-accent-soft"
+      data-cy="validation-helper"
+    >
+      {{ t('validation.sample.helper_copy') }}
+    </div>
 
-      <form
-        class="d-flex flex-column gap-4"
-        data-cy="validation-form"
-        @submit.prevent="onSubmit"
-      >
-        <v-text-field
+    <form
+      class="space-y-4"
+      data-cy="validation-form"
+      @submit.prevent="onSubmit"
+    >
+      <label class="flex flex-col gap-2 text-sm text-slate-200">
+        <span class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+          {{ t('validation.sample.fields.full_name.label') }}
+        </span>
+        <input
           v-model="fullName"
-          :label="t('validation.sample.fields.full_name.label')"
-          :error-messages="fullNameErrors"
-          :error="fullNameErrors.length > 0"
-          prepend-inner-icon="mdi-account"
+          type="text"
+          class="rounded-lg border border-slate-700 bg-surface-soft px-3 py-2 text-sm text-slate-100 shadow-inner focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent-strong/30"
           autocomplete="name"
           data-cy="full-name-input"
+          :aria-invalid="fullNameErrors.length > 0"
           @blur="handleFullNameBlur"
         />
+        <p
+          v-if="fullNameErrors.length"
+          class="text-xs text-rose-300"
+        >
+          {{ fullNameErrors[0] }}
+        </p>
+      </label>
 
-        <v-text-field
+      <label class="flex flex-col gap-2 text-sm text-slate-200">
+        <span class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+          {{ t('validation.sample.fields.email.label') }}
+        </span>
+        <input
           v-model="email"
-          :label="t('validation.sample.fields.email.label')"
-          :error-messages="emailErrors"
-          :error="emailErrors.length > 0"
-          prepend-inner-icon="mdi-email"
+          type="email"
+          class="rounded-lg border border-slate-700 bg-surface-soft px-3 py-2 text-sm text-slate-100 shadow-inner focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent-strong/30"
           autocomplete="email"
           data-cy="email-input"
+          :aria-invalid="emailErrors.length > 0"
           @blur="handleEmailBlur"
         />
-
-        <div class="d-flex flex-wrap gap-2">
-          <v-btn
-            color="primary"
-            type="submit"
-            :loading="isSubmitting"
-            :disabled="isSubmitting"
-            data-cy="submit-button"
-          >
-            {{ t('validation.sample.actions.submit') }}
-          </v-btn>
-
-          <v-btn
-            variant="text"
-            color="secondary"
-            type="button"
-            data-cy="reset-button"
-            @click="onReset"
-          >
-            {{ t('validation.sample.actions.reset') }}
-          </v-btn>
-        </div>
-
-        <v-alert
-          v-if="visibleErrors.length"
-          type="error"
-          variant="tonal"
-          density="comfortable"
-          border="start"
-          class="mb-0"
-          data-cy="validation-errors"
+        <p
+          v-if="emailErrors.length"
+          class="text-xs text-rose-300"
         >
-          <ul class="mb-0 ps-4">
-            <li
-              v-for="message in visibleErrors"
-              :key="message"
-              class="text-body-2"
-            >
-              {{ message }}
-            </li>
-          </ul>
-        </v-alert>
-      </form>
+          {{ emailErrors[0] }}
+        </p>
+      </label>
 
-      <v-alert
-        v-if="submissionMessage"
-        type="success"
-        variant="tonal"
-        border="start"
-        class="mb-0"
-        data-cy="submission-message"
+      <div class="flex flex-wrap gap-2">
+        <button
+          type="submit"
+          class="rounded-lg bg-accent-strong px-4 py-2 text-sm font-semibold text-white shadow-glow transition hover:bg-accent disabled:cursor-not-allowed disabled:opacity-70"
+          :disabled="isSubmitting"
+          data-cy="submit-button"
+        >
+          {{ t('validation.sample.actions.submit') }}
+        </button>
+
+        <button
+          type="button"
+          class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-100 ring-1 ring-inset ring-slate-700 transition hover:bg-slate-700"
+          data-cy="reset-button"
+          @click="onReset"
+        >
+          {{ t('validation.sample.actions.reset') }}
+        </button>
+      </div>
+
+      <div
+        v-if="visibleErrors.length"
+        class="rounded-xl border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-50"
+        data-cy="validation-errors"
       >
-        {{ submissionMessage }}
-      </v-alert>
-    </v-card-text>
-  </v-card>
+        <ul class="list-disc space-y-1 pl-4">
+          <li
+            v-for="message in visibleErrors"
+            :key="message"
+          >
+            {{ message }}
+          </li>
+        </ul>
+      </div>
+    </form>
+
+    <div
+      v-if="submissionMessage"
+      class="rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-50"
+      data-cy="submission-message"
+    >
+      {{ submissionMessage }}
+    </div>
+  </div>
 </template>

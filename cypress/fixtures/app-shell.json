@@ -1,4 +1,4 @@
 {
   "title": "Tonal Scale Scaffold",
-  "description": "Vue 3 + TypeScript + Vuetify starter with PWA readiness."
+  "description": "Vue 3 + TypeScript starter with Tailwind CSS, Headless UI, and PWA readiness."
 }

@@ -1,30 +1,30 @@
 <script setup lang="ts">
-  const title = 'Page not found';
-  const message =
-    'The page you are looking for does not exist yet. Use the navigation to continue exploring the portal.';
+  import { ExclamationTriangleIcon } from '@heroicons/vue/24/solid';
+  import { useI18n } from 'vue-i18n';
+
+  const { t } = useI18n();
 </script>
 
 <template>
   <section
-    class="text-center d-flex flex-column align-center gap-4"
+    class="flex flex-col items-center gap-6 text-center"
     data-cy="not-found"
   >
-    <v-icon
-      icon="mdi-compass-off"
-      size="72"
-      color="error"
-    />
-    <div>
-      <h1 class="text-h5 font-weight-bold mb-2">{{ title }}</h1>
-      <p class="text-body-2 text-medium-emphasis">{{ message }}</p>
+    <div
+      class="flex h-16 w-16 items-center justify-center rounded-full bg-rose-500/15 text-rose-300"
+    >
+      <ExclamationTriangleIcon class="h-9 w-9" />
     </div>
-    <v-btn
-      color="primary"
-      variant="flat"
+    <div class="space-y-2">
+      <h1 class="text-2xl font-bold text-slate-50">{{ t('system.not_found.title') }}</h1>
+      <p class="text-sm text-slate-300">{{ t('system.not_found.message') }}</p>
+    </div>
+    <RouterLink
       to="/"
+      class="rounded-lg bg-accent-strong px-4 py-2 text-sm font-semibold text-white shadow-glow transition hover:bg-accent"
       data-cy="not-found-home-link"
     >
-      Return home
-    </v-btn>
+      {{ t('system.not_found.home') }}
+    </RouterLink>
   </section>
 </template>
