@@ -57,7 +57,7 @@ This backlog tracks foundational user stories for the new SaaS platform scaffold
 | Pending   | [E2-F4-S1](./E2-F4-S1.md) | [E2-F4](./E2-F4.md) | [E2](./E2.md) | CI health instrumentation for bundle size budgets and PWA quality.                        |
 | Pending   | [E2-F5-S1](./E2-F5-S1.md) | [E2-F5](./E2-F5.md) | [E2](./E2.md) | Sentry integration for error, release, and performance monitoring.                        |
 | Completed | [E3-F1-S1](./E3-F1-S1.md) | [E3-F1](./E3-F1.md) | [E3](./E3.md) | Configure Tailwind CSS and Headless UI while removing Vuetify usage.                      |
-| Pending   | [E3-F1-S2](./E3-F1-S2.md) | [E3-F1](./E3-F1.md) | [E3](./E3.md) | Move the Vuetify index demo to a dedicated scaffolding-demo route.                        |
+| Completed | [E3-F1-S2](./E3-F1-S2.md) | [E3-F1](./E3-F1.md) | [E3](./E3.md) | Move the Vuetify index demo to a dedicated scaffolding-demo route.                        |
 | Pending   | [E3-F1-S3](./E3-F1-S3.md) | [E3-F1](./E3-F1.md) | [E3](./E3.md) | Rewrite the scaffolding demo with Tailwind/Headless UI and repair tests.                  |
 | Pending   | [E3-F1-S4](./E3-F1-S4.md) | [E3-F1](./E3-F1.md) | [E3](./E3.md) | Build the tonal builder home page shell and layout scaffolding.                           |
 | Pending   | [E3-F2-S1](./E3-F2-S1.md) | [E3-F2](./E3-F2.md) | [E3](./E3.md) | Base and blend color pickers with synchronized inputs.                                    |

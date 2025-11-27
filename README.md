@@ -28,6 +28,9 @@ npm install
 npm run watch
 ```
 
+The legacy scaffolding demo now lives at `/scaffolding-demo`. The root path currently redirects there until the tonal builder ow
+ns the home experience.
+
 ## Scripts
 
 - `npm run watch` – start the local development server
@@ -97,12 +100,13 @@ npm run test:watch
 npm run test:coverage
 ```
 
-Import application modules using the `@/` alias inside tests (e.g., `@/views/HomeView.vue`).
+Import application modules using the `@/` alias inside tests (e.g., `@/views/demo/ScaffoldingDemoView.vue`).
 
 ### End-to-end testing with Cypress
 
 Cypress is configured for both E2E and component testing using Vite + Vue bundling. Specs live under `cypress/e2e` and use
-`data-cy` selectors for stability (see `cypress/e2e/smoke.cy.ts` for a shell check of the home view). Component tests mount
+`data-cy` selectors for stability (see `cypress/e2e/smoke.cy.ts` for a shell check of the scaffolding demo). Component tests
+mount
 Vue files with base plugins already registered via `cypress/support/component.ts`.
 
 ```bash
