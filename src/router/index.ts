@@ -10,7 +10,7 @@ export const routes: RouteRecordRaw[] = [
       {
         path: '',
         name: 'home',
-        redirect: { name: 'scaffolding-demo' },
+        component: () => import('@/views/tonal-builder/TonalBuilderHomeView.vue'),
         meta: {
           layout: 'app-shell',
         },
