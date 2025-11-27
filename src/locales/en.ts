@@ -8,6 +8,21 @@ export default {
       title: 'Toolkit',
       description:
         'Vue 3 • TypeScript • Vite • Tailwind CSS • Headless UI • Pinia • Vue Router • Vee-Validate • Vue I18n • VueUse • Lodash • Luxon',
+      stack_label: 'Stack details',
+      stack_items: [
+        'Vue 3',
+        'TypeScript',
+        'Vite',
+        'Tailwind CSS',
+        'Headless UI',
+        'Pinia',
+        'Vue Router',
+        'Vee-Validate',
+        'Vue I18n',
+        'VueUse',
+        'Lodash',
+        'Luxon',
+      ],
     },
     timestamp: {
       title: 'Live timestamp',

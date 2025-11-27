@@ -15,6 +15,13 @@ describe('PWA shell smoke test', () => {
       cy.contains('Vue 3').should('be.visible');
       cy.contains('Tailwind CSS').should('be.visible');
       cy.contains('Headless UI').should('be.visible');
+      cy.getBySel('toolkit-stack-item').should('have.length', 12);
     });
+
+    cy.getBySel('toolkit-stack').should('be.visible');
+    cy.getBySel('toolkit-toggle').click();
+    cy.getBySel('toolkit-stack').should('not.exist');
+    cy.getBySel('toolkit-toggle').click();
+    cy.getBySel('toolkit-stack-item').first().should('contain.text', 'Vue 3');
   });
 });
