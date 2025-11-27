@@ -13,7 +13,8 @@ describe('PWA shell smoke test', () => {
     cy.getBySel('home-description').should('contain.text', this.shell.description);
     cy.getBySel('toolkit-alert').within(() => {
       cy.contains('Vue 3').should('be.visible');
-      cy.contains('Vuetify').should('be.visible');
+      cy.contains('Tailwind CSS').should('be.visible');
+      cy.contains('Headless UI').should('be.visible');
     });
   });
 });
