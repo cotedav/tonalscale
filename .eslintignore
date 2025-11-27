@@ -1,0 +1,10 @@
+node_modules
+.dist
+.vite
+dist
+temp
+coverage
+public/service-worker.js
+*.config.js
+*.config.cjs
+*.config.ts

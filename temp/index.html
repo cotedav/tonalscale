@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Parcel Sandbox</title>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto+Condensed&amp;family=Roboto+Mono:wght@700&amp;family=Roboto:wght@400;500;700&amp;display=swap">
+    <link rel="stylesheet" type="text/css" href="src/css/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-color/1.2.1/d3-color.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.24.3/plotly.min.js" defer></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.7.8/handlebars.min.js" defer></script>
+    <script src="src/js/utils/math.js" defer></script>
+		<script src="src/js/utils/blendingmodes.js" defer></script>
+    <script src="src/js/utils/clipboard.js" defer></script>
+    <script src="src/js/utils/color.js" defer></script>
+    <script src="src/js/utils/easing.js" defer></script>
+    <script src="src/js/utils/templateElement.js" defer></script>
+		<script src="src/js/components/colorcard.js" defer></script>
+		<script src="src/js/components/dialog.js" defer></script>
+		<script src="src/js/components/iro.js" defer></script>
+		<script src="src/js/components/myIroPicker.js" defer></script>
+    <script src="src/js/index.js" defer></script>
+  </head>
+
+  <body>
+			<div id="toolbar">
+				<div id="baseColorPickerInput"></div>
+				<div>
+					<button id="import-export-button" class="tonal">Import/Export</button>
+					<button id="copy-button" class="tonal">Copy SVG</button>
+					<button id="theme-toggle" class="light">
+						<div class="icon-holder">
+							<i class="material-icons moon">dark_mode</i>
+							<i class="material-icons sun">light_mode</i>
+						</div>
+					</button>
+				</div>
+			</div>
+			
+			<div id="baseColorPicker"></div>
+			
+			<div class="color-scale-containers">
+				Full
+				<div id="color-scale-container-full" class="color-scale-container" showBlendDistGraph="true"></div>
+				Key Extended
+				<div id="color-scale-container-custom" class="color-scale-container"></div>
+				Key
+				<div id="color-scale-container-key" class="color-scale-container"></div>
+			</div>
+			
+			<div id="gradient-controls">
+				<!--<label for="s">Add Blend to Darker Colors</label>
+				<input id="s" type="checkbox" value="false">
+				<span></span>-->
+			
+				<label for="blendmode">Blend mode</label>
+				<select name="blendmode" id="blendmode">
+					<option value="darken">Darken</option>
+					<option value="multiply">Multiply</option>
+					<option value="colorburn">Color Burn</option>
+					<option value="lighten">Lighten</option>
+					<option value="screen">Screen</option>
+					<option value="colordodge">Color Dodge</option>
+					<option value="overlay">Overlay</option>
+					<option value="softlight" selected="selected">Soft Light</option>
+					<option value="hardlight">Hard Light</option>
+					<option value="vividlight">Vivid Light</option>
+					<option value="hue">Hue</option>
+				</select>
+				<span></span>
+				<label>Blend Color</label>
+				<div>
+					<div id="blendColorPickerInput"></div>
+					<div id="blendColorPicker"></div>
+				</div>
+				<span></span>
+			
+				<label for="strength-slider">Blend Strength</label>
+				<input id="strength-slider" type="range" min="0" max="100" value="0">
+				<input id="strength-value" type="number" step="1" min="0" max="100"></input>
+			
+				<label for="middle-slider">Blend Peak</label>
+				<input id="middle-slider" type="range" min="-50" max="50" step="1" value="0">
+				<input id="middle-value" type="number" step="1" min="0" max="100"></input>
+			
+				<label for="spread-slider">Blend Spread</label>
+				<input id="spread-slider" type="range" min="0" max="100" step="1" value="0">
+				<input id="spread-value" type="number" step="1" min="0" max="1"></input>
+			
+				<label for="satDarker-slider">Saturation Darker</label>
+				<input id="satDarker-slider" type="range" min="0" max="100" value="0">
+				<input id="satDarker-value" type="number" step="1" min="0" max="100"></input>
+			
+				<label for="satLighter-slider">Saturation Lighter</label>
+				<input id="satLighter-slider" type="range" min="0" max="100" value="0">
+				<input id="satLighter-value" type="number" step="1" min="0" max="100"></input>
+			</div>
+			
+			<div class="colorcards">
+				<div id="colorcard-darker45"></div>
+				<div id="colorcard-darker3"></div>
+				<div id="colorcard-lighter3"></div>
+				<div id="colorcard-lighter45"></div>
+			</div>
+			
+			<div id="dialog-overlay"></div>
+			
+			<div id="dialog">
+				<div id="dialog-header">
+					<label id="dialog-title"></label>
+					<button id="dialog-close" class="tonal">&times;</button>
+				</div>
+				<div id="dialog-body"></div>
+				<div id="dialog-footer"></div>
+			</div>
+			
+			<div id="copied-message"></div>
+
+
+			<script id="my-iro-picker-input-template" type="text/x-handlebars-template">
+				<div class="my-iropicker-input-container">
+					<div class="my-iropicker-color"></div>
+					<input class="my-iropicker-input" type="text" placeholder="Hex color">
+				</div>
+			</script>
+			<script id="my-iro-picker-template" type="text/x-handlebars-template">
+				<div class="my-iropicker reveal">
+					<div class="my-iropicker-box"></div>
+					<div class="my-iropicker-sliders">
+						<div class="my-iropicker-slider-hsl"></div>
+						<div class="my-iropicker-slider-rgb"></div>
+					</div>
+					<div style="display: flex; flex-direction: column;">
+						<button class="my-iropicker-toggle-button my-iropicker-toggle-button-hsv tonal">HSV</button>
+						<button class="my-iropicker-toggle-button my-iropicker-toggle-button-rgb tonal">RGB</button>
+					</div>
+				</div>
+			</script>
+			<script id="colorcard-template" type="text/x-handlebars-template">
+				<div class="colorcard">
+					<h1>{{contrastRatio}}</h1>
+					<div class="colorcard-colorrefs">
+						<div class="colorcard-colorref_bkg">
+							<label>Index</label><span class="colorcard-colorref-index">{{backgroundIndex}}</span>
+							<label>Hex</label><span class="colorcard-colorref-hex">{{backgroundHex}}</span>
+						</div>
+						<div class="colorcard-colorref_txt">
+							<label>Index</label><span class="colorcard-colorref-index">{{textIndex}}</span>
+							<label>Hex</label><span class="colorcard-colorref-hex">{{textHex}}</span>
+						</div>
+					</div>
+					<div class="colorcard-divider"></div>
+					<h2>Large</h2>
+					<span class="colorcard-wcaglevel colorcard-wcaglevel-large_aa colorcard-wcaglevel_fail">
+						<span class="material-icons icon-pass">check</span>
+						<span class="material-icons icon-fail">close</span>
+						AA 3:1
+					</span>
+					<span class="colorcard-wcaglevel colorcard-wcaglevel-large_aaa colorcard-wcaglevel_fail">
+						<span class="material-icons icon-pass">check</span>
+						<span class="material-icons icon-fail">close</span>
+						AAA 4.5:1
+					</span>
+					<p class="colorcard-large_20">20pt example text. Jumpy wizard fox grabs TV, vexing bland queen.</p>
+					<p class="colorcard-large_14">14pt bold example text. Pack my box with five dozen liquor jugs, the dwarf jokingly quizzed.</p>
+					<div class="colorcard-icons">
+						<div class="colorcard-icons_bkg">
+							<span class="material-icons">check</span>
+							<span class="material-icons">info</span>
+							<span class="material-icons">warning</span>
+						</div>
+						<div class="colorcard-icons_txt">
+							<span class="material-icons">check</span>
+							<span class="material-icons">info</span>
+							<span class="material-icons">warning</span>
+						</div>
+					</div>
+					<div class="colorcard-divider"></div>
+					<h2>Regular</h2>
+					<span class="colorcard-wcaglevel colorcard-wcaglevel-regular_aa colorcard-wcaglevel_fail">
+						<span class="material-icons icon-pass">check</span>
+						<span class="material-icons icon-fail">close</span>
+						AA 4.5:1
+					</span>
+					<span class="colorcard-wcaglevel colorcard-wcaglevel-regular_aaa colorcard-wcaglevel_fail">
+						<span class="material-icons icon-pass">check</span>
+						<span class="material-icons icon-fail">close</span>
+						AAA 7:1
+					</span>
+					<p class="colorcard-regular_16">16pt example text. Zany jackdaws love my big sphinx of quartz, Fred.</p>
+					<p class="colorcard-regular_12">12pt bold example text. Q. Frog, a jinxed blimp driver, went zesty on the volleyball league.</p>
+				</div>
+			</div>
+			</script>
+  </body>
+</html>

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Tonal Scale PWA placeholder icon</title>
+  <desc id="desc">Simple placeholder icon for the Tonal Scale progressive web app.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e88e5" />
+      <stop offset="100%" stop-color="#0d47a1" />
+    </linearGradient>
+    <clipPath id="maskable">
+      <path d="M64 32h384a32 32 0 0 1 32 32v384a32 32 0 0 1-32 32H64a32 32 0 0 1-32-32V64a32 32 0 0 1 32-32z" />
+    </clipPath>
+  </defs>
+  <rect width="512" height="512" rx="64" ry="64" fill="url(#bg)" clip-path="url(#maskable)" />
+  <path
+    d="M160 160h64l32 64 32-64h64l-96 192z"
+    fill="#e3f2fd"
+    stroke="#bbdefb"
+    stroke-width="12"
+    clip-path="url(#maskable)"
+  />
+  <circle cx="256" cy="384" r="28" fill="#bbdefb" clip-path="url(#maskable)" />
+</svg>

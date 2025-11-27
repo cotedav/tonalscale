@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+set -e
+
+# Ensure Node/npm are on PATH when Git hooks run in Git Bash or GitExtensions
+add_node_path() {
+  if [ -n "$1" ] && [ -d "$1" ]; then
+    PATH="$1:$PATH"
+  fi
+}
+
+add_node_path "$NVM_SYMLINK"
+add_node_path "/c/Program Files/nodejs"
+add_node_path "/c/Program Files (x86)/nodejs"
+add_node_path "/c/Users/$USERNAME/AppData/Local/Programs/nodejs"
+add_node_path "/c/Users/$USERNAME/AppData/Roaming/npm"
+
+if ! command -v npx >/dev/null 2>&1; then
+  printf "husky: npx not found on PATH. Install Node.js or update PATH for Git hooks.\n" >&2
+  exit 127
+fi
+
+npx lint-staged
