@@ -20,7 +20,7 @@
       <p class="text-sm text-slate-300">{{ t('system.not_found.message') }}</p>
     </div>
     <RouterLink
-      to="/"
+      :to="{ name: 'scaffolding-demo' }"
       class="rounded-lg bg-accent-strong px-4 py-2 text-sm font-semibold text-white shadow-glow transition hover:bg-accent"
       data-cy="not-found-home-link"
     >

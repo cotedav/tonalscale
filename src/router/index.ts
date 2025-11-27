@@ -10,7 +10,15 @@ export const routes: RouteRecordRaw[] = [
       {
         path: '',
         name: 'home',
-        component: () => import('@/views/HomeView.vue'),
+        redirect: { name: 'scaffolding-demo' },
+        meta: {
+          layout: 'app-shell',
+        },
+      },
+      {
+        path: 'scaffolding-demo',
+        name: 'scaffolding-demo',
+        component: () => import('@/views/demo/ScaffoldingDemoView.vue'),
         meta: {
           layout: 'app-shell',
         },

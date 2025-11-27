@@ -1,9 +1,9 @@
 import { mount } from '@vue/test-utils';
-import HomeView from '@/views/HomeView.vue';
+import ScaffoldingDemoView from '@/views/demo/ScaffoldingDemoView.vue';
 
-describe('HomeView', () => {
+describe('ScaffoldingDemoView', () => {
   it('renders hero content and toolkit details', () => {
-    const wrapper = mount(HomeView);
+    const wrapper = mount(ScaffoldingDemoView);
 
     expect(wrapper.text()).toContain('Tonal Scale Scaffold');
     expect(wrapper.text()).toContain('Vue 3 • TypeScript • Vite • Tailwind CSS');

@@ -5,8 +5,8 @@ describe('PWA shell smoke test', () => {
     cy.fixture('app-shell').as('shell');
   });
 
-  it('renders the home shell with primary content', function testHomeShell() {
-    cy.visit('/');
+  it('renders the scaffolding demo shell with primary content', function testHomeShell() {
+    cy.visit('/scaffolding-demo');
 
     cy.getBySel('home-shell').should('exist');
     cy.getBySel('home-title').should('have.text', this.shell.title);
