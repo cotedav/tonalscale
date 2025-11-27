@@ -17,7 +17,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:ci": "vitest run --reporter=dot",
+    "test:ci": "vitest run --reporter=basic",
     "cypress:install": "cypress install",
     "cypress:base": "npm run cypress:install --silent && start-server-and-test \"npm run watch -- --host --port 5173\" http-get://localhost:5173 \"$CYPRESS_COMMAND\"",
     "cypress:open": "CYPRESS_COMMAND=\"cypress open --config-file cypress.config.ts\" npm run cypress:base",

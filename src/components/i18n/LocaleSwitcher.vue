@@ -47,6 +47,7 @@
         <select
           :value="currentLocale"
           class="w-full appearance-none rounded-lg border border-slate-700 bg-surface-soft px-3 py-2 text-sm font-medium text-slate-100 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent-strong/30"
+          data-cy="locale-select"
           @change="updateLocale"
         >
           <option

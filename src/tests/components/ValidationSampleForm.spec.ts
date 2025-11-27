@@ -14,8 +14,8 @@ describe('ValidationSampleForm', () => {
     expect(errorsAlert.exists()).toBe(true);
     expect(errorsAlert.text()).toContain('This field is required.');
 
-    await wrapper.get('[data-cy="full-name-input"] input').setValue('Ada Lovelace');
-    await wrapper.get('[data-cy="email-input"] input').setValue('ada@example.com');
+    await wrapper.get('[data-cy="full-name-input"]').setValue('Ada Lovelace');
+    await wrapper.get('[data-cy="email-input"]').setValue('ada@example.com');
     await wrapper.vm.onSubmit();
     await flushPromises();
     await wrapper.vm.$nextTick();
