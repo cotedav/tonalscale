@@ -1,6 +1,6 @@
 # Tonal Scale
 
-A Vite-powered Vue 3 + TypeScript scaffold configured for building the Tonal Scale progressive web app. The project includes Vuetify, Pinia, Vue Router, Vee-Validate, Vue I18n, VueUse, Lodash, and Luxon out of the box.
+A Vite-powered Vue 3 + TypeScript scaffold configured for building the Tonal Scale progressive web app. The project includes Tailwind CSS, Headless UI, Pinia, Vue Router, Vee-Validate, Vue I18n, VueUse, Lodash, and Luxon out of the box.
 
 ## Table of Contents
 
@@ -50,7 +50,7 @@ npm run watch
 
 ## Linting
 
-The project uses Airbnb-flavored ESLint with Vue 3 + TypeScript support and Prettier compatibility, plus Stylelint for SCSS and
+The project uses Airbnb-flavored ESLint with Vue 3 + TypeScript support and Prettier compatibility, plus Stylelint for CSS and
 Vue single-file components.
 
 ```bash
@@ -83,7 +83,7 @@ Re-enable hooks by unsetting `HUSKY` or running `npm run prepare` to reinstall H
 
 ## Testing
 
-Vitest is configured with a jsdom environment, Vue Test Utils, and Vuetify auto-imports for component rendering. Global setup in `src/tests/setup.ts` registers Vuetify plugins so Vue components can mount without additional boilerplate.
+Vitest is configured with a jsdom environment and Vue Test Utils for component rendering. Global setup in `src/tests/setup.ts` registers Vue I18n and validation so components can mount without additional boilerplate.
 
 ```bash
 # Run the full unit test suite once
@@ -102,7 +102,7 @@ Import application modules using the `@/` alias inside tests (e.g., `@/views/Hom
 
 Cypress is configured for both E2E and component testing using Vite + Vue bundling. Specs live under `cypress/e2e` and use
 `data-cy` selectors for stability (see `cypress/e2e/smoke.cy.ts` for a shell check of the home view). Component tests mount
-Vue files with Vuetify already registered via `cypress/support/component.ts`.
+Vue files with base plugins already registered via `cypress/support/component.ts`.
 
 ```bash
 # Run headless E2E specs with an auto-started dev server on :5173
@@ -135,11 +135,17 @@ GitHub Actions runs the core checks in [`.github/workflows/ci.yml`](./.github/wo
 ## Tech stack
 
 - Vite + Vue 3 + TypeScript
-- Vuetify 3
+- Tailwind CSS + Headless UI
 - Pinia, Vue Router, Vue I18n
 - Vee-Validate + Yup
 - VueUse utilities, Lodash helpers, Luxon date handling
 - PWA-ready Vite configuration
+
+## Styling with Tailwind CSS
+
+- Theme tokens for the tonal builder (colors, fonts, and shadows) live in [`tailwind.config.ts`](./tailwind.config.ts).
+- Global base styles and utility-friendly surfaces are defined in [`src/styles/main.css`](./src/styles/main.css).
+- Vuetify has been removed in favor of Tailwind + Headless UI primitives to keep the scaffold lightweight.
 
 ## Progressive web app (PWA) setup
 
@@ -172,10 +178,10 @@ GitHub Actions runs the core checks in [`.github/workflows/ci.yml`](./.github/wo
   );
   ```
 
-- Convert Vee-Validate error strings into Vuetify-friendly arrays with `toErrorMessages`:
+- Convert Vee-Validate error strings into array-friendly output with `toErrorMessages`:
 
-  ```vue
-  <v-text-field :error-messages="toErrorMessages(errorMessage)" />
+  ```ts
+  const errors = toErrorMessages(result.errors?.email);
   ```
 
 - See `src/components/forms/ValidationSampleForm.vue` for a full example that wires the schema into `useForm`, uses data-cy
@@ -231,7 +237,7 @@ GitHub Actions runs the core checks in [`.github/workflows/ci.yml`](./.github/wo
 
 ## Module resolution and aliases
 
-- Path aliases are configured for both TypeScript and Vite. Import application code using the `@/` prefix (e.g., `@/router` or `@/styles/main.scss`) instead of long relative paths.
+- Path aliases are configured for both TypeScript and Vite. Import application code using the `@/` prefix (e.g., `@/router` or `@/styles/main.css`) instead of long relative paths.
 
 ## Documentation
 

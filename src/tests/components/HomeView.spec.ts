@@ -6,7 +6,7 @@ describe('HomeView', () => {
     const wrapper = mount(HomeView);
 
     expect(wrapper.text()).toContain('Tonal Scale Scaffold');
-    expect(wrapper.text()).toContain('Vue 3 • TypeScript • Vite • Vuetify');
+    expect(wrapper.text()).toContain('Vue 3 • TypeScript • Vite • Tailwind CSS');
     expect(wrapper.text()).toContain('Live timestamp');
     expect(wrapper.find('[data-cy="localization-card"]').exists()).toBe(true);
     expect(wrapper.find('[data-cy="validation-form"]').exists()).toBe(true);

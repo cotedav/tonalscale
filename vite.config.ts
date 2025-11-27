@@ -3,7 +3,6 @@ import { fileURLToPath, URL } from 'node:url';
 import { VitePWA } from 'vite-plugin-pwa';
 import vue from '@vitejs/plugin-vue';
 import { defineConfig, loadEnv } from 'vite';
-import vuetify from 'vite-plugin-vuetify';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
@@ -17,7 +16,6 @@ export default defineConfig(({ mode }) => {
     base: normalizedBasePath,
     plugins: [
       vue(),
-      vuetify({ autoImport: true }),
       VitePWA({
         registerType: 'autoUpdate',
         includeAssets: ['favicon.svg', 'robots.txt', 'pwa-icon.svg'],
@@ -74,11 +72,6 @@ export default defineConfig(({ mode }) => {
       environment: 'jsdom',
       css: true,
       setupFiles: 'src/tests/setup.ts',
-      server: {
-        deps: {
-          inline: ['vuetify'],
-        },
-      },
       coverage: {
         provider: 'v8',
         reporter: ['text', 'json-summary', 'html'],

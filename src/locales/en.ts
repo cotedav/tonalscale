@@ -2,12 +2,12 @@ export default {
   home: {
     hero: {
       title: 'Tonal Scale Scaffold',
-      description: 'Vue 3 + TypeScript + Vuetify starter with PWA readiness.',
+      description: 'Vue 3 + TypeScript starter with Tailwind CSS, Headless UI, and PWA readiness.',
     },
     toolkit: {
       title: 'Toolkit',
       description:
-        'Vue 3 • TypeScript • Vite • Vuetify • Pinia • Vue Router • Vee-Validate • Vue I18n • VueUse • Lodash • Luxon',
+        'Vue 3 • TypeScript • Vite • Tailwind CSS • Headless UI • Pinia • Vue Router • Vee-Validate • Vue I18n • VueUse • Lodash • Luxon',
     },
     timestamp: {
       title: 'Live timestamp',
@@ -18,7 +18,7 @@ export default {
     },
     validation: {
       heading: 'Schema-based validation demo',
-      description: 'Reusable Vee-Validate + Yup form with Vuetify inputs.',
+      description: 'Reusable Vee-Validate + Yup form with Tailwind inputs.',
     },
     utilities: {
       heading: 'Utility library demos',
@@ -42,6 +42,14 @@ export default {
         formattedLabel: 'Localized label',
         utcLabel: 'UTC ISO timestamp',
       },
+      dialog: {
+        title: 'Headless UI dialog wiring',
+        description: 'Overlay sample proving Headless UI is ready for tonal builder workflows.',
+        open: 'Open sample dialog',
+        body: 'Dialogs use Tailwind-powered transitions and keep focus management intact.',
+        close: 'Close',
+        helper: 'Use the escape key or background click to dismiss the overlay.',
+      },
     },
   },
   validation: {
@@ -62,7 +70,8 @@ export default {
         reset: 'Reset form',
       },
       success: 'Validation succeeded for {name} ({email}).',
-      helper_copy: 'Errors hydrate Vuetify `error-messages` arrays for consistent layout.',
+      helper_copy:
+        'Errors hydrate reactive arrays for consistent layout without component lock-in.',
     },
     rules: {
       required: 'This field is required.',
@@ -77,6 +86,14 @@ export default {
     locales: {
       en: 'English',
       fr: 'Français',
+    },
+  },
+  system: {
+    not_found: {
+      title: 'Page not found',
+      message:
+        'The page you are looking for does not exist yet. Use the navigation to keep exploring.',
+      home: 'Return home',
     },
   },
 };

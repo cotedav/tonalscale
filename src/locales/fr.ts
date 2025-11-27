@@ -2,12 +2,13 @@ export default {
   home: {
     hero: {
       title: 'Squelette Tonal Scale',
-      description: 'Démarrage Vue 3 + TypeScript + Vuetify prêt pour la PWA.',
+      description:
+        'Démarrage Vue 3 + TypeScript avec Tailwind CSS, Headless UI et préparation PWA.',
     },
     toolkit: {
       title: 'Boîte à outils',
       description:
-        'Vue 3 • TypeScript • Vite • Vuetify • Pinia • Vue Router • Vee-Validate • Vue I18n • VueUse • Lodash • Luxon',
+        'Vue 3 • TypeScript • Vite • Tailwind CSS • Headless UI • Pinia • Vue Router • Vee-Validate • Vue I18n • VueUse • Lodash • Luxon',
     },
     timestamp: {
       title: 'Horodatage en direct',
@@ -18,7 +19,7 @@ export default {
     },
     validation: {
       heading: 'Démo de validation basée sur un schéma',
-      description: 'Formulaire réutilisable Vee-Validate + Yup avec champs Vuetify.',
+      description: 'Formulaire réutilisable Vee-Validate + Yup avec champs Tailwind.',
     },
     utilities: {
       heading: 'Démos des bibliothèques utilitaires',
@@ -44,6 +45,15 @@ export default {
         formattedLabel: 'Libellé localisé',
         utcLabel: 'Horodatage ISO UTC',
       },
+      dialog: {
+        title: 'Boîte de dialogue Headless UI',
+        description:
+          'Exemple de superposition prouvant que Headless UI est prête pour les flux du constructeur tonal.',
+        open: 'Ouvrir la boîte de dialogue',
+        body: 'Les dialogues utilisent des transitions Tailwind et conservent une gestion du focus complète.',
+        close: 'Fermer',
+        helper: "Utilisez Échap ou cliquez à l'arrière-plan pour fermer la fenêtre.",
+      },
     },
   },
   validation: {
@@ -65,7 +75,7 @@ export default {
       },
       success: 'Validation réussie pour {name} ({email}).',
       helper_copy:
-        'Les erreurs alimentent les tableaux "error-messages" de Vuetify pour un rendu cohérent.',
+        'Les erreurs alimentent des tableaux réactifs pour un rendu cohérent sans dépendance aux composants.',
     },
     rules: {
       required: 'Ce champ est obligatoire.',
@@ -80,6 +90,14 @@ export default {
     locales: {
       en: 'Anglais',
       fr: 'Français',
+    },
+  },
+  system: {
+    not_found: {
+      title: 'Page introuvable',
+      message:
+        "La page que vous recherchez n'existe pas encore. Utilisez la navigation pour continuer à explorer.",
+      home: 'Retour à la page principale',
     },
   },
 };
