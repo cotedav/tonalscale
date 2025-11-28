@@ -153,6 +153,9 @@ export default {
       extended_helper: 'Key luminance + supporting stops',
       key: 'Key strip',
       key_helper: 'Key luminance and nearest neighbors',
+      empty_state: 'No tonal data available yet.',
+      base_marker: 'Base luminance at {index}',
+      index_label: 'Index {index}',
     },
     overlays: {
       title: 'Interactive overlays',

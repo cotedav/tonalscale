@@ -4,11 +4,13 @@
   import { useI18n } from 'vue-i18n';
 
   import ColorPickerCard from '@/components/tonal-builder/ColorPickerCard.vue';
+  import TonalStrip from '@/components/tonal-builder/TonalStrip.vue';
   import {
     type BlendControlId,
     useTonalBuilderControls,
   } from '@/composables/useTonalBuilderControls';
   import { useTonalBuilderColors } from '@/composables/useTonalBuilderColors';
+  import { useTonalBuilderStrips } from '@/composables/useTonalBuilderStrips';
 
   const { t } = useI18n();
 
@@ -70,6 +72,11 @@
       label: t(control.labelKey),
       value: controls[control.id],
     })),
+  );
+
+  const { baseLuminance, fullStrip, extendedStrip, keyStrip } = useTonalBuilderStrips(
+    baseHex,
+    blendHex,
   );
 
   const onControlInput = (id: BlendControlId, value: number) => {
@@ -233,10 +240,9 @@
             </span>
             <span class="text-xs text-slate-500">{{ t('tonal_builder.scales.full_helper') }}</span>
           </div>
-          <div
-            id="color-scale-container-full"
-            class="color-scale-container relative min-h-[96px] rounded-2xl border border-dashed border-white/15 bg-surface-soft/80 p-3"
-            showBlendDistGraph="true"
+          <TonalStrip
+            :swatches="fullStrip"
+            :base-index="baseLuminance"
             data-cy="scale-strip-full"
           />
         </div>
@@ -250,9 +256,9 @@
               t('tonal_builder.scales.extended_helper')
             }}</span>
           </div>
-          <div
-            id="color-scale-container-custom"
-            class="color-scale-container relative min-h-[72px] rounded-2xl border border-dashed border-white/15 bg-surface-soft/80 p-3"
+          <TonalStrip
+            :swatches="extendedStrip"
+            :base-index="baseLuminance"
             data-cy="scale-strip-extended"
           />
         </div>
@@ -264,9 +270,9 @@
             </span>
             <span class="text-xs text-slate-500">{{ t('tonal_builder.scales.key_helper') }}</span>
           </div>
-          <div
-            id="color-scale-container-key"
-            class="color-scale-container relative min-h-[72px] rounded-2xl border border-dashed border-white/15 bg-surface-soft/80 p-3"
+          <TonalStrip
+            :swatches="keyStrip"
+            :base-index="baseLuminance"
             data-cy="scale-strip-key"
           />
         </div>

@@ -157,6 +157,9 @@ export default {
       extended_helper: 'Luminance clé et points de support',
       key: 'Bande clé',
       key_helper: 'Luminance clé et voisins proches',
+      empty_state: 'Aucune donnée tonale disponible pour le moment.',
+      base_marker: 'Luminance de base à {index}',
+      index_label: 'Index {index}',
     },
     overlays: {
       title: 'Superpositions interactives',
