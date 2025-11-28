@@ -113,6 +113,8 @@ export default {
         badge: 'Mélange',
         placeholder: 'Emplacement pour le sélecteur de mélange et les pastilles.',
       },
+      slider_modes: 'Modes de curseur',
+      invalid_hex: 'Saisissez une valeur hexadécimale à 6 chiffres',
     },
     controls: {
       title: 'Contrôles de mélange et saturation',

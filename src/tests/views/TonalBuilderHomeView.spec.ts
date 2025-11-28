@@ -10,7 +10,9 @@ describe('TonalBuilderHomeView', () => {
     [
       '#toolbar',
       '#baseColorPickerInput',
+      '#blendColorPickerInput',
       '#baseColorPicker',
+      '#blendColorPicker',
       '#color-scale-container-full',
       '#color-scale-container-custom',
       '#color-scale-container-key',
@@ -25,6 +27,10 @@ describe('TonalBuilderHomeView', () => {
     ].forEach((selector) => {
       expect(wrapper.find(selector).exists()).toBe(true);
     });
+
+    expect(wrapper.find('[data-cy="base-color-picker"]').exists()).toBe(true);
+    expect(wrapper.find('[data-cy="blend-color-picker"]').exists()).toBe(true);
+    expect(wrapper.find('#baseColorPickerInput').text()).toContain('#7c3aed');
 
     expect(wrapper.findAll('[type="range"]').length).toBe(5);
     expect(wrapper.findAll('[data-cy$="-value"]').length).toBe(5);

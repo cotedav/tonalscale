@@ -109,6 +109,8 @@ export default {
         badge: 'Blend',
         placeholder: 'Slot for the blend color picker and chip previews.',
       },
+      slider_modes: 'Slider modes',
+      invalid_hex: 'Enter a valid 6-digit hex value',
     },
     controls: {
       title: 'Blend + saturation controls',

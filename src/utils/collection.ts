@@ -19,3 +19,9 @@ export const chunkIntoRows = <T>(items: readonly T[], rowSize = 1): T[][] => {
  */
 export const uniqueTruthy = <T>(items: readonly (T | undefined | null | false | '')[]): T[] =>
   uniq(items.filter(Boolean) as T[]);
+
+/**
+ * Clamp a numeric value within a minimum and maximum boundary.
+ */
+export const clamp = (value: number, min: number, max: number): number =>
+  Math.min(Math.max(value, min), max);

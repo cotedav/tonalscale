@@ -38,6 +38,7 @@
 - Lint and format are clean for touched code (`npm run lint`, `npm run format:check`).
 - No missing i18n keys at runtime; add translations instead of hard-coding strings.
 - Update documentation (including this file) when project scope or conventions shift.
+- Before concluding any task, run the full CI parity command `npm run ci` (or document constraints per `_DOC/guides/execution-constraints.md` if it cannot be executed) so failures surface before handoff.
 
 ## Code style & architecture conventions
 

@@ -3,10 +3,47 @@
   import { computed, watchEffect } from 'vue';
   import { useI18n } from 'vue-i18n';
 
+  import ColorPickerCard from '@/components/tonal-builder/ColorPickerCard.vue';
+  import {
+    type BlendControlId,
+    useTonalBuilderControls,
+  } from '@/composables/useTonalBuilderControls';
+  import { useTonalBuilderColors } from '@/composables/useTonalBuilderColors';
+
   const { t } = useI18n();
 
   const pageTitle = computed(() => t('tonal_builder.meta.title'));
   const pageDescription = computed(() => t('tonal_builder.meta.description'));
+
+  const { baseHex, blendHex, sliderMode, updateBase, updateBlend, setSliderMode } =
+    useTonalBuilderColors();
+
+  const { blendMode, controlDefinitions, controls, setBlendMode, updateControl } =
+    useTonalBuilderControls();
+
+  const baseHexModel = computed({
+    get: () => baseHex.value,
+    set: (value: string) => {
+      updateBase(value);
+    },
+  });
+
+  const blendHexModel = computed({
+    get: () => blendHex.value,
+    set: (value: string) => {
+      updateBlend(value);
+    },
+  });
+
+  const sliderModeModel = computed({
+    get: () => sliderMode.value,
+    set: (value: typeof sliderMode.value) => {
+      setSliderMode(value);
+    },
+  });
+
+  const baseSwatchStyle = computed(() => ({ backgroundColor: baseHex.value }));
+  const blendSwatchStyle = computed(() => ({ backgroundColor: blendHex.value }));
 
   const blendModes = computed(() => [
     { label: t('tonal_builder.controls.blend_modes.darken'), value: 'darken' },
@@ -22,38 +59,22 @@
     { label: t('tonal_builder.controls.blend_modes.hue'), value: 'hue' },
   ]);
 
-  const sliderControls = computed(() => [
-    {
-      id: 'strength',
-      label: t('tonal_builder.controls.fields.strength'),
-      range: { id: 'strength-slider', min: 0, max: 100, step: 1, value: 0 },
-      number: { id: 'strength-value', min: 0, max: 100, step: 1, value: 0 },
-    },
-    {
-      id: 'middle',
-      label: t('tonal_builder.controls.fields.middle'),
-      range: { id: 'middle-slider', min: -50, max: 50, step: 1, value: 0 },
-      number: { id: 'middle-value', min: 0, max: 100, step: 1, value: 0 },
-    },
-    {
-      id: 'spread',
-      label: t('tonal_builder.controls.fields.spread'),
-      range: { id: 'spread-slider', min: 0, max: 100, step: 1, value: 0 },
-      number: { id: 'spread-value', min: 0, max: 1, step: 1, value: 0 },
-    },
-    {
-      id: 'satDarker',
-      label: t('tonal_builder.controls.fields.sat_darker'),
-      range: { id: 'satDarker-slider', min: 0, max: 100, step: 1, value: 0 },
-      number: { id: 'satDarker-value', min: 0, max: 100, step: 1, value: 0 },
-    },
-    {
-      id: 'satLighter',
-      label: t('tonal_builder.controls.fields.sat_lighter'),
-      range: { id: 'satLighter-slider', min: 0, max: 100, step: 1, value: 0 },
-      number: { id: 'satLighter-value', min: 0, max: 100, step: 1, value: 0 },
-    },
-  ]);
+  const blendModeModel = computed({
+    get: () => blendMode.value,
+    set: (value: (typeof blendMode)['value']) => setBlendMode(value),
+  });
+
+  const sliderControls = computed(() =>
+    controlDefinitions.map((control) => ({
+      ...control,
+      label: t(control.labelKey),
+      value: controls[control.id],
+    })),
+  );
+
+  const onControlInput = (id: BlendControlId, value: number) => {
+    updateControl(id, value);
+  };
 
   useTitle(pageTitle);
 
@@ -93,20 +114,41 @@
         id="toolbar"
         class="flex flex-wrap items-center justify-between gap-4"
       >
-        <div
-          id="baseColorPickerInput"
-          class="flex items-center gap-3 rounded-2xl border border-dashed border-accent-soft/40 bg-surface-soft/80 px-4 py-3 shadow-card"
-        >
+        <div class="flex flex-wrap items-center gap-3">
           <div
-            class="h-10 w-10 rounded-full bg-gradient-to-br from-accent via-accent-soft to-white/40"
-          />
-          <div class="space-y-1">
-            <p class="text-sm font-semibold text-slate-100">
-              {{ t('tonal_builder.pickers.base.title') }}
-            </p>
-            <p class="text-xs text-slate-400">
-              {{ t('tonal_builder.pickers.base.input_helper') }}
-            </p>
+            id="baseColorPickerInput"
+            class="flex items-center gap-3 rounded-2xl border border-dashed border-accent-soft/40 bg-surface-soft/80 px-4 py-3 shadow-card"
+          >
+            <div
+              class="h-10 w-10 rounded-full border border-white/10"
+              :style="baseSwatchStyle"
+            />
+            <div class="space-y-1">
+              <p class="text-sm font-semibold text-slate-100">
+                {{ t('tonal_builder.pickers.base.title') }}
+              </p>
+              <p class="text-xs text-slate-400">
+                {{ baseHex }}
+              </p>
+            </div>
+          </div>
+
+          <div
+            id="blendColorPickerInput"
+            class="flex items-center gap-3 rounded-2xl border border-dashed border-accent-soft/40 bg-surface-soft/80 px-4 py-3 shadow-card"
+          >
+            <div
+              class="h-10 w-10 rounded-full border border-white/10"
+              :style="blendSwatchStyle"
+            />
+            <div class="space-y-1">
+              <p class="text-sm font-semibold text-slate-100">
+                {{ t('tonal_builder.pickers.blend.title') }}
+              </p>
+              <p class="text-xs text-slate-400">
+                {{ blendHex }}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -147,19 +189,25 @@
         </div>
       </div>
 
-      <div
-        id="baseColorPicker"
-        class="relative overflow-visible rounded-3xl border border-dashed border-accent-soft/40 bg-surface-soft/80 p-6"
-        :aria-label="t('tonal_builder.pickers.base.title')"
-        data-cy="base-color-picker"
-      >
-        <div
-          class="flex h-64 items-center justify-center rounded-2xl border border-white/10 bg-surface/60"
-        >
-          <p class="text-sm text-slate-400">
-            {{ t('tonal_builder.pickers.base.placeholder') }}
-          </p>
-        </div>
+      <div class="grid gap-4 lg:grid-cols-2">
+        <ColorPickerCard
+          id="baseColorPicker"
+          v-model="baseHexModel"
+          v-model:slider-mode="sliderModeModel"
+          :label="t('tonal_builder.pickers.base.title')"
+          :description="t('tonal_builder.pickers.base.description')"
+          :swatch-label="t('tonal_builder.pickers.base.badge')"
+          data-cy="base-color-picker"
+        />
+        <ColorPickerCard
+          id="blendColorPicker"
+          v-model="blendHexModel"
+          v-model:slider-mode="sliderModeModel"
+          :label="t('tonal_builder.pickers.blend.title')"
+          :description="t('tonal_builder.pickers.blend.description')"
+          :swatch-label="t('tonal_builder.pickers.blend.badge')"
+          data-cy="blend-color-picker"
+        />
       </div>
     </section>
 
@@ -245,6 +293,7 @@
         </label>
         <select
           id="blendmode"
+          v-model="blendModeModel"
           name="blendmode"
           class="h-11 w-full rounded-xl border border-white/10 bg-surface px-3 text-sm text-slate-100 shadow-inner"
           data-cy="blendmode-select"
@@ -262,23 +311,39 @@
           class="hidden sm:block"
         />
 
-        <label
-          class="text-sm font-semibold text-slate-100"
-          for="blendColorPickerInput"
-        >
-          {{ t('tonal_builder.controls.labels.blend_color') }}
-        </label>
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div
-            id="blendColorPickerInput"
-            class="h-11 rounded-xl border border-dashed border-accent-soft/40 bg-surface/70 px-3"
-            data-cy="blend-color-input"
-          />
-          <div
-            id="blendColorPicker"
-            class="h-11 flex-1 rounded-xl border border-dashed border-accent-soft/40 bg-surface/70"
-            data-cy="blend-color-picker"
-          />
+          <label
+            class="flex items-center gap-2 text-sm font-semibold text-slate-100"
+            for="blendColorPickerInput"
+          >
+            <span class="h-3 w-3 rounded-full bg-accent-soft" />
+            {{ t('tonal_builder.controls.labels.blend_color') }}
+          </label>
+          <div class="flex flex-1 flex-wrap items-center gap-2">
+            <div
+              id="blendColorPickerInput"
+              class="flex h-11 items-center gap-3 rounded-xl border border-dashed border-accent-soft/40 bg-surface/70 px-3"
+              data-cy="blend-color-input"
+            >
+              <span
+                class="h-8 w-8 rounded-xl border border-white/10"
+                :style="blendSwatchStyle"
+                role="img"
+                :aria-label="t('tonal_builder.pickers.blend.title')"
+              />
+              <span class="text-xs font-semibold text-slate-200">{{ blendHex }}</span>
+            </div>
+            <div
+              id="blendColorPicker"
+              class="flex h-11 flex-1 items-center justify-between rounded-xl border border-dashed border-accent-soft/40 bg-surface/70 px-3"
+              data-cy="blend-color-picker"
+            >
+              <span class="text-xs font-semibold uppercase tracking-wide text-slate-300">
+                {{ t('tonal_builder.controls.labels.blend_mode') }}
+              </span>
+              <span class="text-xs font-semibold text-accent-soft">{{ blendModeModel }}</span>
+            </div>
+          </div>
         </div>
         <span
           aria-hidden="true"
@@ -297,25 +362,29 @@
           </label>
           <input
             :id="control.range.id"
+            v-model.number="controls[control.id]"
             type="range"
             :min="control.range.min"
             :max="control.range.max"
             :step="control.range.step"
-            :value="control.range.value"
             class="h-2 w-full cursor-pointer appearance-none rounded-full bg-slate-700 accent-accent"
             :aria-label="control.label"
             :data-cy="`${control.id}-slider`"
+            @input="onControlInput(control.id, controls[control.id])"
+            @change="onControlInput(control.id, controls[control.id])"
           />
           <input
             :id="control.number.id"
+            v-model.number="controls[control.id]"
             type="number"
             :min="control.number.min"
             :max="control.number.max"
             :step="control.number.step"
-            :value="control.number.value"
             class="h-11 w-full rounded-xl border border-white/10 bg-surface px-3 text-sm text-slate-100 shadow-inner"
             :aria-label="control.label"
             :data-cy="`${control.id}-value`"
+            @input="onControlInput(control.id, controls[control.id])"
+            @change="onControlInput(control.id, controls[control.id])"
           />
         </template>
       </div>
