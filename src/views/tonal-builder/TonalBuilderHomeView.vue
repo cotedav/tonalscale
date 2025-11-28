@@ -408,7 +408,7 @@
             {{
               t(
                 (controlErrors[control.id] as ControlError).key,
-                (controlErrors[control.id] as ControlError).values,
+                (controlErrors[control.id] as ControlError).values ?? {},
               )
             }}
           </p>
