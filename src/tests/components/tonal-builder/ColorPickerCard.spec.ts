@@ -26,79 +26,96 @@ type MockIroModule = {
     ColorPicker: new (_target: HTMLElement, options?: { color?: string }) => MockColorPickerShape;
     ui: { Box: string; Slider: string };
   };
-  __instances: MockColorPickerShape[];
+  instances: MockColorPickerShape[];
   MockColor: new (color: string) => MockColorShape;
 };
 
 vi.stubGlobal(
   'ResizeObserver',
-  class {
-    observe() {}
-
-    unobserve() {}
-
-    disconnect() {}
-  },
+  vi.fn(() => ({
+    observe: vi.fn(),
+    unobserve: vi.fn(),
+    disconnect: vi.fn(),
+  })),
 );
 
 vi.mock('@jaames/iro', () => {
-  class MockColor implements MockColorShape {
-    hexString: string;
-
-    rgb: RgbColor;
-
-    hsv: HsvColor;
-
-    constructor(color: string) {
-      this.hexString = normalizeHex(color);
-      this.rgb = hexToRgb(this.hexString);
-      this.hsv = hexToHsv(this.hexString);
-    }
-
-    set(color: string) {
-      const normalized = normalizeHex(color);
-      this.hexString = normalized;
-      this.rgb = hexToRgb(normalized);
-      this.hsv = hexToHsv(normalized);
-    }
-  }
-
-  class MockColorPicker implements MockColorPickerShape {
-    color: MockColor;
-
-    listeners: Record<string, ((color: MockColor) => void)[]> = {};
-
-    resize = vi.fn();
-
-    constructor(_target: HTMLElement, options?: { color?: string }) {
-      this.color = new MockColor(options?.color ?? '#000000');
-      instances.push(this);
-    }
-
-    on(event: string, callback: (color: MockColor) => void) {
-      this.listeners[event] = this.listeners[event] ?? [];
-      this.listeners[event].push(callback);
-    }
-
-    off(event: string, callback: (color: MockColor) => void) {
-      this.listeners[event] = (this.listeners[event] ?? []).filter((cb) => cb !== callback);
-    }
-
-    emit(event: string, color?: MockColor) {
-      (this.listeners[event] ?? []).forEach((callback) => callback(color ?? this.color));
-    }
-  }
-
   const instances: MockColorPickerShape[] = [];
 
+  function createMockColor(color: string): MockColorShape {
+    let hexString = normalizeHex(color);
+
+    const set = (newColor: string) => {
+      const normalized = normalizeHex(newColor);
+      hexString = normalized;
+    };
+
+    return {
+      get hexString() {
+        return hexString;
+      },
+      set hexString(value: string) {
+        set(value);
+      },
+      get rgb() {
+        return hexToRgb(hexString);
+      },
+      get hsv() {
+        return hexToHsv(hexString);
+      },
+      set,
+    };
+  }
+
+  function MockColorPicker(
+    this: MockColorPickerShape,
+    _target: HTMLElement,
+    options?: { color?: string },
+  ) {
+    this.color = createMockColor(options?.color ?? '#000000');
+    this.listeners = {};
+    this.resize = vi.fn();
+    instances.push(this);
+  }
+
+  const ColorPickerFactory = (
+    target: HTMLElement,
+    options?: { color?: string },
+  ): MockColorPickerShape => new MockColorPicker(target, options);
+
+  ColorPickerFactory.prototype = MockColorPicker.prototype;
+
+  MockColorPicker.prototype.on = function on(
+    event: string,
+    callback: (color: MockColorShape) => void,
+  ) {
+    this.listeners[event] = this.listeners[event] ?? [];
+    this.listeners[event].push(callback);
+  };
+
+  MockColorPicker.prototype.off = function off(
+    event: string,
+    callback: (color: MockColorShape) => void,
+  ) {
+    this.listeners[event] = (this.listeners[event] ?? []).filter(
+      (cb: (color: MockColorShape) => void) => cb !== callback,
+    );
+  };
+
+  MockColorPicker.prototype.emit = function emit(event: string, emittedColor?: MockColorShape) {
+    (this.listeners[event] ?? []).forEach((listener: (color: MockColorShape) => void) => {
+      listener(emittedColor ?? this.color);
+    });
+  };
+
   return {
-    default: { ColorPicker: MockColorPicker, ui: { Box: 'Box', Slider: 'Slider' } },
-    __instances: instances,
-    MockColor,
+    default: { ColorPicker: ColorPickerFactory, ui: { Box: 'Box', Slider: 'Slider' } },
+    instances,
+    MockColor: createMockColor,
   };
 });
 
-const getIroModule = () => import('@jaames/iro') as Promise<MockIroModule>;
+const getIroModule = () => import('@jaames/iro').then((mod) => mod as unknown as MockIroModule);
 
 const mountPicker = async () => {
   const wrapper = mount(ColorPickerCard, {
@@ -116,7 +133,7 @@ const mountPicker = async () => {
 describe('ColorPickerCard', () => {
   beforeEach(async () => {
     const iro = await getIroModule();
-    iro.__instances.length = 0;
+    iro.instances.length = 0;
   });
 
   it('synchronizes hex input with iro pickers and emits updates', async () => {
@@ -126,7 +143,7 @@ describe('ColorPickerCard', () => {
     await wrapper.get('[data-cy="hex-input"]').setValue('#abcdef');
     await nextTick();
 
-    expect(iro.__instances.every((picker) => picker.color.hexString === '#abcdef')).toBe(true);
+    expect(iro.instances.every((picker) => picker.color.hexString === '#abcdef')).toBe(true);
     expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['#abcdef']);
     expect(wrapper.emitted('color-change')?.[0]?.[0]).toMatchObject({ hex: '#abcdef' });
   });
@@ -146,7 +163,7 @@ describe('ColorPickerCard', () => {
     const iro = await getIroModule();
 
     const sliderColor = new iro.MockColor('#445566');
-    iro.__instances[0].emit('input:change', sliderColor);
+    iro.instances[0].emit('input:change', sliderColor);
     await nextTick();
 
     expect((wrapper.get('[data-cy="hex-input"]').element as HTMLInputElement).value).toBe(

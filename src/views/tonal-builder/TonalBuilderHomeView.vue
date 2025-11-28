@@ -202,7 +202,7 @@
         <ColorPickerCard
           id="baseColorPicker"
           v-model="baseHexModel"
-          v-model:sliderMode="sliderModeModel"
+          v-model:slider-mode="sliderModeModel"
           :label="t('tonal_builder.pickers.base.title')"
           :description="t('tonal_builder.pickers.base.description')"
           :swatch-label="t('tonal_builder.pickers.base.badge')"
@@ -211,7 +211,7 @@
         <ColorPickerCard
           id="blendColorPicker"
           v-model="blendHexModel"
-          v-model:sliderMode="sliderModeModel"
+          v-model:slider-mode="sliderModeModel"
           :label="t('tonal_builder.pickers.blend.title')"
           :description="t('tonal_builder.pickers.blend.description')"
           :swatch-label="t('tonal_builder.pickers.blend.badge')"

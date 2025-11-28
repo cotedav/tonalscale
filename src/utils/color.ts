@@ -21,12 +21,10 @@ export function normalizeHex(hex: string): string {
 
 export function hexToRgb(hex: string): RgbColor {
   const normalized = normalizeHex(hex).replace('#', '');
-  const bigint = parseInt(normalized, 16);
-
   return {
-    r: (bigint >> 16) & 255,
-    g: (bigint >> 8) & 255,
-    b: bigint & 255,
+    r: parseInt(normalized.slice(0, 2), 16),
+    g: parseInt(normalized.slice(2, 4), 16),
+    b: parseInt(normalized.slice(4, 6), 16),
   };
 }
 

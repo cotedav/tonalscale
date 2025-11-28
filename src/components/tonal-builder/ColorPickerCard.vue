@@ -85,13 +85,15 @@
     hexError.value = '';
     hexInput.value = normalized;
     emit('update:modelValue', normalized);
-    emitColorChange(normalized, { rgb: color.rgb, hsv: color.hsv });
+    emitColorChange(normalized);
   };
 
-  const createPicker = (target: HTMLElement | null, layout: iro.Layout[]) => {
+  type PickerLayout = Array<{ component: unknown; options?: Record<string, unknown> }>;
+
+  const createPicker = (target: HTMLElement | null, layout: PickerLayout) => {
     if (!target) return null;
 
-    const picker = new iro.ColorPicker(target, {
+    const picker = iro.ColorPicker(target, {
       color: hexInput.value,
       layout,
       borderWidth: 1,
@@ -106,9 +108,15 @@
 
   const resizePickers = () => {
     requestAnimationFrame(() => {
-      boxPicker?.resize();
-      hsvPicker?.resize();
-      rgbPicker?.resize();
+      if (boxRef.value && boxPicker) {
+        boxPicker.resize(boxRef.value.clientWidth);
+      }
+      if (hsvRef.value && hsvPicker) {
+        hsvPicker.resize(hsvRef.value.clientWidth);
+      }
+      if (rgbRef.value && rgbPicker) {
+        rgbPicker.resize(rgbRef.value.clientWidth);
+      }
     });
   };
 
