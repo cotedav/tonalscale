@@ -6,8 +6,10 @@
   import ColorPickerCard from '@/components/tonal-builder/ColorPickerCard.vue';
   import {
     type BlendControlId,
+    type ControlError,
     useTonalBuilderControls,
   } from '@/composables/useTonalBuilderControls';
+  import { useTonalBuilderEngine } from '@/composables/useTonalBuilderEngine';
   import { useTonalBuilderColors } from '@/composables/useTonalBuilderColors';
 
   const { t } = useI18n();
@@ -18,8 +20,15 @@
   const { baseHex, blendHex, sliderMode, updateBase, updateBlend, setSliderMode } =
     useTonalBuilderColors();
 
-  const { blendMode, controlDefinitions, controls, setBlendMode, updateControl } =
-    useTonalBuilderControls();
+  const {
+    blendMode,
+    controlDefinitions,
+    controls,
+    controlErrors,
+    hasErrors,
+    setBlendMode,
+    updateControl,
+  } = useTonalBuilderControls();
 
   const baseHexModel = computed({
     get: () => baseHex.value,
@@ -72,9 +81,14 @@
     })),
   );
 
-  const onControlInput = (id: BlendControlId, value: number) => {
+  const onControlInput = (id: BlendControlId, value: number | string) => {
     updateControl(id, value);
   };
+
+  useTonalBuilderEngine({
+    colors: { baseHex, blendHex },
+    controls: { blendMode, controls, hasErrors },
+  });
 
   useTitle(pageTitle);
 
@@ -362,7 +376,7 @@
           </label>
           <input
             :id="control.range.id"
-            v-model.number="controls[control.id]"
+            :value="controls[control.id]"
             type="range"
             :min="control.range.min"
             :max="control.range.max"
@@ -370,12 +384,12 @@
             class="h-2 w-full cursor-pointer appearance-none rounded-full bg-slate-700 accent-accent"
             :aria-label="control.label"
             :data-cy="`${control.id}-slider`"
-            @input="onControlInput(control.id, controls[control.id])"
-            @change="onControlInput(control.id, controls[control.id])"
+            @input="onControlInput(control.id, ($event.target as HTMLInputElement).value)"
+            @change="onControlInput(control.id, ($event.target as HTMLInputElement).value)"
           />
           <input
             :id="control.number.id"
-            v-model.number="controls[control.id]"
+            :value="controls[control.id]"
             type="number"
             :min="control.number.min"
             :max="control.number.max"
@@ -383,9 +397,21 @@
             class="h-11 w-full rounded-xl border border-white/10 bg-surface px-3 text-sm text-slate-100 shadow-inner"
             :aria-label="control.label"
             :data-cy="`${control.id}-value`"
-            @input="onControlInput(control.id, controls[control.id])"
-            @change="onControlInput(control.id, controls[control.id])"
+            @input="onControlInput(control.id, ($event.target as HTMLInputElement).value)"
+            @change="onControlInput(control.id, ($event.target as HTMLInputElement).value)"
           />
+          <p
+            v-if="controlErrors[control.id]"
+            class="text-xs text-rose-300 sm:col-start-2 sm:col-span-2"
+            role="alert"
+          >
+            {{
+              t(
+                (controlErrors[control.id] as ControlError).key,
+                (controlErrors[control.id] as ControlError).values,
+              )
+            }}
+          </p>
         </template>
       </div>
     </section>

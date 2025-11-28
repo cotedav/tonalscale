@@ -130,6 +130,10 @@ export default {
         sat_darker: 'Saturation foncée',
         sat_lighter: 'Saturation claire',
       },
+      errors: {
+        invalid_number: 'Saisissez un nombre valide pour mettre à jour ce contrôle.',
+        out_of_range: 'Entrez une valeur entre {min} et {max}.',
+      },
       blend_modes: {
         darken: 'Assombrir',
         multiply: 'Produit',
