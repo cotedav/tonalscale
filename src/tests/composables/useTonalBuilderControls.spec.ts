@@ -8,6 +8,9 @@ describe('useTonalBuilderControls', () => {
     expect(blendMode.value).toBe('colordodge');
     expect(controls.strength).toBe(0);
     expect(controls.middle).toBe(0);
+    expect(controls.spread).toBe(50);
+    expect(controls.satDarker).toBe(0);
+    expect(controls.satLighter).toBe(0);
 
     setBlendMode('overlay');
     expect(blendMode.value).toBe('overlay');

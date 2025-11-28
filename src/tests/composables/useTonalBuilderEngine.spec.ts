@@ -31,6 +31,8 @@ describe('useTonalBuilderEngine', () => {
         blendHex: '#22d3ee',
         blendMode: 'colordodge',
         spread: 50,
+        satDarker: 0,
+        satLighter: 0,
       }),
     );
     expect(payload.value.middle).toBe(0);
