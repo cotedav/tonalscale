@@ -126,6 +126,10 @@ export default {
         sat_darker: 'Saturation Darker',
         sat_lighter: 'Saturation Lighter',
       },
+      errors: {
+        invalid_number: 'Enter a valid number to update this control.',
+        out_of_range: 'Enter a value between {min} and {max}.',
+      },
       blend_modes: {
         darken: 'Darken',
         multiply: 'Multiply',
