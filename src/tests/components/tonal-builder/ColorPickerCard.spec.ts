@@ -27,7 +27,7 @@ type MockIroModule = {
     ui: { Box: string; Slider: string };
   };
   instances: MockColorPickerShape[];
-  MockColor: new (color: string) => MockColorShape;
+  MockColor: (color: string) => MockColorShape;
 };
 
 vi.stubGlobal(
@@ -67,46 +67,42 @@ vi.mock('@jaames/iro', () => {
     };
   }
 
-  function MockColorPicker(
-    this: MockColorPickerShape,
-    _target: HTMLElement,
-    options?: { color?: string },
-  ) {
-    this.color = createMockColor(options?.color ?? '#000000');
-    this.listeners = {};
-    this.resize = vi.fn();
-    instances.push(this);
+  class MockColorPicker implements MockColorPickerShape {
+    color: MockColorShape;
+
+    listeners: Record<string, ((color: MockColorShape) => void)[]>;
+
+    resize: () => void;
+
+    constructor(_target: HTMLElement, options?: { color?: string }) {
+      this.color = createMockColor(options?.color ?? '#000000');
+      this.listeners = {};
+      this.resize = vi.fn();
+      instances.push(this);
+    }
+
+    on(event: string, callback: (color: MockColorShape) => void) {
+      this.listeners[event] = this.listeners[event] ?? [];
+      this.listeners[event].push(callback);
+    }
+
+    off(event: string, callback: (color: MockColorShape) => void) {
+      this.listeners[event] = (this.listeners[event] ?? []).filter(
+        (cb: (color: MockColorShape) => void) => cb !== callback,
+      );
+    }
+
+    emit(event: string, emittedColor?: MockColorShape) {
+      (this.listeners[event] ?? []).forEach((listener: (color: MockColorShape) => void) => {
+        listener(emittedColor ?? this.color);
+      });
+    }
   }
 
   const ColorPickerFactory = (
     target: HTMLElement,
     options?: { color?: string },
   ): MockColorPickerShape => new MockColorPicker(target, options);
-
-  ColorPickerFactory.prototype = MockColorPicker.prototype;
-
-  MockColorPicker.prototype.on = function on(
-    event: string,
-    callback: (color: MockColorShape) => void,
-  ) {
-    this.listeners[event] = this.listeners[event] ?? [];
-    this.listeners[event].push(callback);
-  };
-
-  MockColorPicker.prototype.off = function off(
-    event: string,
-    callback: (color: MockColorShape) => void,
-  ) {
-    this.listeners[event] = (this.listeners[event] ?? []).filter(
-      (cb: (color: MockColorShape) => void) => cb !== callback,
-    );
-  };
-
-  MockColorPicker.prototype.emit = function emit(event: string, emittedColor?: MockColorShape) {
-    (this.listeners[event] ?? []).forEach((listener: (color: MockColorShape) => void) => {
-      listener(emittedColor ?? this.color);
-    });
-  };
 
   return {
     default: { ColorPicker: ColorPickerFactory, ui: { Box: 'Box', Slider: 'Slider' } },
@@ -162,7 +158,7 @@ describe('ColorPickerCard', () => {
     const wrapper = await mountPicker();
     const iro = await getIroModule();
 
-    const sliderColor = new iro.MockColor('#445566');
+    const sliderColor = iro.MockColor('#445566');
     iro.instances[0].emit('input:change', sliderColor);
     await nextTick();
 
