@@ -6,8 +6,8 @@ describe('useTonalBuilderControls', () => {
     const { blendMode, controls, setBlendMode } = useTonalBuilderControls();
 
     expect(blendMode.value).toBe('colordodge');
-    expect(controls.strength).toBe(85);
-    expect(controls.middle).toBe(-35);
+    expect(controls.strength).toBe(0);
+    expect(controls.middle).toBe(0);
 
     setBlendMode('overlay');
     expect(blendMode.value).toBe('overlay');
@@ -33,7 +33,7 @@ describe('useTonalBuilderControls', () => {
     expect(controlErrors.spread?.key).toBe('tonal_builder.controls.errors.invalid_number');
 
     resetControls();
-    expect(controls.middle).toBe(-35);
+    expect(controls.middle).toBe(0);
     expect(controlErrors.middle).toBeNull();
   });
 });

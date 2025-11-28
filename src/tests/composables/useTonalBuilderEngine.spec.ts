@@ -30,10 +30,10 @@ describe('useTonalBuilderEngine', () => {
         baseHex: '#7c3aed',
         blendHex: '#22d3ee',
         blendMode: 'colordodge',
-        spread: 100,
+        spread: 50,
       }),
     );
-    expect(payload.value.middle).toBe(-35);
+    expect(payload.value.middle).toBe(0);
 
     controls.updateControl('spread', 40);
     await nextTick();
