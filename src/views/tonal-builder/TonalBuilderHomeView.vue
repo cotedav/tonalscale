@@ -77,7 +77,7 @@
     controlDefinitions.map((control) => ({
       ...control,
       label: t(control.labelKey),
-      value: controls[control.id],
+      value: controls[control.id] ?? control.defaultValue,
     })),
   );
 
@@ -376,7 +376,7 @@
           </label>
           <input
             :id="control.range.id"
-            :value="controls[control.id]"
+            :value="control.value"
             type="range"
             :min="control.range.min"
             :max="control.range.max"
@@ -389,7 +389,7 @@
           />
           <input
             :id="control.number.id"
-            :value="controls[control.id]"
+            :value="control.value"
             type="number"
             :min="control.number.min"
             :max="control.number.max"
