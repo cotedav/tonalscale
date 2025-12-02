@@ -1,9 +1,12 @@
 <script setup lang="ts">
   import { computed } from 'vue';
+  import { useI18n } from 'vue-i18n';
 
   import type { TonalStep } from '@/utils/tonal/scale';
 
   const props = defineProps<{ tones: TonalStep[]; baseIndex: number }>();
+
+  const { t } = useI18n();
 
   const swatches = computed(() =>
     props.tones.map((tone) => ({
@@ -11,12 +14,30 @@
       isBase: tone.index === props.baseIndex,
     })),
   );
+
+  const isFullStrip = computed(() => props.tones.length >= 101);
+  const wrapMode = computed(() => (isFullStrip.value ? 'wrap' : 'nowrap'));
+  const swatchWidth = computed(() => {
+    if (isFullStrip.value) return 'calc(100% / 101)';
+
+    const count = props.tones.length || 1;
+    return `calc(100% / ${count})`;
+  });
+
+  const swatchLabel = (index: number, hex: string) =>
+    t('tonal_builder.scales.metadata.swatch_label', { index, hex });
 </script>
 
 <template>
   <div
     class="color-scale-container"
     data-cy="tonal-strip"
+    role="list"
+    :data-full="isFullStrip"
+    :style="{
+      '--swatch-width': swatchWidth,
+      '--wrap-mode': wrapMode,
+    }"
   >
     <div
       v-for="swatch in swatches"
@@ -27,6 +48,7 @@
       :data-index="swatch.tone.index"
       role="listitem"
       tabindex="0"
+      :aria-label="swatchLabel(swatch.tone.index, swatch.tone.hex)"
     >
       <span class="color-number">{{ swatch.tone.index }}</span>
       <span class="color-hex">{{ swatch.tone.hex }}</span>
@@ -42,19 +64,14 @@
 <style scoped>
   .color-scale-container {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: var(--wrap-mode, wrap);
     justify-content: flex-start;
     position: relative;
     margin-bottom: 16px;
   }
 
-  #color-scale-container-custom,
-  #color-scale-container-key {
-    flex-wrap: nowrap;
-  }
-
   .color-box {
-    width: calc(100% / 101);
+    width: var(--swatch-width, calc(100% / 101));
     height: 50px;
     display: flex;
     flex-direction: column;
@@ -76,9 +93,7 @@
     z-index: 2;
   }
 
-  #color-scale-container-custom .color-box,
-  #color-scale-container-key .color-box {
-    width: 100%;
+  .color-scale-container:not([data-full='true']) .color-box {
     flex-shrink: unset;
   }
 
@@ -133,25 +148,25 @@
   }
 
   @media (width <= 1100px) {
-    #color-scale-container-full .color-box {
+    .color-scale-container[data-full='true'] .color-box {
       width: calc(100% / 51);
     }
   }
 
   @media (width <= 600px) {
-    #color-scale-container-full .color-box {
+    .color-scale-container[data-full='true'] .color-box {
       width: calc(100% / 26);
     }
   }
 
   @media (width <= 400px) {
-    #color-scale-container-full .color-box {
+    .color-scale-container[data-full='true'] .color-box {
       width: calc(100% / 21);
     }
   }
 
   @media (width <= 300px) {
-    #color-scale-container-full .color-box {
+    .color-scale-container[data-full='true'] .color-box {
       width: calc(100% / 21);
     }
   }
