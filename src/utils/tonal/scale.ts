@@ -38,7 +38,19 @@ export const generateTonalScale = (params: TonalScaleParams): TonalScale => {
   const baseLab = rgbToLab(baseRgb);
   const luminance = Math.round(baseLab.l);
 
-  const intensityCurve = getIntensityCurve((params.middle + 50) / 100, params.spread / 100);
+  const blendEnabled =
+    params.blendStrength > 0 && (params.blendR > 0 || params.blendG > 0 || params.blendB > 0);
+  const saturationDarkerEnabled = params.satDarker > 0;
+  const saturationLighterEnabled = params.satLighter > 0;
+  const normalizedBlend = {
+    r: toNormalized(params.blendR),
+    g: toNormalized(params.blendG),
+    b: toNormalized(params.blendB),
+  };
+
+  const intensityCurve = blendEnabled
+    ? getIntensityCurve((params.middle + 50) / 100, params.spread / 100)
+    : null;
 
   const colorScale: TonalStep[] = [];
 
@@ -54,22 +66,27 @@ export const generateTonalScale = (params: TonalScaleParams): TonalScale => {
     if (i === luminance) {
       adjustedRgb = baseRgb;
     } else if (i < luminance) {
-      const intensity = getIntensity(intensityCurve, i, luminance - 1);
-      adjustedRgb = applyBlend(
-        adjustedRgb,
-        params.blendMode,
-        params.blendStrength / 100,
-        toNormalized(params.blendR),
-        toNormalized(params.blendG),
-        toNormalized(params.blendB),
-        intensity,
-      );
-      adjustedRgb = applySaturation(
-        adjustedRgb,
-        params.satDarker / 100,
-        easeInOutQuad(luminance, i),
-      );
-    } else if (i > luminance) {
+      if (blendEnabled && intensityCurve) {
+        const intensity = getIntensity(intensityCurve, i, luminance - 1);
+        adjustedRgb = applyBlend(
+          adjustedRgb,
+          params.blendMode,
+          params.blendStrength / 100,
+          normalizedBlend.r,
+          normalizedBlend.g,
+          normalizedBlend.b,
+          intensity,
+        );
+      }
+
+      if (saturationDarkerEnabled) {
+        adjustedRgb = applySaturation(
+          adjustedRgb,
+          params.satDarker / 100,
+          easeInOutQuad(luminance, i),
+        );
+      }
+    } else if (i > luminance && saturationLighterEnabled) {
       const intensity = easeInOutQuad(100 - luminance, i - luminance);
       adjustedRgb = applySaturation(adjustedRgb, params.satLighter / 100, intensity);
     }

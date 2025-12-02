@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { applyBlend, applySaturation } from '@/utils/tonal/blending';
 import { cubicBezier, easeInOutQuad, getIntensity, getIntensityCurve } from '@/utils/tonal/easing';
 import { generateTonalScale, type TonalScaleParams } from '@/utils/tonal/scale';
-import { rgbToHsl } from '@/utils/tonal/color-math';
+import { normalizeHexRgb, rgbToHsl, rgbToLab } from '@/utils/tonal/color-math';
 
 describe('blending', () => {
   it('blends overlay mode with expected result', () => {
@@ -89,5 +89,43 @@ describe('generateTonalScale', () => {
   it('produces expected endpoints', () => {
     expect(scale.colorScale[0]).toEqual({ index: 0, hex: '#000000' });
     expect(scale.colorScale[100]).toEqual({ index: 100, hex: '#ffffff' });
+  });
+
+  it('builds unblended LAB ramps when blend and saturation controls are zeroed', () => {
+    const noBlendParams: TonalScaleParams = {
+      colorHex: '#7d4bff',
+      blendMode: 'overlay',
+      blendStrength: 0,
+      blendR: 0,
+      blendG: 0,
+      blendB: 0,
+      middle: 0,
+      spread: 50,
+      satDarker: 0,
+      satLighter: 0,
+    };
+
+    const unblended = generateTonalScale(noBlendParams);
+    const baseLab = rgbToLab(normalizeHexRgb(noBlendParams.colorHex));
+    const baseStep = unblended.colorScale.find((step) => step.index === unblended.luminance);
+
+    expect(baseStep?.hex.toLowerCase()).toBe(noBlendParams.colorHex);
+    expect(unblended.colorScale[0]).toEqual({ index: 0, hex: '#000000' });
+    expect(unblended.colorScale[100]).toEqual({ index: 100, hex: '#ffffff' });
+
+    const chromaAt = (index: number) => {
+      const lab = rgbToLab(normalizeHexRgb(unblended.colorScale[index].hex));
+      return Math.hypot(lab.a, lab.b);
+    };
+
+    const baseChroma = Math.hypot(baseLab.a, baseLab.b);
+    const darkerNear = chromaAt(Math.max(unblended.luminance - 5, 0));
+    const darkerFar = chromaAt(Math.max(unblended.luminance - 25, 0));
+    const lighterNear = chromaAt(Math.min(unblended.luminance + 5, 100));
+    const lighterFar = chromaAt(Math.min(unblended.luminance + 25, 100));
+
+    expect(darkerFar).toBeLessThan(darkerNear);
+    expect(lighterFar).toBeLessThan(lighterNear);
+    expect(Math.abs(darkerNear - lighterNear)).toBeLessThan(baseChroma * 0.1);
   });
 });
