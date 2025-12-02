@@ -161,6 +161,18 @@ export default {
       extended_helper: 'Luminance clé et points de support',
       key: 'Bande clé',
       key_helper: 'Luminance clé et voisins proches',
+      metadata: {
+        title: 'Hex et cibles de contraste',
+        base_marker: 'Luminance de base',
+        index_label: 'Indice {index}',
+        contrast_label: 'Ancrages de contraste',
+        darker_45: '4,5:1 plus sombre',
+        darker_3: '3:1 plus sombre',
+        lighter_3: '3:1 plus clair',
+        lighter_45: '4,5:1 plus clair',
+        empty: 'Aucun ancrage de contraste proche',
+        swatch_label: 'Nuancier tonal {index} à {hex}',
+      },
     },
     overlays: {
       title: 'Superpositions interactives',

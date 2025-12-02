@@ -157,6 +157,18 @@ export default {
       extended_helper: 'Key luminance + supporting stops',
       key: 'Key strip',
       key_helper: 'Key luminance and nearest neighbors',
+      metadata: {
+        title: 'Hex and contrast targets',
+        base_marker: 'Base luminance',
+        index_label: 'Index {index}',
+        contrast_label: 'Contrast anchors',
+        darker_45: '4.5:1 darker',
+        darker_3: '3:1 darker',
+        lighter_3: '3:1 lighter',
+        lighter_45: '4.5:1 lighter',
+        empty: 'No nearby contrast anchors',
+        swatch_label: 'Tonal swatch {index} at {hex}',
+      },
     },
     overlays: {
       title: 'Interactive overlays',

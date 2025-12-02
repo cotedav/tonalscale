@@ -65,7 +65,7 @@ This backlog tracks foundational user stories for the new SaaS platform scaffold
 | Completed | [E3-F3-S1](./E3-F3-S1.md) | [E3-F3](./E3-F3.md) | [E3](./E3.md) | Port LAB-based tonal generation, easing, and blending utilities to TypeScript with tests. |
 | Completed | [E3-F3-S2](./E3-F3-S2.md) | [E3-F3](./E3-F3.md) | [E3](./E3.md) | Expose reusable composables/services for tonal scale state and derivations.               |
 | Completed | [E3-F4-S1](./E3-F4-S1.md) | [E3-F4](./E3-F4.md) | [E3](./E3.md) | Baseline tonal scale generation without blend color.                                      |
-| Pending   | [E3-F4-S2](./E3-F4-S2.md) | [E3-F4](./E3-F4.md) | [E3](./E3.md) | Render full, extended key, and key tonal strips with contextual metadata.                 |
+| Completed | [E3-F4-S2](./E3-F4-S2.md) | [E3-F4](./E3-F4.md) | [E3](./E3.md) | Render full, extended key, and key tonal strips with contextual metadata.                 |
 | Pending   | [E3-F4-S3](./E3-F4-S3.md) | [E3-F4](./E3-F4.md) | [E3](./E3.md) | Hover interactions, contrast helper dots, and linked previews.                            |
 | Pending   | [E3-F4-S4](./E3-F4-S4.md) | [E3-F4](./E3-F4.md) | [E3](./E3.md) | Optional blend distribution visualization with Plotly overlay controls.                   |
 | Pending   | [E3-F5-S1](./E3-F5-S1.md) | [E3-F5](./E3-F5.md) | [E3](./E3.md) | WCAG-aware color cards and contrast calculations.                                         |

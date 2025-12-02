@@ -1,9 +1,18 @@
 import { mount } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
+
 import TonalBuilderHomeView from '@/views/tonal-builder/TonalBuilderHomeView.vue';
 
 describe('TonalBuilderHomeView', () => {
   it('renders tonal builder shell aligned to the prototype layout', () => {
-    const wrapper = mount(TonalBuilderHomeView);
+    const pinia = createPinia();
+    setActivePinia(pinia);
+
+    const wrapper = mount(TonalBuilderHomeView, {
+      global: {
+        plugins: [pinia],
+      },
+    });
 
     expect(wrapper.find('[data-cy="tonal-builder-title"]').text()).toContain('Tonal Builder');
 
@@ -34,10 +43,20 @@ describe('TonalBuilderHomeView', () => {
 
     expect(wrapper.findAll('[type="range"]').length).toBe(5);
     expect(wrapper.findAll('[data-cy$="-value"]').length).toBe(5);
+
+    const fullStrip = wrapper.get('[data-cy="scale-strip-full"]');
+    expect(fullStrip.findAll('[data-cy="tonal-swatch"]').length).toBeGreaterThan(0);
   });
 
   it('initializes blend controls to the expected defaults', () => {
-    const wrapper = mount(TonalBuilderHomeView);
+    const pinia = createPinia();
+    setActivePinia(pinia);
+
+    const wrapper = mount(TonalBuilderHomeView, {
+      global: {
+        plugins: [pinia],
+      },
+    });
 
     const expectedDefaults: Record<string, string> = {
       strength: '0',
