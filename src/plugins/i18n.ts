@@ -1,5 +1,5 @@
 import { createI18n } from 'vue-i18n';
-import { localeLoaders, messages, type SupportedLocale } from '@/locales';
+import { messages, type SupportedLocale } from '@/locales';
 
 export const DEFAULT_LOCALE: SupportedLocale = 'en';
 export const LOCALE_STORAGE_KEY = 'pp_locale';
@@ -47,11 +47,10 @@ export type AppI18n = ReturnType<typeof buildI18n>;
 export const loadLocaleMessages = async (instance: AppI18n, locale: SupportedLocale) => {
   if (instance.global.availableLocales.includes(locale)) return;
 
-  const loader = localeLoaders[locale];
-  if (!loader) return;
+  const messageSet = messages[locale];
+  if (!messageSet) return;
 
-  const messageModule = await loader();
-  instance.global.setLocaleMessage(locale, messageModule.default);
+  instance.global.setLocaleMessage(locale, messageSet);
 };
 
 export const setLocale = async (
