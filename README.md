@@ -195,17 +195,16 @@ GitHub Actions runs the core checks in [`.github/workflows/ci.yml`](./.github/wo
 
 - Vue I18n is initialized in `src/plugins/i18n.ts` with the default locale set to English (`en`) and fallbacks enabled. Supported
   locales and TypeScript-safe keys live in `src/locales`, with sample dictionaries for English and French.
-- Locale messages are organized by namespace (e.g., `home.localization`, `i18n.switcher`). A `localeLoaders` map in `src/locales/index.ts`
-  enables lazy loading for future locales via dynamic imports while keeping the default bundle eager for `en`/`fr`.
+- Locale messages are organized by namespace (e.g., `home.localization`, `i18n.switcher`). Messages for English (`en`) and French (`fr`)
+  are bundled eagerly to avoid chunking warnings during the production build.
 - `useLocale` (`src/composables/useLocale.ts`) exposes `currentLocale`, `availableLocales`, and `switchLocale` helpers. Switching a locale
   loads messages on demand and persists the choice with `localStorage` using the `pp_locale` key.
 - `LocaleSwitcher` (`src/components/i18n/LocaleSwitcher.vue`) demonstrates reading translated strings and updating the active locale in the
   Home view.
 - To add a locale:
   1. Create a new locale file in `src/locales` and add it to the `messages` export.
-  2. Register a dynamic import in `localeLoaders` so `switchLocale` can lazy-load it.
-  3. Define translations for all existing keys (`en` and `fr` must be updated together).
-  4. If testing with Vitest, mount components normally; the global test setup already installs the I18n plugin. For locale persistence logic,
+  2. Define translations for all existing keys (`en` and `fr` must be updated together).
+  3. If testing with Vitest, mount components normally; the global test setup already installs the I18n plugin. For locale persistence logic,
      pass stubbed storage objects to `switchLocale` or `setLocale` in unit tests.
 
 ## State management with Pinia
