@@ -10,13 +10,13 @@ export const cubicBezier =
   (p1x: number, p1y: number, p2x: number, p2y: number) =>
   (t: number): { x: number; y: number } => {
     const t1 = 1 - t;
-    const t1_2 = t1 * t1;
-    const t1_3 = t1_2 * t1;
+    const t1Squared = t1 * t1;
+    const t1Cubed = t1Squared * t1;
     const t2 = t * t;
     const t3 = t2 * t;
 
-    const x = t1_3 * 0 + 3 * t1_2 * t * p1x + 3 * t1 * t2 * p2x + t3 * 1;
-    const y = t1_3 * 0 + 3 * t1_2 * t * p1y + 3 * t1 * t2 * p2y + t3 * 1;
+    const x = t1Cubed * 0 + 3 * t1Squared * t * p1x + 3 * t1 * t2 * p2x + t3 * 1;
+    const y = t1Cubed * 0 + 3 * t1Squared * t * p1y + 3 * t1 * t2 * p2y + t3 * 1;
 
     return { x, y };
   };
@@ -25,17 +25,18 @@ export const getIntensityCurve = (middle: number, spread: number) => {
   let p1x = 0.42;
   let p2x = 0.58;
   const factor = Math.abs(middle / 0.5 - 1);
+  let effectiveSpread = spread;
 
   if (middle <= 0.5) {
     p1x += (1 - p1x) * factor;
-    spread = (1 - p1x) * spread;
+    effectiveSpread = (1 - p1x) * spread;
   } else {
     p2x -= p2x * factor;
-    spread = p2x * spread;
+    effectiveSpread = p2x * spread;
   }
 
-  p1x += spread;
-  p2x -= spread;
+  p1x += effectiveSpread;
+  p2x -= effectiveSpread;
 
   return cubicBezier(p1x, 0, p2x, 1);
 };
