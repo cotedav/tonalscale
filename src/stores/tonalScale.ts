@@ -212,7 +212,14 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
   };
 
   const importState = (payload: string | Partial<TonalScaleParams>) => {
-    const parsed = typeof payload === 'string' ? JSON.parse(payload) : payload;
+    const parsed = (() => {
+      if (typeof payload !== 'string') return payload;
+      try {
+        return JSON.parse(payload);
+      } catch {
+        return null;
+      }
+    })();
     if (!parsed) return false;
 
     const nextParams: TonalScaleParams = {

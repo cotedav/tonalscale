@@ -71,6 +71,16 @@ describe('useTonalScaleStore', () => {
     expect(store.controls.middle).toBe(-35);
   });
 
+  it('safely rejects malformed import payloads', async () => {
+    const store = useTonalScaleStore();
+    await flushTimers();
+
+    expect(store.importState('{invalid json')).toBe(false);
+    await flushTimers();
+
+    expect(store.baseHex).toBe('#8000ff');
+  });
+
   it('computes contrast metadata for each tone', async () => {
     const store = useTonalScaleStore();
     await flushTimers();
