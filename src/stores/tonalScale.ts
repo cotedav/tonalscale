@@ -1,5 +1,4 @@
-import { useDebounceFn } from '@vueuse/core';
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, nextTick, reactive, ref, watch } from 'vue';
 import { defineStore } from 'pinia';
 
 import type { BlendControlId } from '@/composables/useTonalBuilderControls';
@@ -50,14 +49,14 @@ const DEFAULT_BLEND_HEX = '#000032';
 const DEFAULT_PARAMS: TonalScaleParams = {
   colorHex: DEFAULT_BASE_HEX,
   blendMode: 'colordodge',
-  blendStrength: 85,
+  blendStrength: 0,
   blendR: 0,
   blendG: 0,
   blendB: 50,
-  middle: -35,
-  spread: 100,
-  satDarker: 30,
-  satLighter: 50,
+  middle: 0,
+  spread: 50,
+  satDarker: 0,
+  satLighter: 0,
 };
 
 const serializeParams = (params: TonalScaleParams): string => JSON.stringify(params);
@@ -115,6 +114,15 @@ const pickIndices = (indices: readonly number[], scale: TonalStep[]): TonalStep[
     .map((index) => scale.find((tone) => tone.index === index))
     .filter((tone): tone is TonalStep => Boolean(tone));
 
+const includeBaseIndex = (
+  indices: readonly number[],
+  scale: TonalStep[],
+  baseIndex: number,
+): TonalStep[] => {
+  const combined = Array.from(new Set([...indices, baseIndex])).sort((a, b) => a - b);
+  return pickIndices(combined, scale);
+};
+
 export const useTonalScaleStore = defineStore('tonalScale', () => {
   const baseHex = ref<string>(normalizeHex(DEFAULT_BASE_HEX));
   const blendHex = ref<string>(normalizeHex(DEFAULT_BLEND_HEX));
@@ -129,6 +137,8 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
 
   const scale = ref<TonalScale>(generateTonalScale(DEFAULT_PARAMS));
   const metadata = ref<ToneMetadata[]>(buildMetadata(scale.value.colorScale));
+  let suppressWatchRefresh = false;
+  let pendingRefresh: ReturnType<typeof setTimeout> | null = null;
 
   const scaleParams = computed<TonalScaleParams>(() => {
     const blendRgb = hexToRgb(blendHex.value);
@@ -147,9 +157,14 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
     };
   });
 
+  const baseIndex = computed(() => scale.value.luminance);
   const fullStrip = computed(() => scale.value.colorScale);
-  const extendedStrip = computed(() => pickIndices(EXTENDED_SCALE_INDICES, scale.value.colorScale));
-  const keyStrip = computed(() => pickIndices(KEY_SCALE_INDICES, scale.value.colorScale));
+  const extendedStrip = computed(() =>
+    includeBaseIndex(EXTENDED_SCALE_INDICES, scale.value.colorScale, baseIndex.value),
+  );
+  const keyStrip = computed(() =>
+    includeBaseIndex(KEY_SCALE_INDICES, scale.value.colorScale, baseIndex.value),
+  );
   const serializedParams = computed(() => serializeParams(scaleParams.value));
 
   const listeners = new Set<(snapshot: TonalScaleSnapshot) => void>();
@@ -175,7 +190,30 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
     broadcast();
   };
 
-  const debouncedRefresh = useDebounceFn((params: TonalScaleParams) => refreshScale(params), 50);
+  const cancelPendingRefresh = () => {
+    if (pendingRefresh) {
+      clearTimeout(pendingRefresh);
+      pendingRefresh = null;
+    }
+  };
+
+  const scheduleRefresh = (params: TonalScaleParams) => {
+    cancelPendingRefresh();
+    pendingRefresh = setTimeout(() => {
+      refreshScale(params);
+      pendingRefresh = null;
+    }, 50);
+  };
+
+  const withSuppressedRefresh = (params: TonalScaleParams, operation: () => void) => {
+    suppressWatchRefresh = true;
+    operation();
+    cancelPendingRefresh();
+    refreshScale(params);
+    nextTick(() => {
+      suppressWatchRefresh = false;
+    });
+  };
 
   const updateControl = (id: BlendControlId, value: number) => {
     controls[id] = clampControl(id, value);
@@ -200,15 +238,16 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
   };
 
   const loadDefaults = () => {
-    baseHex.value = normalizeHex(DEFAULT_BASE_HEX);
-    blendHex.value = normalizeHex(DEFAULT_BLEND_HEX);
-    blendMode.value = DEFAULT_PARAMS.blendMode;
-    updateControl('strength', DEFAULT_PARAMS.blendStrength);
-    updateControl('middle', DEFAULT_PARAMS.middle);
-    updateControl('spread', DEFAULT_PARAMS.spread);
-    updateControl('satDarker', DEFAULT_PARAMS.satDarker);
-    updateControl('satLighter', DEFAULT_PARAMS.satLighter);
-    refreshScale(DEFAULT_PARAMS);
+    withSuppressedRefresh(DEFAULT_PARAMS, () => {
+      baseHex.value = normalizeHex(DEFAULT_BASE_HEX);
+      blendHex.value = normalizeHex(DEFAULT_BLEND_HEX);
+      blendMode.value = DEFAULT_PARAMS.blendMode;
+      updateControl('strength', DEFAULT_PARAMS.blendStrength);
+      updateControl('middle', DEFAULT_PARAMS.middle);
+      updateControl('spread', DEFAULT_PARAMS.spread);
+      updateControl('satDarker', DEFAULT_PARAMS.satDarker);
+      updateControl('satLighter', DEFAULT_PARAMS.satLighter);
+    });
   };
 
   const importState = (payload: string | Partial<TonalScaleParams>) => {
@@ -239,20 +278,20 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
       satLighter: clampControl('satLighter', Number(parsed.satLighter ?? controls.satLighter)),
     };
 
-    baseHex.value = nextParams.colorHex;
-    blendHex.value = normalizeHex(
-      `#${[nextParams.blendR, nextParams.blendG, nextParams.blendB]
-        .map((channel) => channel.toString(16).padStart(2, '0'))
-        .join('')}`,
-    );
-    blendMode.value = nextParams.blendMode;
-    controls.strength = nextParams.blendStrength;
-    controls.middle = nextParams.middle;
-    controls.spread = nextParams.spread;
-    controls.satDarker = nextParams.satDarker;
-    controls.satLighter = nextParams.satLighter;
-
-    refreshScale(nextParams);
+    withSuppressedRefresh(nextParams, () => {
+      baseHex.value = nextParams.colorHex;
+      blendHex.value = normalizeHex(
+        `#${[nextParams.blendR, nextParams.blendG, nextParams.blendB]
+          .map((channel) => channel.toString(16).padStart(2, '0'))
+          .join('')}`,
+      );
+      blendMode.value = nextParams.blendMode;
+      controls.strength = nextParams.blendStrength;
+      controls.middle = nextParams.middle;
+      controls.spread = nextParams.spread;
+      controls.satDarker = nextParams.satDarker;
+      controls.satLighter = nextParams.satLighter;
+    });
     return true;
   };
 
@@ -278,12 +317,11 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
   watch(
     scaleParams,
     (nextParams) => {
-      debouncedRefresh(nextParams);
+      if (suppressWatchRefresh) return;
+      scheduleRefresh(nextParams);
     },
     { deep: true },
   );
-
-  refreshScale(DEFAULT_PARAMS);
 
   return {
     baseHex,

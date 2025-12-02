@@ -27,11 +27,13 @@ describe('useTonalScaleStore', () => {
     expect(store.baseHex).toBe('#8000ff');
     expect(store.blendHex).toBe('#000032');
     expect(store.fullStrip).toHaveLength(101);
-    expect(store.extendedStrip).toHaveLength(EXTENDED_SCALE_INDICES.length);
-    expect(store.keyStrip).toHaveLength(KEY_SCALE_INDICES.length);
+    expect(store.extendedStrip.length).toBeGreaterThanOrEqual(EXTENDED_SCALE_INDICES.length);
+    expect(store.keyStrip.length).toBeGreaterThanOrEqual(KEY_SCALE_INDICES.length);
 
     const baseTone = store.fullStrip.find((step) => step.index === store.scale.luminance);
     expect(baseTone?.hex).toBe('#8000ff');
+    expect(store.extendedStrip.some((step) => step.index === store.scale.luminance)).toBe(true);
+    expect(store.keyStrip.some((step) => step.index === store.scale.luminance)).toBe(true);
   });
 
   it('broadcasts snapshots when parameters change', async () => {
@@ -68,7 +70,36 @@ describe('useTonalScaleStore', () => {
     expect(imported).toBe(true);
     expect(store.baseHex).toBe('#8000ff');
     expect(store.blendHex).toBe('#000032');
-    expect(store.controls.middle).toBe(-35);
+    expect(store.controls.middle).toBe(0);
+  });
+
+  it('refreshes only once for import and default load operations', async () => {
+    const store = useTonalScaleStore();
+    const snapshots: TonalScaleSnapshot[] = [];
+    store.onSnapshot((snapshot) => snapshots.push(snapshot));
+
+    const defaultPayload = store.exportState();
+    await flushTimers();
+
+    store.setBaseHex('#123456');
+    await flushTimers();
+    const countAfterChange = snapshots.length;
+
+    store.importState(defaultPayload);
+    await flushTimers();
+
+    expect(snapshots.length - countAfterChange).toBe(1);
+    expect(snapshots.at(-1)?.baseHex).toBe('#8000ff');
+
+    store.setBlendHex('#abcdef');
+    await flushTimers();
+    const countAfterBlendChange = snapshots.length;
+
+    store.loadDefaults();
+    await flushTimers();
+
+    expect(snapshots.length - countAfterBlendChange).toBe(1);
+    expect(snapshots.at(-1)?.blendHex).toBe('#000032');
   });
 
   it('safely rejects malformed import payloads', async () => {
