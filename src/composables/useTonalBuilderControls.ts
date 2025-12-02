@@ -1,4 +1,4 @@
-import { reactive, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 
 export type BlendMode =
   | 'darken'
@@ -30,77 +30,117 @@ export type BlendControlDefinition = {
     max: number;
     step: number;
   };
+  defaultValue: number;
 };
 
-const controlDefinitions: BlendControlDefinition[] = [
+export type ControlError = {
+  key:
+    | 'tonal_builder.controls.errors.invalid_number'
+    | 'tonal_builder.controls.errors.out_of_range';
+  values?: Record<string, number>;
+};
+
+export type ControlErrorState = Record<BlendControlId, ControlError | null>;
+
+export const BLEND_CONTROL_DEFINITIONS: BlendControlDefinition[] = [
   {
     id: 'strength',
     labelKey: 'tonal_builder.controls.fields.strength',
     range: { id: 'strength-slider', min: 0, max: 100, step: 1 },
     number: { id: 'strength-value', min: 0, max: 100, step: 1 },
+    defaultValue: 0,
   },
   {
     id: 'middle',
     labelKey: 'tonal_builder.controls.fields.middle',
     range: { id: 'middle-slider', min: -50, max: 50, step: 1 },
-    number: { id: 'middle-value', min: 0, max: 100, step: 1 },
+    number: { id: 'middle-value', min: -50, max: 50, step: 1 },
+    defaultValue: 0,
   },
   {
     id: 'spread',
     labelKey: 'tonal_builder.controls.fields.spread',
     range: { id: 'spread-slider', min: 0, max: 100, step: 1 },
-    number: { id: 'spread-value', min: 0, max: 1, step: 1 },
+    number: { id: 'spread-value', min: 0, max: 100, step: 1 },
+    defaultValue: 50,
   },
   {
     id: 'satDarker',
     labelKey: 'tonal_builder.controls.fields.sat_darker',
     range: { id: 'satDarker-slider', min: 0, max: 100, step: 1 },
     number: { id: 'satDarker-value', min: 0, max: 100, step: 1 },
+    defaultValue: 0,
   },
   {
     id: 'satLighter',
     labelKey: 'tonal_builder.controls.fields.sat_lighter',
     range: { id: 'satLighter-slider', min: 0, max: 100, step: 1 },
     number: { id: 'satLighter-value', min: 0, max: 100, step: 1 },
+    defaultValue: 0,
   },
 ];
 
-const defaultControlValues: Record<BlendControlId, number> = {
-  strength: 0,
-  middle: 0,
-  spread: 0,
-  satDarker: 0,
-  satLighter: 0,
-};
+const buildDefaultValues = () =>
+  BLEND_CONTROL_DEFINITIONS.reduce(
+    (acc, control) => ({ ...acc, [control.id]: control.defaultValue }),
+    {} as Record<BlendControlId, number>,
+  );
 
-const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+const buildDefaultErrors = () =>
+  BLEND_CONTROL_DEFINITIONS.reduce(
+    (acc, control) => ({ ...acc, [control.id]: null }),
+    {} as ControlErrorState,
+  );
 
-export const useTonalBuilderControls = (initialBlendMode: BlendMode = 'multiply') => {
+export const useTonalBuilderControls = (initialBlendMode: BlendMode = 'colordodge') => {
   const blendMode = ref<BlendMode>(initialBlendMode);
-  const controls = reactive<Record<BlendControlId, number>>({ ...defaultControlValues });
+  const initialDefaults = buildDefaultValues();
+  const controls = reactive<Record<BlendControlId, number>>({ ...initialDefaults });
+  const controlErrors = reactive<ControlErrorState>(buildDefaultErrors());
 
   const setBlendMode = (mode: BlendMode) => {
     blendMode.value = mode;
   };
 
-  const updateControl = (id: BlendControlId, value: number) => {
-    const definition = controlDefinitions.find((control) => control.id === id);
-    if (!definition) return;
+  const updateControl = (id: BlendControlId, value: number | string) => {
+    const definition = BLEND_CONTROL_DEFINITIONS.find((control) => control.id === id);
+    if (!definition) return false;
 
-    const constrained = clamp(value, definition.number.min, definition.number.max);
-    controls[id] = Number.isFinite(constrained) ? constrained : defaultControlValues[id];
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) {
+      controlErrors[id] = { key: 'tonal_builder.controls.errors.invalid_number' };
+      return false;
+    }
+
+    if (numericValue < definition.number.min || numericValue > definition.number.max) {
+      controlErrors[id] = {
+        key: 'tonal_builder.controls.errors.out_of_range',
+        values: { min: definition.number.min, max: definition.number.max },
+      };
+      return false;
+    }
+
+    controlErrors[id] = null;
+    controls[id] = Math.round(numericValue);
+    return true;
   };
 
   const resetControls = () => {
-    Object.entries(defaultControlValues).forEach(([id, value]) => {
-      updateControl(id as BlendControlId, value);
+    const defaults = buildDefaultValues();
+    Object.entries(defaults).forEach(([id, value]) => {
+      controls[id as BlendControlId] = value as number;
+      controlErrors[id as BlendControlId] = null;
     });
   };
 
+  const hasErrors = computed(() => Object.values(controlErrors).some(Boolean));
+
   return {
     blendMode,
-    controlDefinitions,
+    controlDefinitions: BLEND_CONTROL_DEFINITIONS,
     controls,
+    controlErrors,
+    hasErrors,
     setBlendMode,
     updateControl,
     resetControls,

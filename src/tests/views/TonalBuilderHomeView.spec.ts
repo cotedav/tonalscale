@@ -35,4 +35,24 @@ describe('TonalBuilderHomeView', () => {
     expect(wrapper.findAll('[type="range"]').length).toBe(5);
     expect(wrapper.findAll('[data-cy$="-value"]').length).toBe(5);
   });
+
+  it('initializes blend controls to the expected defaults', () => {
+    const wrapper = mount(TonalBuilderHomeView);
+
+    const expectedDefaults: Record<string, string> = {
+      strength: '0',
+      middle: '0',
+      spread: '50',
+      satDarker: '0',
+      satLighter: '0',
+    };
+
+    Object.entries(expectedDefaults).forEach(([id, value]) => {
+      const slider = wrapper.get(`[data-cy="${id}-slider"]`);
+      const number = wrapper.get(`[data-cy="${id}-value"]`);
+
+      expect((slider.element as HTMLInputElement).value).toBe(value);
+      expect((number.element as HTMLInputElement).value).toBe(value);
+    });
+  });
 });
