@@ -81,10 +81,6 @@
     })),
   );
 
-  watchEffect(() => {
-    console.log('[TonalBuilderHomeView] slider controls snapshot', sliderControls.value);
-  });
-
   const onControlInput = (id: BlendControlId, value: number | string) => {
     updateControl(id, value);
   };

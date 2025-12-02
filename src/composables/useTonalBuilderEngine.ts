@@ -49,7 +49,6 @@ export const useTonalBuilderEngine = (
   }));
 
   const dispatch = (nextPayload: TonalEnginePayload) => {
-    console.log('[TonalBuilderEngine] dispatch payload', nextPayload);
     lastPayload.value = nextPayload;
     options?.onUpdate?.(nextPayload);
   };

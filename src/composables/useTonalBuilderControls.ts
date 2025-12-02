@@ -1,4 +1,4 @@
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, reactive, ref } from 'vue';
 
 export type BlendMode =
   | 'darken'
@@ -97,22 +97,6 @@ export const useTonalBuilderControls = (initialBlendMode: BlendMode = 'colordodg
   const initialDefaults = buildDefaultValues();
   const controls = reactive<Record<BlendControlId, number>>({ ...initialDefaults });
   const controlErrors = reactive<ControlErrorState>(buildDefaultErrors());
-
-  console.log('[TonalBuilderControls] initialized defaults', initialDefaults);
-
-  watch(
-    controls,
-    (next) => {
-      console.log('[TonalBuilderControls] control state changed', {
-        strength: next.strength,
-        middle: next.middle,
-        spread: next.spread,
-        satDarker: next.satDarker,
-        satLighter: next.satLighter,
-      });
-    },
-    { immediate: true, deep: true },
-  );
 
   const setBlendMode = (mode: BlendMode) => {
     blendMode.value = mode;
