@@ -25,7 +25,7 @@
     useTonalBuilderColors();
 
   const tonalScale = useTonalScaleStore();
-  const { fullStrip, extendedStrip, keyStrip, metadata, scale } = storeToRefs(tonalScale);
+  const { fullStrip, extendedStrip, keyStrip, scale } = storeToRefs(tonalScale);
 
   const {
     blendMode,
@@ -279,7 +279,6 @@
             id="color-scale-container-full"
             :tones="fullStrip"
             :base-index="baseLuminanceIndex"
-            :metadata="metadata"
             class="min-h-[96px]"
             data-cy="scale-strip-full"
           />
@@ -298,7 +297,6 @@
             id="color-scale-container-custom"
             :tones="extendedStrip"
             :base-index="baseLuminanceIndex"
-            :metadata="metadata"
             class="min-h-[72px]"
             data-cy="scale-strip-extended"
           />
@@ -315,7 +313,6 @@
             id="color-scale-container-key"
             :tones="keyStrip"
             :base-index="baseLuminanceIndex"
-            :metadata="metadata"
             class="min-h-[72px]"
             data-cy="scale-strip-key"
           />
