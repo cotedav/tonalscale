@@ -329,44 +329,38 @@
           class="hidden sm:block"
         />
 
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <label
-            class="flex items-center gap-2 text-sm font-semibold text-slate-100"
-            for="blendColorPickerInput"
+        <label
+          class="flex items-center gap-2 text-sm font-semibold text-slate-100"
+          for="blendColorPickerInput"
+        >
+          <span class="h-3 w-3 rounded-full bg-accent-soft" />
+          {{ t('tonal_builder.controls.labels.blend_color') }}
+        </label>
+        <div class="flex flex-1 flex-wrap items-center gap-2 sm:col-span-2">
+          <div
+            id="blendColorPickerInput"
+            class="flex h-11 items-center gap-3 rounded-xl border border-dashed border-accent-soft/40 bg-surface/70 px-3"
+            data-cy="blend-color-input"
           >
-            <span class="h-3 w-3 rounded-full bg-accent-soft" />
-            {{ t('tonal_builder.controls.labels.blend_color') }}
-          </label>
-          <div class="flex flex-1 flex-wrap items-center gap-2">
-            <div
-              id="blendColorPickerInput"
-              class="flex h-11 items-center gap-3 rounded-xl border border-dashed border-accent-soft/40 bg-surface/70 px-3"
-              data-cy="blend-color-input"
-            >
-              <span
-                class="h-8 w-8 rounded-xl border border-white/10"
-                :style="blendSwatchStyle"
-                role="img"
-                :aria-label="t('tonal_builder.pickers.blend.title')"
-              />
-              <span class="text-xs font-semibold text-slate-200">{{ blendHex }}</span>
-            </div>
-            <div
-              id="blendColorPicker"
-              class="flex h-11 flex-1 items-center justify-between rounded-xl border border-dashed border-accent-soft/40 bg-surface/70 px-3"
-              data-cy="blend-color-picker"
-            >
-              <span class="text-xs font-semibold uppercase tracking-wide text-slate-300">
-                {{ t('tonal_builder.controls.labels.blend_mode') }}
-              </span>
-              <span class="text-xs font-semibold text-accent-soft">{{ blendModeModel }}</span>
-            </div>
+            <span
+              class="h-8 w-8 rounded-xl border border-white/10"
+              :style="blendSwatchStyle"
+              role="img"
+              :aria-label="t('tonal_builder.pickers.blend.title')"
+            />
+            <span class="text-xs font-semibold text-slate-200">{{ blendHex }}</span>
+          </div>
+          <div
+            id="blendColorPicker"
+            class="flex h-11 flex-1 items-center justify-between rounded-xl border border-dashed border-accent-soft/40 bg-surface/70 px-3"
+            data-cy="blend-color-picker"
+          >
+            <span class="text-xs font-semibold uppercase tracking-wide text-slate-300">
+              {{ t('tonal_builder.controls.labels.blend_mode') }}
+            </span>
+            <span class="text-xs font-semibold text-accent-soft">{{ blendModeModel }}</span>
           </div>
         </div>
-        <span
-          aria-hidden="true"
-          class="hidden sm:block"
-        />
 
         <template
           v-for="control in sliderControls"
