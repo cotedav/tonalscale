@@ -2,8 +2,10 @@
   import { useTitle } from '@vueuse/core';
   import { computed, watchEffect } from 'vue';
   import { useI18n } from 'vue-i18n';
+  import { storeToRefs } from 'pinia';
 
   import ColorPickerCard from '@/components/tonal-builder/ColorPickerCard.vue';
+  import TonalStrip from '@/components/tonal-builder/TonalStrip.vue';
   import {
     type BlendControlId,
     type ControlError,
@@ -11,6 +13,8 @@
   } from '@/composables/useTonalBuilderControls';
   import { useTonalBuilderEngine } from '@/composables/useTonalBuilderEngine';
   import { useTonalBuilderColors } from '@/composables/useTonalBuilderColors';
+  import { useTonalScaleStore } from '@/stores/tonalScale';
+  import { hexToRgb } from '@/utils/color';
 
   const { t } = useI18n();
 
@@ -19,6 +23,9 @@
 
   const { baseHex, blendHex, sliderMode, updateBase, updateBlend, setSliderMode } =
     useTonalBuilderColors();
+
+  const tonalScale = useTonalScaleStore();
+  const { fullStrip, extendedStrip, keyStrip, scale } = storeToRefs(tonalScale);
 
   const {
     blendMode,
@@ -53,6 +60,7 @@
 
   const baseSwatchStyle = computed(() => ({ backgroundColor: baseHex.value }));
   const blendSwatchStyle = computed(() => ({ backgroundColor: blendHex.value }));
+  const baseLuminanceIndex = computed(() => scale.value.luminance);
 
   const blendModes = computed(() => [
     { label: t('tonal_builder.controls.blend_modes.darken'), value: 'darken' },
@@ -85,10 +93,30 @@
     updateControl(id, value);
   };
 
-  useTonalBuilderEngine({
-    colors: { baseHex, blendHex },
-    controls: { blendMode, controls, hasErrors },
-  });
+  useTonalBuilderEngine(
+    {
+      colors: { baseHex, blendHex },
+      controls: { blendMode, controls, hasErrors },
+    },
+    {
+      onUpdate: (payload) => {
+        const blendChannels = hexToRgb(payload.blendHex);
+
+        tonalScale.importState({
+          colorHex: payload.baseHex,
+          blendMode: payload.blendMode,
+          blendStrength: payload.strength,
+          blendR: blendChannels.r,
+          blendG: blendChannels.g,
+          blendB: blendChannels.b,
+          middle: payload.middle,
+          spread: payload.spread,
+          satDarker: payload.satDarker,
+          satLighter: payload.satLighter,
+        });
+      },
+    },
+  );
 
   useTitle(pageTitle);
 
@@ -247,10 +275,11 @@
             </span>
             <span class="text-xs text-slate-500">{{ t('tonal_builder.scales.full_helper') }}</span>
           </div>
-          <div
+          <TonalStrip
             id="color-scale-container-full"
-            class="color-scale-container relative min-h-[96px] rounded-2xl border border-dashed border-white/15 bg-surface-soft/80 p-3"
-            showBlendDistGraph="true"
+            :tones="fullStrip"
+            :base-index="baseLuminanceIndex"
+            class="min-h-[96px]"
             data-cy="scale-strip-full"
           />
         </div>
@@ -264,9 +293,11 @@
               t('tonal_builder.scales.extended_helper')
             }}</span>
           </div>
-          <div
+          <TonalStrip
             id="color-scale-container-custom"
-            class="color-scale-container relative min-h-[72px] rounded-2xl border border-dashed border-white/15 bg-surface-soft/80 p-3"
+            :tones="extendedStrip"
+            :base-index="baseLuminanceIndex"
+            class="min-h-[72px]"
             data-cy="scale-strip-extended"
           />
         </div>
@@ -278,9 +309,11 @@
             </span>
             <span class="text-xs text-slate-500">{{ t('tonal_builder.scales.key_helper') }}</span>
           </div>
-          <div
+          <TonalStrip
             id="color-scale-container-key"
-            class="color-scale-container relative min-h-[72px] rounded-2xl border border-dashed border-white/15 bg-surface-soft/80 p-3"
+            :tones="keyStrip"
+            :base-index="baseLuminanceIndex"
+            class="min-h-[72px]"
             data-cy="scale-strip-key"
           />
         </div>
