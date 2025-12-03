@@ -8,7 +8,7 @@
     XMarkIcon,
   } from '@heroicons/vue/24/solid';
 
-  import { getContrastRatio } from '@/utils/tonal/contrast';
+  import { formatContrastRatio, getContrastRatio } from '@/utils/tonal/contrast';
 
   type ContrastColor = {
     index: number;
@@ -29,22 +29,15 @@
 
   const hasPair = computed(() => Boolean(props.background && props.text));
 
-  const formatContrastRatio = (value: number) =>
-    value
-      .toFixed(2)
-      .replace(/\.0+$/, '')
-      .replace(/\.(\d*[1-9])0+$/, '.$1');
-
   const contrastRatio = computed(() => {
     if (!props.background || !props.text) return null;
     return getContrastRatio(props.background.hex, props.text.hex);
   });
 
-  const ratioDisplay = computed(() =>
-    contrastRatio.value === null
-      ? props.ratioLabel
-      : `${formatContrastRatio(contrastRatio.value)}:1`,
-  );
+  const ratioDisplay = computed(() => {
+    if (contrastRatio.value === null) return props.ratioLabel;
+    return formatContrastRatio(contrastRatio.value);
+  });
 
   const styles = computed(() => ({
     '--bkg': props.background?.hex ?? '#77777e',
