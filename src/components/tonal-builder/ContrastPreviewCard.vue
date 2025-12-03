@@ -104,23 +104,27 @@
       aria-hidden="true"
     />
 
-    <h2>{{ t('tonal_builder.accessibility.large_heading') }}</h2>
-    <span
-      v-for="level in levels.slice(0, 2)"
-      :key="level.key"
-      class="colorcard-wcaglevel"
-      :class="level.value ? 'colorcard-wcaglevel_pass' : 'colorcard-wcaglevel_fail'"
-    >
-      <CheckIcon
-        class="icon-pass"
-        aria-hidden="true"
-      />
-      <XMarkIcon
-        class="icon-fail"
-        aria-hidden="true"
-      />
-      {{ levelLabel(level.key) }}
-    </span>
+    <div class="colorcard-heading">
+      <h2>{{ t('tonal_builder.accessibility.large_heading') }}</h2>
+      <div class="colorcard-wcaglevels">
+        <span
+          v-for="level in levels.slice(0, 2)"
+          :key="level.key"
+          class="colorcard-wcaglevel"
+          :class="level.value ? 'colorcard-wcaglevel_pass' : 'colorcard-wcaglevel_fail'"
+        >
+          <CheckIcon
+            class="icon-pass"
+            aria-hidden="true"
+          />
+          <XMarkIcon
+            class="icon-fail"
+            aria-hidden="true"
+          />
+          {{ levelLabel(level.key) }}
+        </span>
+      </div>
+    </div>
     <p class="colorcard-large_20">{{ t('tonal_builder.accessibility.sample_large') }}</p>
     <p class="colorcard-large_14">{{ t('tonal_builder.accessibility.sample_large_bold') }}</p>
 
@@ -145,23 +149,27 @@
       aria-hidden="true"
     />
 
-    <h2>{{ t('tonal_builder.accessibility.regular_heading') }}</h2>
-    <span
-      v-for="level in levels.slice(2)"
-      :key="level.key"
-      class="colorcard-wcaglevel"
-      :class="level.value ? 'colorcard-wcaglevel_pass' : 'colorcard-wcaglevel_fail'"
-    >
-      <CheckIcon
-        class="icon-pass"
-        aria-hidden="true"
-      />
-      <XMarkIcon
-        class="icon-fail"
-        aria-hidden="true"
-      />
-      {{ levelLabel(level.key) }}
-    </span>
+    <div class="colorcard-heading">
+      <h2>{{ t('tonal_builder.accessibility.regular_heading') }}</h2>
+      <div class="colorcard-wcaglevels">
+        <span
+          v-for="level in levels.slice(2)"
+          :key="level.key"
+          class="colorcard-wcaglevel"
+          :class="level.value ? 'colorcard-wcaglevel_pass' : 'colorcard-wcaglevel_fail'"
+        >
+          <CheckIcon
+            class="icon-pass"
+            aria-hidden="true"
+          />
+          <XMarkIcon
+            class="icon-fail"
+            aria-hidden="true"
+          />
+          {{ levelLabel(level.key) }}
+        </span>
+      </div>
+    </div>
     <p class="colorcard-regular_16">{{ t('tonal_builder.accessibility.sample_regular') }}</p>
     <p class="colorcard-regular_12">{{ t('tonal_builder.accessibility.sample_regular_bold') }}</p>
   </article>
@@ -188,11 +196,26 @@
   }
 
   .colorcard h2 {
-    margin: 0 0 8px;
+    margin: 0;
     font-weight: 500;
     font-size: 12px;
-    display: inline-block;
-    width: calc(100% - 124px);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .colorcard .colorcard-heading {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 4px 8px;
+    margin-bottom: 8px;
+  }
+
+  .colorcard .colorcard-wcaglevels {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 4px 8px;
   }
 
   .colorcard .colorcard-colorrefs {
@@ -240,6 +263,8 @@
     font-weight: 700;
     padding: 0 4px;
     line-height: 14px;
+    white-space: nowrap;
+    flex-shrink: 0;
     transition:
       opacity 0.5s cubic-bezier(0.19, 1, 0.22, 1),
       color 0.5s cubic-bezier(0.19, 1, 0.22, 1);
@@ -300,16 +325,22 @@
 
   .colorcard .colorcard-icons {
     display: flex;
+    column-gap: 12px;
   }
 
   .colorcard .colorcard-icons_bkg,
   .colorcard .colorcard-icons_txt {
     width: 100%;
+    display: inline-flex;
+    align-items: center;
+    column-gap: 12px;
+    flex-wrap: nowrap;
   }
 
   .colorcard .colorcard-icons svg {
     width: 24px;
     height: 24px;
+    flex-shrink: 0;
   }
 
   .colorcard .colorcard-icons_txt {
