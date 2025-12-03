@@ -484,7 +484,7 @@
         </p>
       </div>
 
-      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div class="grid gap-3 sm:grid-cols-2">
         <ContrastPreviewCard
           id="colorcard-darker45"
           :title-key="'tonal_builder.accessibility.cards.darker_45'"

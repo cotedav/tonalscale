@@ -65,13 +65,9 @@
     class="colorcard"
     :style="styles"
     data-cy="contrast-preview-card"
+    :aria-label="t(titleKey)"
   >
-    <header class="colorcard-header">
-      <h1>{{ ratioDisplay }}</h1>
-      <p class="colorcard-label text-xs uppercase tracking-wide text-slate-400">
-        {{ t(titleKey) }}
-      </p>
-    </header>
+    <h1>{{ ratioDisplay }}</h1>
 
     <section
       class="colorcard-colorrefs"
@@ -81,9 +77,7 @@
         class="colorcard-colorref_bkg"
         role="presentation"
       >
-        <label>{{
-          t('tonal_builder.scales.metadata.index_label', { index: background?.index ?? '—' })
-        }}</label>
+        <label>{{ t('tonal_builder.accessibility.index_label') }}</label>
         <span class="colorcard-colorref-index">{{ background?.index ?? '—' }}</span>
         <label>{{ t('tonal_builder.accessibility.hex_label') }}</label>
         <span class="colorcard-colorref-hex">{{ background?.hex?.toUpperCase() ?? '—' }}</span>
@@ -92,9 +86,7 @@
         class="colorcard-colorref_txt"
         role="presentation"
       >
-        <label>{{
-          t('tonal_builder.scales.metadata.index_label', { index: text?.index ?? '—' })
-        }}</label>
+        <label>{{ t('tonal_builder.accessibility.index_label') }}</label>
         <span class="colorcard-colorref-index">{{ text?.index ?? '—' }}</span>
         <label>{{ t('tonal_builder.accessibility.hex_label') }}</label>
         <span class="colorcard-colorref-hex">{{ text?.hex?.toUpperCase() ?? '—' }}</span>
@@ -171,15 +163,7 @@
     min-width: 200px;
   }
 
-  .colorcard-header {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
-
   .colorcard h1 {
-    font-family: 'Roboto Mono', monospace;
     margin: 0 0 16px;
     font-size: 34px;
     font-weight: 400;
@@ -228,11 +212,6 @@
     opacity: 0.32;
   }
 
-  .colorcard .colorcard-label {
-    background: none;
-    color: inherit;
-  }
-
   .colorcard .colorcard-wcaglevel {
     display: inline-flex;
     background-color: #fff;
@@ -243,8 +222,8 @@
     padding: 0 4px;
     line-height: 14px;
     transition:
-      opacity 0.5s ease,
-      color 0.5s ease;
+      opacity 0.5s cubic-bezier(0.19, 1, 0.22, 1),
+      color 0.5s cubic-bezier(0.19, 1, 0.22, 1);
   }
 
   .colorcard .colorcard-wcaglevel .material-icons {
@@ -273,6 +252,8 @@
 
   .colorcard p {
     background: linear-gradient(to right, var(--txt) 50%, var(--bkg) 50%);
+    /* stylelint-disable-next-line property-no-vendor-prefix */
+    -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }

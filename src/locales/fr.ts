@@ -195,6 +195,7 @@ export default {
         'Texte exemple 16pt. Les choucas fantasques adorent mon grand sphinx de quartz, Fred.',
       sample_regular_bold:
         'Texte exemple 12pt gras. La grenouille Q., pilote maudit de dirigeable, s’est lâchée au volley.',
+      index_label: 'Indice',
       hex_label: 'Hex',
       levels: {
         large_aa: 'AA 3:1',

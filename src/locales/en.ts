@@ -190,6 +190,7 @@ export default {
       sample_regular: '16pt example text. Zany jackdaws love my big sphinx of quartz, Fred.',
       sample_regular_bold:
         '12pt bold example text. Q. Frog, a jinxed blimp driver, went zesty on the volleyball league.',
+      index_label: 'Index',
       hex_label: 'Hex',
       levels: {
         large_aa: 'AA 3:1',
