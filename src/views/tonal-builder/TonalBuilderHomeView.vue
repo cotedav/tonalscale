@@ -3,6 +3,7 @@
   import { computed, ref, watchEffect } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { storeToRefs } from 'pinia';
+  import { MoonIcon, SunIcon } from '@heroicons/vue/24/solid';
 
   import ColorPickerCard from '@/components/tonal-builder/ColorPickerCard.vue';
   import ContrastPreviewCard from '@/components/tonal-builder/ContrastPreviewCard.vue';
@@ -249,8 +250,8 @@
             <div
               class="icon-holder flex h-full w-full flex-col items-center justify-center overflow-hidden text-lg"
             >
-              <i class="material-icons moon leading-none">dark_mode</i>
-              <i class="material-icons sun leading-none">light_mode</i>
+              <MoonIcon class="moon h-5 w-5" />
+              <SunIcon class="sun h-5 w-5" />
             </div>
           </button>
         </div>

@@ -293,7 +293,9 @@
     position: absolute;
     width: 100%;
     text-align: center;
-    font-family: 'Roboto Mono', monospace;
+    font-family:
+      'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+      'Courier New', monospace;
     text-transform: uppercase;
     pointer-events: none;
   }

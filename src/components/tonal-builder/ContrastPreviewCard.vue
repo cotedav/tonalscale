@@ -1,6 +1,12 @@
 <script setup lang="ts">
   import { computed } from 'vue';
   import { useI18n } from 'vue-i18n';
+  import {
+    CheckIcon,
+    ExclamationTriangleIcon,
+    InformationCircleIcon,
+    XMarkIcon,
+  } from '@heroicons/vue/24/solid';
 
   import { getContrastRatio } from '@/utils/tonal/contrast';
 
@@ -105,8 +111,14 @@
       class="colorcard-wcaglevel"
       :class="level.value ? 'colorcard-wcaglevel_pass' : 'colorcard-wcaglevel_fail'"
     >
-      <span class="material-icons icon-pass">check</span>
-      <span class="material-icons icon-fail">close</span>
+      <CheckIcon
+        class="icon-pass"
+        aria-hidden="true"
+      />
+      <XMarkIcon
+        class="icon-fail"
+        aria-hidden="true"
+      />
       {{ levelLabel(level.key) }}
     </span>
     <p class="colorcard-large_20">{{ t('tonal_builder.accessibility.sample_large') }}</p>
@@ -117,14 +129,14 @@
       aria-hidden="true"
     >
       <div class="colorcard-icons_bkg">
-        <span class="material-icons">check</span>
-        <span class="material-icons">info</span>
-        <span class="material-icons">warning</span>
+        <CheckIcon />
+        <InformationCircleIcon />
+        <ExclamationTriangleIcon />
       </div>
       <div class="colorcard-icons_txt">
-        <span class="material-icons">check</span>
-        <span class="material-icons">info</span>
-        <span class="material-icons">warning</span>
+        <CheckIcon />
+        <InformationCircleIcon />
+        <ExclamationTriangleIcon />
       </div>
     </div>
 
@@ -140,8 +152,14 @@
       class="colorcard-wcaglevel"
       :class="level.value ? 'colorcard-wcaglevel_pass' : 'colorcard-wcaglevel_fail'"
     >
-      <span class="material-icons icon-pass">check</span>
-      <span class="material-icons icon-fail">close</span>
+      <CheckIcon
+        class="icon-pass"
+        aria-hidden="true"
+      />
+      <XMarkIcon
+        class="icon-fail"
+        aria-hidden="true"
+      />
       {{ levelLabel(level.key) }}
     </span>
     <p class="colorcard-regular_16">{{ t('tonal_builder.accessibility.sample_regular') }}</p>
@@ -201,7 +219,9 @@
 
   .colorcard .colorcard-colorref-index,
   .colorcard .colorcard-colorref-hex {
-    font-family: 'Roboto Mono', monospace;
+    font-family:
+      'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+      'Courier New', monospace;
     font-weight: 700;
   }
 
@@ -218,7 +238,6 @@
     font-size: 11px;
     border-radius: 8px;
     font-weight: 700;
-    font-family: 'Roboto Condensed', sans-serif;
     padding: 0 4px;
     line-height: 14px;
     transition:
@@ -226,8 +245,9 @@
       color 0.5s cubic-bezier(0.19, 1, 0.22, 1);
   }
 
-  .colorcard .colorcard-wcaglevel .material-icons {
-    font-size: 14px;
+  .colorcard .colorcard-wcaglevel svg {
+    width: 14px;
+    height: 14px;
     position: relative;
   }
 
