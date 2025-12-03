@@ -307,6 +307,11 @@
     width: 100%;
   }
 
+  .colorcard .colorcard-icons svg {
+    width: 24px;
+    height: 24px;
+  }
+
   .colorcard .colorcard-icons_txt {
     color: var(--bkg);
     margin-left: 16px;
