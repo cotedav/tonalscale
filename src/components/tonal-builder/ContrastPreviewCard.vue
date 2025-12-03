@@ -23,13 +23,21 @@
 
   const hasPair = computed(() => Boolean(props.background && props.text));
 
+  const formatContrastRatio = (value: number) =>
+    value
+      .toFixed(2)
+      .replace(/\.0+$/, '')
+      .replace(/\.(\d*[1-9])0+$/, '.$1');
+
   const contrastRatio = computed(() => {
     if (!props.background || !props.text) return null;
     return getContrastRatio(props.background.hex, props.text.hex);
   });
 
   const ratioDisplay = computed(() =>
-    contrastRatio.value ? `${contrastRatio.value}:1` : props.ratioLabel,
+    contrastRatio.value === null
+      ? props.ratioLabel
+      : `${formatContrastRatio(contrastRatio.value)}:1`,
   );
 
   const styles = computed(() => ({

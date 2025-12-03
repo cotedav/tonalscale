@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils';
 import { nextTick } from 'vue';
 
 import TonalStrip from '@/components/tonal-builder/TonalStrip.vue';
-import type { TonalStep } from '@/utils/tonal/scale';
+import type { PairingSelection } from '@/components/tonal-builder/types';
 
 const tones = [
   { index: 0, hex: '#000000' },
@@ -10,14 +10,6 @@ const tones = [
   { index: 92, hex: '#e6e6e6' },
   { index: 100, hex: '#ffffff' },
 ];
-
-type PairingSelection = {
-  base: TonalStep;
-  darker3: TonalStep | null;
-  darker45: TonalStep | null;
-  lighter3: TonalStep | null;
-  lighter45: TonalStep | null;
-} | null;
 
 describe('TonalStrip', () => {
   it('emits pairing data on hover and renders helper dots', async () => {
@@ -43,7 +35,8 @@ describe('TonalStrip', () => {
       darker45: tones[0],
       darker3: tones[0],
     });
-    expect([tones[2], tones[3], null]).toContain(payload.lighter3 ?? null);
+    expect(payload.lighter3?.index).toBe(tones[2].index);
+    expect(payload.lighter45).toBeNull();
   });
 
   it('supports cycling through matches with wheel and keyboard input', async () => {
@@ -68,7 +61,8 @@ describe('TonalStrip', () => {
     expect(wheelPayload).toMatchObject({
       darker3: tones[0],
     });
-    expect([tones[2], tones[3], null]).toContain(wheelPayload?.lighter3 ?? null);
+    expect(wheelPayload.lighter3?.index).toBe(tones[3].index);
+    expect(wheelPayload.lighter45).toBeNull();
 
     await swatch.trigger('keydown', { key: 'ArrowLeft' });
     await nextTick();
@@ -78,5 +72,6 @@ describe('TonalStrip', () => {
       throw new Error('Expected pairing payload after keyboard event');
     }
     expect(keyPayload.darker3).toEqual(tones[0]);
+    expect(keyPayload.lighter3?.index).toBe(tones[2].index);
   });
 });

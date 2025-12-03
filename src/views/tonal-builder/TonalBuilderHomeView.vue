@@ -17,6 +17,7 @@
   import { useTonalScaleStore } from '@/stores/tonalScale';
   import { hexToRgb } from '@/utils/color';
   import type { TonalStep } from '@/utils/tonal/scale';
+  import type { PairingSelection } from '@/components/tonal-builder/types';
 
   const { t } = useI18n();
 
@@ -90,14 +91,6 @@
       value: controls[control.id] ?? control.defaultValue,
     })),
   );
-
-  type PairingSelection = {
-    base: TonalStep;
-    darker3: TonalStep | null;
-    darker45: TonalStep | null;
-    lighter3: TonalStep | null;
-    lighter45: TonalStep | null;
-  } | null;
 
   const previewSelection = ref<PairingSelection>(null);
 

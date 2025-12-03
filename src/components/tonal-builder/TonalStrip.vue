@@ -5,6 +5,7 @@
   import { clamp } from '@/utils/collection';
   import { getContrastRatio } from '@/utils/tonal/contrast';
   import type { TonalStep } from '@/utils/tonal/scale';
+  import type { PairingSelection } from './types';
 
   type ContrastDirection = 'lighter' | 'darker';
 
@@ -12,14 +13,6 @@
     tone: TonalStep;
     ratio: number;
   };
-
-  type PairingSelection = {
-    base: TonalStep;
-    darker3: TonalStep | null;
-    darker45: TonalStep | null;
-    lighter3: TonalStep | null;
-    lighter45: TonalStep | null;
-  } | null;
 
   const props = defineProps<{ tones: TonalStep[]; baseIndex: number }>();
 
