@@ -3,8 +3,10 @@
   import { useI18n } from 'vue-i18n';
 
   import { clamp } from '@/utils/collection';
+  import type { BlendDistribution } from '@/stores/tonalScale';
   import { getContrastRatio } from '@/utils/tonal/contrast';
   import type { TonalStep } from '@/utils/tonal/scale';
+  import BlendDistributionGraph from './BlendDistributionGraph.vue';
   import type { PairingSelection } from './types';
 
   type ContrastDirection = 'lighter' | 'darker';
@@ -14,7 +16,13 @@
     ratio: number;
   };
 
-  const props = defineProps<{ tones: TonalStep[]; baseIndex: number }>();
+  const props = defineProps<{
+    tones: TonalStep[];
+    baseIndex: number;
+    showBlendDistGraph?: boolean;
+    blendGraphActive?: boolean;
+    blendGraphData?: BlendDistribution | null;
+  }>();
 
   const emit = defineEmits<{ 'pairing-change': [PairingSelection] }>();
 
@@ -210,11 +218,17 @@
     data-cy="tonal-strip"
     role="list"
     :data-full="isFullStrip"
+    :showBlendDistGraph="props.showBlendDistGraph ? 'true' : undefined"
     :style="{
       '--swatch-width': swatchWidth,
       '--wrap-mode': wrapMode,
     }"
   >
+    <BlendDistributionGraph
+      v-if="props.showBlendDistGraph"
+      :active="props.blendGraphActive ?? false"
+      :data="props.blendGraphData ?? null"
+    />
     <div
       v-for="swatch in swatches"
       :key="swatch.tone.index"

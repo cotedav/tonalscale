@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { useTitle } from '@vueuse/core';
+  import { useEventListener, useTitle } from '@vueuse/core';
   import { computed, ref, watchEffect } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { storeToRefs } from 'pinia';
@@ -29,7 +29,7 @@
     useTonalBuilderColors();
 
   const tonalScale = useTonalScaleStore();
-  const { fullStrip, extendedStrip, keyStrip, scale } = storeToRefs(tonalScale);
+  const { blendDistribution, extendedStrip, fullStrip, keyStrip, scale } = storeToRefs(tonalScale);
 
   const {
     blendMode,
@@ -95,6 +95,14 @@
 
   const previewSelection = ref<PairingSelection>(null);
 
+  const blendOverlayActive = ref(false);
+  const overlayAnnouncement = ref('');
+
+  const activateBlendOverlay = () => {
+    blendOverlayActive.value = true;
+    overlayAnnouncement.value = t('tonal_builder.scales.blend_overlay_active');
+  };
+
   const handlePairingChange = (payload: PairingSelection) => {
     previewSelection.value = payload;
   };
@@ -115,9 +123,30 @@
     };
   });
 
-  const onControlInput = (id: BlendControlId, value: number | string) => {
+  const onControlInput = (
+    id: BlendControlId,
+    value: number | string,
+    shouldActivateOverlay = false,
+  ) => {
     updateControl(id, value);
+    if (shouldActivateOverlay && ['middle', 'spread'].includes(id)) {
+      activateBlendOverlay();
+    }
   };
+
+  const onBlendControlPointerDown = (id: BlendControlId) => {
+    if (['middle', 'spread'].includes(id)) {
+      activateBlendOverlay();
+    }
+  };
+
+  const deactivateBlendOverlay = () => {
+    if (!blendOverlayActive.value) return;
+    blendOverlayActive.value = false;
+    overlayAnnouncement.value = t('tonal_builder.scales.blend_overlay_inactive');
+  };
+
+  useEventListener(window, ['pointerup', 'pointercancel', 'touchend'], deactivateBlendOverlay);
 
   useTonalBuilderEngine(
     {
@@ -291,6 +320,13 @@
           {{ t('tonal_builder.scales.title') }}
         </p>
         <p class="text-sm text-slate-400">{{ t('tonal_builder.scales.description') }}</p>
+        <p
+          class="sr-only"
+          role="status"
+          aria-live="polite"
+        >
+          {{ overlayAnnouncement }}
+        </p>
       </div>
 
       <div class="space-y-4">
@@ -306,6 +342,9 @@
             :tones="fullStrip"
             :base-index="baseLuminanceIndex"
             class="min-h-[96px]"
+            :blend-graph-active="blendOverlayActive"
+            :blend-graph-data="blendDistribution"
+            :show-blend-dist-graph="true"
             data-cy="scale-strip-full"
             @pairing-change="handlePairingChange"
           />
@@ -440,7 +479,11 @@
             class="h-2 w-full cursor-pointer appearance-none rounded-full bg-slate-700 accent-accent"
             :aria-label="control.label"
             :data-cy="`${control.id}-slider`"
-            @input="onControlInput(control.id, ($event.target as HTMLInputElement).value)"
+            @pointerdown="onBlendControlPointerDown(control.id)"
+            @pointerup="deactivateBlendOverlay"
+            @pointercancel="deactivateBlendOverlay"
+            @blur="deactivateBlendOverlay"
+            @input="onControlInput(control.id, ($event.target as HTMLInputElement).value, true)"
             @change="onControlInput(control.id, ($event.target as HTMLInputElement).value)"
           />
           <input
@@ -455,6 +498,7 @@
             :data-cy="`${control.id}-value`"
             @input="onControlInput(control.id, ($event.target as HTMLInputElement).value)"
             @change="onControlInput(control.id, ($event.target as HTMLInputElement).value)"
+            @blur="deactivateBlendOverlay"
           />
           <p
             v-if="controlErrors[control.id]"

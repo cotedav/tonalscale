@@ -157,6 +157,8 @@ export default {
       extended_helper: 'Key luminance + supporting stops',
       key: 'Key strip',
       key_helper: 'Key luminance and nearest neighbors',
+      blend_overlay_active: 'Blend distribution overlay shown',
+      blend_overlay_inactive: 'Blend distribution overlay hidden',
       metadata: {
         title: 'Hex and contrast targets',
         base_marker: 'Base luminance',
