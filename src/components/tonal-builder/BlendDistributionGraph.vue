@@ -26,7 +26,7 @@
           mode: 'lines',
           line: {
             color: props.data.lineColor,
-            width: 2,
+            width: 1,
             dash: 'dot',
           },
           name: 'blend distribution',
@@ -70,23 +70,32 @@
 
 <template>
   <div
-    class="blend-dist-graph pointer-events-none absolute inset-x-0 top-0 z-10 flex h-full items-start justify-start"
+    class="blend-dist-graph"
     data-cy="blend-distribution-overlay"
     aria-hidden="true"
   >
-    <div class="relative h-full w-full">
-      <div
-        ref="plotRef"
-        class="h-full"
-        :style="styles"
-      />
-    </div>
+    <div
+      ref="plotRef"
+      class="blend-dist-graph__canvas"
+      :style="styles"
+    />
   </div>
 </template>
 
 <style scoped>
   .blend-dist-graph {
-    mix-blend-mode: screen;
-    transition: opacity 120ms ease;
+    position: absolute;
+    inset-inline: 0;
+    top: 16px;
+    height: 50px;
+    z-index: 10;
+    pointer-events: none;
+    display: flex;
+  }
+
+  .blend-dist-graph__canvas {
+    width: 100%;
+    height: 100%;
+    transition: opacity 160ms ease;
   }
 </style>

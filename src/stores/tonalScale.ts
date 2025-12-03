@@ -3,7 +3,7 @@ import { defineStore } from 'pinia';
 
 import type { BlendControlId } from '@/composables/useTonalBuilderControls';
 import { clamp } from '@/utils/collection';
-import { hexToRgb, isValidHex, normalizeHex } from '@/utils/color';
+import { hexToRgb, isValidHex, normalizeHex, rgbToHex } from '@/utils/color';
 import { BLEND_MODES, type BlendMode } from '@/utils/tonal/color-math';
 import { getContrastRatio } from '@/utils/tonal/contrast';
 import { getIntensity, getIntensityCurve } from '@/utils/tonal/easing';
@@ -137,13 +137,9 @@ const pickLineColor = (scale: TonalScale): string => {
     Math.min(scale.colorScale.length - 1, Math.round(scale.luminance / 2)),
   );
   const probe = scale.colorScale[probeIndex]?.hex ?? '#e2e8f0';
-  const lightOption = '#e2e8f0';
-  const darkOption = '#0f172a';
 
-  const lightContrast = getContrastRatio(probe, lightOption);
-  const darkContrast = getContrastRatio(probe, darkOption);
-
-  return lightContrast >= darkContrast ? lightOption : darkOption;
+  const { r, g, b } = hexToRgb(probe);
+  return rgbToHex({ r: 255 - r, g: 255 - g, b: 255 - b });
 };
 
 const buildBlendDistribution = (
