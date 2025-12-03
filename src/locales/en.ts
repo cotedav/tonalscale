@@ -182,6 +182,22 @@ export default {
     accessibility: {
       title: 'Accessibility helpers',
       description: 'Contrast, WCAG, and card previews anchored in the right rail.',
+      large_heading: 'Large text',
+      regular_heading: 'Regular text',
+      sample_large: '20pt example text. Jumpy wizard fox grabs TV, vexing bland queen.',
+      sample_large_bold:
+        '14pt bold example text. Pack my box with five dozen liquor jugs, the dwarf jokingly quizzed.',
+      sample_regular: '16pt example text. Zany jackdaws love my big sphinx of quartz, Fred.',
+      sample_regular_bold:
+        '12pt bold example text. Q. Frog, a jinxed blimp driver, went zesty on the volleyball league.',
+      index_label: 'Index',
+      hex_label: 'Hex',
+      levels: {
+        large_aa: 'AA 3:1',
+        large_aaa: 'AAA 4.5:1',
+        regular_aa: 'AA 4.5:1',
+        regular_aaa: 'AAA 7:1',
+      },
       cards: {
         darker_45: 'AA/AAA at 4.5:1 - darker base',
         darker_3: 'AA at 3:1 - darker base',

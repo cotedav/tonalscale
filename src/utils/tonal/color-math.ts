@@ -237,8 +237,15 @@ export const hsvToRgb = ({ h, s, v }: HsvColor): RgbColor => {
 
 export const getLuminance = (hex: string): number => {
   const rgb = hexToRgb(hex);
-  const lab = rgbToLab(rgb);
-  return Math.round(lab.l);
+
+  const normalize = (channel: number) => {
+    const srgb = channel / 255;
+    return srgb <= 0.03928 ? srgb / 12.92 : ((srgb + 0.055) / 1.055) ** 2.4;
+  };
+
+  const [r, g, b] = [rgb.r, rgb.g, rgb.b].map(normalize);
+
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 };
 
 export const normalizeHexRgb = (hex: string): RgbColor => hexToRgb(hex);

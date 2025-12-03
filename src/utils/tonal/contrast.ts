@@ -6,7 +6,7 @@ export const getContrastRatio = (first: string, second: string): number => {
   const ratio =
     (Math.max(firstLuminance, secondLuminance) + 0.05) /
     (Math.min(firstLuminance, secondLuminance) + 0.05);
-  return Number(ratio.toFixed(1));
+  return Number(ratio.toFixed(4));
 };
 
 export const toRgbChannels = (hex: string) => normalizeHexRgb(hex);
