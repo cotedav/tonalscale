@@ -161,6 +161,8 @@ export default {
       extended_helper: 'Luminance clé et points de support',
       key: 'Bande clé',
       key_helper: 'Luminance clé et voisins proches',
+      blend_overlay_active: 'Superposition de distribution de mélange affichée',
+      blend_overlay_inactive: 'Superposition de distribution de mélange masquée',
       metadata: {
         title: 'Hex et cibles de contraste',
         base_marker: 'Luminance de base',

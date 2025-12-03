@@ -6,6 +6,7 @@ import { clamp } from '@/utils/collection';
 import { hexToRgb, isValidHex, normalizeHex } from '@/utils/color';
 import { BLEND_MODES, type BlendMode } from '@/utils/tonal/color-math';
 import { getContrastRatio } from '@/utils/tonal/contrast';
+import { getIntensity, getIntensityCurve } from '@/utils/tonal/easing';
 import {
   generateTonalScale,
   type TonalScale,
@@ -31,6 +32,12 @@ export type ToneMetadata = {
   lighter45: ContrastCandidate | null;
 };
 
+export type BlendDistribution = {
+  curve: { x: number[]; y: number[] };
+  widthPercent: number;
+  lineColor: string;
+};
+
 export type TonalScaleSnapshot = {
   params: TonalScaleParams;
   baseHex: string;
@@ -41,6 +48,7 @@ export type TonalScaleSnapshot = {
   keyStrip: TonalStep[];
   metadata: ToneMetadata[];
   serializedParams: string;
+  blendDistribution: BlendDistribution | null;
 };
 
 const DEFAULT_BASE_HEX = '#8000ff';
@@ -123,6 +131,54 @@ const includeBaseIndex = (
   return pickIndices(combined, scale);
 };
 
+const pickLineColor = (scale: TonalScale): string => {
+  const probeIndex = Math.max(
+    0,
+    Math.min(scale.colorScale.length - 1, Math.round(scale.luminance / 2)),
+  );
+  const probe = scale.colorScale[probeIndex]?.hex ?? '#e2e8f0';
+  const lightOption = '#e2e8f0';
+  const darkOption = '#0f172a';
+
+  const lightContrast = getContrastRatio(probe, lightOption);
+  const darkContrast = getContrastRatio(probe, darkOption);
+
+  return lightContrast >= darkContrast ? lightOption : darkOption;
+};
+
+const buildBlendDistribution = (
+  params: TonalScaleParams,
+  nextScale: TonalScale,
+): BlendDistribution | null => {
+  const blendEnabled =
+    params.blendStrength > 0 && (params.blendR > 0 || params.blendG > 0 || params.blendB > 0);
+
+  if (!blendEnabled) {
+    return {
+      curve: { x: [], y: [] },
+      widthPercent: Math.max(0, nextScale.luminance - 1),
+      lineColor: pickLineColor(nextScale),
+    };
+  }
+
+  const curve = getIntensityCurve((params.middle + 50) / 100, params.spread / 100);
+
+  const x: number[] = [];
+  const y: number[] = [];
+  const luminanceRange = Math.max(1, nextScale.luminance - 1);
+
+  for (let i = 0; i < nextScale.luminance; i += 1) {
+    x.push(i);
+    y.push(getIntensity(curve, i, luminanceRange));
+  }
+
+  return {
+    curve: { x, y },
+    widthPercent: Math.max(0, nextScale.luminance - 1),
+    lineColor: pickLineColor(nextScale),
+  };
+};
+
 export const useTonalScaleStore = defineStore('tonalScale', () => {
   const baseHex = ref<string>(normalizeHex(DEFAULT_BASE_HEX));
   const blendHex = ref<string>(normalizeHex(DEFAULT_BLEND_HEX));
@@ -166,6 +222,7 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
     includeBaseIndex(KEY_SCALE_INDICES, scale.value.colorScale, baseIndex.value),
   );
   const serializedParams = computed(() => serializeParams(scaleParams.value));
+  const blendDistribution = computed(() => buildBlendDistribution(scaleParams.value, scale.value));
 
   const listeners = new Set<(snapshot: TonalScaleSnapshot) => void>();
 
@@ -180,6 +237,7 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
       keyStrip: keyStrip.value,
       metadata: metadata.value,
       serializedParams: serializedParams.value,
+      blendDistribution: blendDistribution.value,
     };
     listeners.forEach((listener) => listener(snapshot));
   };
@@ -309,6 +367,7 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
       keyStrip: keyStrip.value,
       metadata: metadata.value,
       serializedParams: serializedParams.value,
+      blendDistribution: blendDistribution.value,
     });
 
     return () => listeners.delete(listener);
@@ -334,6 +393,7 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
     extendedStrip,
     keyStrip,
     serializedParams,
+    blendDistribution,
     exportState,
     importState,
     setBaseHex,

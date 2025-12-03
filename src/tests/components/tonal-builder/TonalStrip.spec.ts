@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils';
 
 import TonalStrip from '@/components/tonal-builder/TonalStrip.vue';
+import type { BlendDistribution } from '@/stores/tonalScale';
 import type { TonalStep } from '@/utils/tonal/scale';
 
 describe('TonalStrip', () => {
@@ -37,5 +38,33 @@ describe('TonalStrip', () => {
     const hexPopovers = wrapper.findAll('.color-hex');
     expect(hexPopovers).toHaveLength(3);
     expect(hexPopovers[2].text()).toBe('#e5e7eb');
+  });
+
+  it('passes blend distribution overlays when enabled', () => {
+    const graph: BlendDistribution = {
+      curve: { x: [0, 1, 2], y: [0.1, 0.2, 0.3] },
+      widthPercent: 50,
+      lineColor: '#ffffff',
+    };
+
+    const wrapper = mount(TonalStrip, {
+      props: {
+        tones,
+        baseIndex: 50,
+        showBlendDistGraph: true,
+        blendGraphActive: true,
+        blendGraphData: graph,
+      },
+      global: {
+        stubs: {
+          BlendDistributionGraph: {
+            template: '<div data-cy="blend-graph-stub" />',
+          },
+        },
+      },
+    });
+
+    expect(wrapper.attributes('showblenddistgraph')).toBe('true');
+    expect(wrapper.find('[data-cy="blend-graph-stub"]').exists()).toBe(true);
   });
 });

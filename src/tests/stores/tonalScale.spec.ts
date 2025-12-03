@@ -126,4 +126,24 @@ describe('useTonalScaleStore', () => {
     );
     expect(calculated).toBeGreaterThanOrEqual(3);
   });
+
+  it('derives blend distribution data for overlay consumers', async () => {
+    const store = useTonalScaleStore();
+    store.updateControl('strength', 50);
+    await flushTimers();
+
+    const initial = store.blendDistribution;
+    expect(initial).toBeTruthy();
+    expect(initial?.curve.x.length).toBe(store.scale.luminance);
+    const initialY = initial?.curve.y.slice();
+
+    store.updateControl('spread', 10);
+    store.updateControl('middle', 25);
+    await flushTimers();
+
+    const updated = store.blendDistribution;
+    expect(updated?.curve.y).not.toEqual(initialY);
+    expect(updated?.widthPercent).toBe(Math.max(0, store.scale.luminance - 1));
+    expect(updated?.lineColor).toMatch(/^#/);
+  });
 });
