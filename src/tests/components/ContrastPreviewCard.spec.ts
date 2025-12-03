@@ -40,6 +40,6 @@ describe('ContrastPreviewCard', () => {
 
     const card = wrapper.get('[data-cy="contrast-preview-card"]');
     expect(wrapper.find('h1').text()).toBe('4.5:1');
-    expect(card.attributes('style')).toContain('opacity: 0.55');
+    expect(card.attributes('style')).toContain('opacity: 0.2');
   });
 });

@@ -340,35 +340,27 @@
   }
 
   .color-box .contrast-dot {
-    width: 9px;
-    height: 9px;
-    border: 2px solid rgb(0 0 0 / 25%);
-    outline: 2px solid rgb(255 255 255 / 30%);
-    box-shadow: 0 0 0 1px rgb(0 0 0 / 30%);
+    width: 5px;
+    height: 5px;
+    outline: 1px solid rgb(0 0 0 / 25%);
+    z-index: 100;
   }
 
   .color-box .contrast-dot[data-kind='background'] {
-    background: linear-gradient(135deg, rgb(15 23 42 / 85%), rgb(30 41 59 / 60%));
-    top: 18%;
+    background: rgb(255 255 255 / 50%);
   }
 
   .color-box .contrast-dot[data-kind='text'] {
-    background: linear-gradient(135deg, rgb(255 255 255 / 90%), rgb(148 163 184 / 90%));
-    bottom: 18%;
-    top: auto;
+    background: rgb(0 0 0 / 50%);
+    outline: 1px solid rgb(255 255 255 / 25%);
   }
 
   .color-box .contrast-dot[data-level='aaa'] {
-    transform: translate(-50%, -50%) scale(1.1);
-    box-shadow:
-      0 0 0 2px rgb(79 70 229 / 50%),
-      0 0 8px 2px rgb(79 70 229 / 35%);
+    transform: translate(-50%, -50%);
   }
 
   .color-box .contrast-dot[data-level='aa'] {
-    box-shadow:
-      0 0 0 1px rgb(16 185 129 / 50%),
-      0 0 6px 1px rgb(16 185 129 / 35%);
+    transform: translate(-50%, -50%);
   }
 
   @media (width <= 1100px) {

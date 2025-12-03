@@ -41,9 +41,9 @@
   );
 
   const styles = computed(() => ({
-    '--bkg': props.background?.hex ?? 'transparent',
-    '--txt': props.text?.hex ?? '#e2e8f0',
-    opacity: hasPair.value ? 1 : 0.55,
+    '--bkg': props.background?.hex ?? '#77777e',
+    '--txt': props.text?.hex ?? '#e2e2e4',
+    opacity: hasPair.value ? 1 : 0.2,
   }));
 
   const levels = computed<Array<{ key: LevelKey; threshold: number; value: boolean }>>(() => {
@@ -68,7 +68,7 @@
   >
     <header class="colorcard-header">
       <h1>{{ ratioDisplay }}</h1>
-      <p class="text-xs uppercase tracking-wide text-slate-400">
+      <p class="colorcard-label text-xs uppercase tracking-wide text-slate-400">
         {{ t(titleKey) }}
       </p>
     </header>
@@ -159,118 +159,106 @@
 
 <style scoped>
   .colorcard {
-    --txt: #e2e8f0;
-    --bkg: #0f172a;
+    --txt: #e2e2e4;
+    --bkg: #77777e;
 
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    border: 1px dashed rgb(255 255 255 / 15%);
-    border-radius: 24px;
-    background: linear-gradient(135deg, rgb(15 23 42 / 90%), rgb(15 23 42 / 70%));
-    padding: 14px;
-    box-shadow: 0 20px 40px rgb(0 0 0 / 35%);
-    color: #e2e8f0;
-    transition:
-      transform 0.3s ease,
-      box-shadow 0.3s ease;
-  }
-
-  .colorcard:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 24px 60px rgb(0 0 0 / 45%);
+    color: var(--txt);
+    background: linear-gradient(to right, var(--bkg) 50%, var(--txt) 50%);
+    padding: 16px;
+    border-radius: 16px;
+    opacity: 0.2;
+    flex: 1;
+    min-width: 200px;
   }
 
   .colorcard-header {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
   }
 
   .colorcard h1 {
     font-family: 'Roboto Mono', monospace;
-    font-size: 24px;
-    margin: 0;
+    margin: 0 0 16px;
+    font-size: 34px;
+    font-weight: 400;
   }
 
   .colorcard h2 {
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #cbd5e1;
-    margin: 2px 0;
+    margin: 0 0 8px;
+    font-weight: 500;
+    font-size: 12px;
+    display: inline-block;
+    width: calc(100% - 124px);
   }
 
   .colorcard .colorcard-colorrefs {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-    font-family: 'Roboto Mono', monospace;
+    display: flex;
+    font-size: 12px;
   }
 
   .colorcard .colorcard-colorrefs label {
-    font-size: 10px;
-    color: #cbd5e1;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    opacity: 0.87;
   }
 
   .colorcard .colorcard-colorref_bkg,
   .colorcard .colorcard-colorref_txt {
-    padding: 10px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, rgb(15 23 42 / 60%), rgb(15 23 42 / 40%));
-    border: 1px solid rgb(255 255 255 / 10%);
+    width: 100%;
+    display: inline-grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 16px;
   }
 
   .colorcard .colorcard-colorref_txt {
-    background: linear-gradient(135deg, rgb(255 255 255 / 14%), rgb(148 163 184 / 12%));
-    color: #0f172a;
+    color: var(--bkg);
+    margin-left: 16px;
   }
 
   .colorcard .colorcard-colorref-index,
   .colorcard .colorcard-colorref-hex {
-    display: block;
-    font-size: 12px;
+    font-family: 'Roboto Mono', monospace;
     font-weight: 700;
-    margin-bottom: 4px;
   }
 
   .colorcard .colorcard-divider {
+    margin: 16px 0;
     height: 1px;
-    width: 100%;
-    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 40%), transparent);
-    margin: 6px 0;
+    background: linear-gradient(to right, var(--txt) 50%, var(--bkg) 50%);
+    opacity: 0.32;
+  }
+
+  .colorcard .colorcard-label {
+    background: none;
+    color: inherit;
   }
 
   .colorcard .colorcard-wcaglevel {
     display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 10px;
+    background-color: #fff;
     font-size: 11px;
+    border-radius: 8px;
     font-weight: 700;
-    border-radius: 999px;
-    border: 1px solid rgb(255 255 255 / 20%);
-    background: rgb(255 255 255 / 4%);
-    margin-right: 6px;
+    font-family: 'Roboto Condensed', sans-serif;
+    padding: 0 4px;
+    line-height: 14px;
+    transition:
+      opacity 0.5s ease,
+      color 0.5s ease;
   }
 
   .colorcard .colorcard-wcaglevel .material-icons {
-    font-size: 16px;
+    font-size: 14px;
+    position: relative;
   }
 
   .colorcard .colorcard-wcaglevel_pass {
-    color: #16a34a;
-    background: rgb(22 163 74 / 12%);
-    border-color: rgb(22 163 74 / 35%);
+    color: #115e39;
   }
 
   .colorcard .colorcard-wcaglevel_fail {
-    color: #f97316;
-    background: rgb(249 115 22 / 12%);
-    border-color: rgb(249 115 22 / 35%);
+    color: #9f1606;
+    opacity: 0.25;
   }
 
   .colorcard .colorcard-wcaglevel_pass .icon-pass,
@@ -284,70 +272,53 @@
   }
 
   .colorcard p {
-    margin: 4px 0;
-    padding: 8px 10px;
-    border-radius: 12px;
-    border: 1px dashed rgb(255 255 255 / 10%);
+    background: linear-gradient(to right, var(--txt) 50%, var(--bkg) 50%);
+    background-clip: text;
+    color: transparent;
   }
 
   .colorcard .colorcard-large_20,
   .colorcard .colorcard-large_14,
   .colorcard .colorcard-regular_16,
   .colorcard .colorcard-regular_12 {
-    background: linear-gradient(135deg, rgb(15 23 42 / 75%), rgb(15 23 42 / 55%));
-    color: var(--txt);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .colorcard .colorcard-large_20 {
-    font-size: 20px;
-    background: linear-gradient(135deg, rgb(255 255 255 / 10%), rgb(148 163 184 / 20%));
-    color: var(--bkg);
+    font-size: 20pt;
+    margin: 0 0 8px;
   }
 
   .colorcard .colorcard-large_14 {
-    font-size: 14px;
+    font-size: 14pt;
     font-weight: 700;
+    margin: 0 0 8px;
   }
 
   .colorcard .colorcard-icons {
     display: flex;
-    gap: 6px;
-    align-items: stretch;
-    justify-content: space-between;
   }
 
   .colorcard .colorcard-icons_bkg,
   .colorcard .colorcard-icons_txt {
-    display: inline-flex;
-    gap: 6px;
-    padding: 8px;
-    border-radius: 12px;
-    border: 1px solid rgb(255 255 255 / 10%);
+    width: 100%;
   }
 
   .colorcard .colorcard-icons_txt {
     color: var(--bkg);
-    background: linear-gradient(135deg, rgb(255 255 255 / 16%), rgb(148 163 184 / 22%));
+    margin-left: 16px;
   }
 
   .colorcard .colorcard-regular_16 {
-    font-size: 16px;
-    color: var(--txt);
+    font-size: 16pt;
+    margin: 0 0 8px;
   }
 
   .colorcard .colorcard-regular_12 {
-    font-size: 12px;
+    font-size: 12pt;
     font-weight: 700;
-    color: var(--txt);
-  }
-
-  @media (width <= 640px) {
-    .colorcard {
-      border-radius: 18px;
-    }
-
-    .colorcard h1 {
-      font-size: 20px;
-    }
+    margin: 0;
   }
 </style>
