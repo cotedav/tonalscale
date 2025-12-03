@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  // eslint-disable-next-line import/no-unresolved
   import Plotly, { type Layout, type PlotData } from 'plotly.js-dist-min';
   import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 

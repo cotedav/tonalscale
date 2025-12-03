@@ -150,17 +150,6 @@ const buildBlendDistribution = (
   params: TonalScaleParams,
   nextScale: TonalScale,
 ): BlendDistribution | null => {
-  const blendEnabled =
-    params.blendStrength > 0 && (params.blendR > 0 || params.blendG > 0 || params.blendB > 0);
-
-  if (!blendEnabled) {
-    return {
-      curve: { x: [], y: [] },
-      widthPercent: Math.max(0, nextScale.luminance - 1),
-      lineColor: pickLineColor(nextScale),
-    };
-  }
-
   const curve = getIntensityCurve((params.middle + 50) / 100, params.spread / 100);
 
   const x: number[] = [];
@@ -265,12 +254,15 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
 
   const withSuppressedRefresh = (params: TonalScaleParams, operation: () => void) => {
     suppressWatchRefresh = true;
-    operation();
-    cancelPendingRefresh();
-    refreshScale(params);
-    nextTick(() => {
-      suppressWatchRefresh = false;
-    });
+    try {
+      operation();
+      cancelPendingRefresh();
+      refreshScale(params);
+    } finally {
+      nextTick(() => {
+        suppressWatchRefresh = false;
+      });
+    }
   };
 
   const updateControl = (id: BlendControlId, value: number) => {
