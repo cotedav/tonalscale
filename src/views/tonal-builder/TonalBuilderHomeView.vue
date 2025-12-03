@@ -123,9 +123,13 @@
     };
   });
 
-  const onControlInput = (id: BlendControlId, value: number | string) => {
+  const onControlInput = (
+    id: BlendControlId,
+    value: number | string,
+    shouldActivateOverlay = false,
+  ) => {
     updateControl(id, value);
-    if (['middle', 'spread'].includes(id)) {
+    if (shouldActivateOverlay && ['middle', 'spread'].includes(id)) {
       activateBlendOverlay();
     }
   };
@@ -479,7 +483,7 @@
             @pointerup="deactivateBlendOverlay"
             @pointercancel="deactivateBlendOverlay"
             @blur="deactivateBlendOverlay"
-            @input="onControlInput(control.id, ($event.target as HTMLInputElement).value)"
+            @input="onControlInput(control.id, ($event.target as HTMLInputElement).value, true)"
             @change="onControlInput(control.id, ($event.target as HTMLInputElement).value)"
           />
           <input

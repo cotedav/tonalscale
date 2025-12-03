@@ -14,8 +14,8 @@ interface UsePlotlyGraphOptions {
   debounceMs?: number;
 }
 
-export function usePlotlyGraph({ plotRef, spec, debounceMs = 60 }: UsePlotlyGraphOptions) {
-  const pendingRender = ref<ReturnType<typeof setTimeout> | null>(null);
+export function usePlotlyGraph({ plotRef, spec, debounceMs = 0 }: UsePlotlyGraphOptions) {
+  const pendingRender = ref<number | ReturnType<typeof setTimeout> | null>(null);
 
   const purge = () => {
     const plotElement = plotRef.value;
@@ -36,12 +36,30 @@ export function usePlotlyGraph({ plotRef, spec, debounceMs = 60 }: UsePlotlyGrap
     Plotly.react(plotElement, currentSpec.traces, currentSpec.layout, currentSpec.config);
   };
 
-  const scheduleRender = () => {
-    if (pendingRender.value) {
-      clearTimeout(pendingRender.value);
+  const cancelPendingRender = () => {
+    if (pendingRender.value === null) return;
+
+    if (typeof pendingRender.value === 'number' && debounceMs <= 0) {
+      cancelAnimationFrame(pendingRender.value);
+    } else {
+      clearTimeout(pendingRender.value as ReturnType<typeof setTimeout>);
     }
 
-    pendingRender.value = setTimeout(render, debounceMs);
+    pendingRender.value = null;
+  };
+
+  const scheduleRender = () => {
+    cancelPendingRender();
+
+    if (debounceMs > 0) {
+      pendingRender.value = setTimeout(render, debounceMs);
+      return;
+    }
+
+    pendingRender.value = requestAnimationFrame(() => {
+      pendingRender.value = null;
+      render();
+    });
   };
 
   watch(
@@ -63,9 +81,7 @@ export function usePlotlyGraph({ plotRef, spec, debounceMs = 60 }: UsePlotlyGrap
   });
 
   onBeforeUnmount(() => {
-    if (pendingRender.value) {
-      clearTimeout(pendingRender.value);
-    }
+    cancelPendingRender();
     purge();
   });
 

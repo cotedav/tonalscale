@@ -183,7 +183,7 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
   const scale = ref<TonalScale>(generateTonalScale(DEFAULT_PARAMS));
   const metadata = ref<ToneMetadata[]>(buildMetadata(scale.value.colorScale));
   let suppressWatchRefresh = false;
-  let pendingRefresh: ReturnType<typeof setTimeout> | null = null;
+  let pendingRefresh: number | null = null;
 
   const scaleParams = computed<TonalScaleParams>(() => {
     const blendRgb = hexToRgb(blendHex.value);
@@ -238,18 +238,18 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
   };
 
   const cancelPendingRefresh = () => {
-    if (pendingRefresh) {
-      clearTimeout(pendingRefresh);
+    if (pendingRefresh !== null) {
+      cancelAnimationFrame(pendingRefresh);
       pendingRefresh = null;
     }
   };
 
   const scheduleRefresh = (params: TonalScaleParams) => {
     cancelPendingRefresh();
-    pendingRefresh = setTimeout(() => {
+    pendingRefresh = requestAnimationFrame(() => {
       refreshScale(params);
       pendingRefresh = null;
-    }, 50);
+    });
   };
 
   const withSuppressedRefresh = (params: TonalScaleParams, operation: () => void) => {
