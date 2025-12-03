@@ -1,10 +1,11 @@
 <script setup lang="ts">
   import { useTitle } from '@vueuse/core';
-  import { computed, watchEffect } from 'vue';
+  import { computed, ref, watchEffect } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { storeToRefs } from 'pinia';
 
   import ColorPickerCard from '@/components/tonal-builder/ColorPickerCard.vue';
+  import ContrastPreviewCard from '@/components/tonal-builder/ContrastPreviewCard.vue';
   import TonalStrip from '@/components/tonal-builder/TonalStrip.vue';
   import {
     type BlendControlId,
@@ -15,6 +16,7 @@
   import { useTonalBuilderColors } from '@/composables/useTonalBuilderColors';
   import { useTonalScaleStore } from '@/stores/tonalScale';
   import { hexToRgb } from '@/utils/color';
+  import type { TonalStep } from '@/utils/tonal/scale';
 
   const { t } = useI18n();
 
@@ -88,6 +90,36 @@
       value: controls[control.id] ?? control.defaultValue,
     })),
   );
+
+  type PairingSelection = {
+    base: TonalStep;
+    darker3: TonalStep | null;
+    darker45: TonalStep | null;
+    lighter3: TonalStep | null;
+    lighter45: TonalStep | null;
+  } | null;
+
+  const previewSelection = ref<PairingSelection>(null);
+
+  const handlePairingChange = (payload: PairingSelection) => {
+    previewSelection.value = payload;
+  };
+
+  const previewCards = computed(() => {
+    const base = previewSelection.value?.base ?? null;
+
+    const pair = (background: TonalStep | null, text: TonalStep | null) => ({
+      background,
+      text,
+    });
+
+    return {
+      darker45: pair(previewSelection.value?.darker45 ?? null, base),
+      darker3: pair(previewSelection.value?.darker3 ?? null, base),
+      lighter3: pair(base, previewSelection.value?.lighter3 ?? null),
+      lighter45: pair(base, previewSelection.value?.lighter45 ?? null),
+    };
+  });
 
   const onControlInput = (id: BlendControlId, value: number | string) => {
     updateControl(id, value);
@@ -281,6 +313,7 @@
             :base-index="baseLuminanceIndex"
             class="min-h-[96px]"
             data-cy="scale-strip-full"
+            @pairing-change="handlePairingChange"
           />
         </div>
 
@@ -299,6 +332,7 @@
             :base-index="baseLuminanceIndex"
             class="min-h-[72px]"
             data-cy="scale-strip-extended"
+            @pairing-change="handlePairingChange"
           />
         </div>
 
@@ -315,6 +349,7 @@
             :base-index="baseLuminanceIndex"
             class="min-h-[72px]"
             data-cy="scale-strip-key"
+            @pairing-change="handlePairingChange"
           />
         </div>
       </div>
@@ -457,57 +492,37 @@
       </div>
 
       <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <div
+        <ContrastPreviewCard
           id="colorcard-darker45"
-          class="space-y-3 rounded-2xl border border-dashed border-white/15 bg-surface-soft/80 p-4"
-          data-cy="colorcard-darker45"
-        >
-          <p class="text-base font-semibold text-slate-100">
-            {{ t('tonal_builder.accessibility.cards.darker_45') }}
-          </p>
-          <div
-            class="h-28 rounded-xl border border-white/10 bg-gradient-to-r from-slate-700 via-slate-500 to-white/20"
-          />
-        </div>
+          :title-key="'tonal_builder.accessibility.cards.darker_45'"
+          ratio-label="4.5:1"
+          :background="previewCards.darker45.background"
+          :text="previewCards.darker45.text"
+        />
 
-        <div
+        <ContrastPreviewCard
           id="colorcard-darker3"
-          class="space-y-3 rounded-2xl border border-dashed border-white/15 bg-surface-soft/80 p-4"
-          data-cy="colorcard-darker3"
-        >
-          <p class="text-base font-semibold text-slate-100">
-            {{ t('tonal_builder.accessibility.cards.darker_3') }}
-          </p>
-          <div
-            class="h-28 rounded-xl border border-white/10 bg-gradient-to-r from-slate-600 via-slate-400 to-white/25"
-          />
-        </div>
+          :title-key="'tonal_builder.accessibility.cards.darker_3'"
+          ratio-label="3:1"
+          :background="previewCards.darker3.background"
+          :text="previewCards.darker3.text"
+        />
 
-        <div
+        <ContrastPreviewCard
           id="colorcard-lighter3"
-          class="space-y-3 rounded-2xl border border-dashed border-white/15 bg-surface-soft/80 p-4"
-          data-cy="colorcard-lighter3"
-        >
-          <p class="text-base font-semibold text-slate-100">
-            {{ t('tonal_builder.accessibility.cards.lighter_3') }}
-          </p>
-          <div
-            class="h-28 rounded-xl border border-white/10 bg-gradient-to-r from-white/20 via-accent-soft/40 to-white/60"
-          />
-        </div>
+          :title-key="'tonal_builder.accessibility.cards.lighter_3'"
+          ratio-label="3:1"
+          :background="previewCards.lighter3.background"
+          :text="previewCards.lighter3.text"
+        />
 
-        <div
+        <ContrastPreviewCard
           id="colorcard-lighter45"
-          class="space-y-3 rounded-2xl border border-dashed border-white/15 bg-surface-soft/80 p-4"
-          data-cy="colorcard-lighter45"
-        >
-          <p class="text-base font-semibold text-slate-100">
-            {{ t('tonal_builder.accessibility.cards.lighter_45') }}
-          </p>
-          <div
-            class="h-28 rounded-xl border border-white/10 bg-gradient-to-r from-white/30 via-accent/60 to-white/80"
-          />
-        </div>
+          :title-key="'tonal_builder.accessibility.cards.lighter_45'"
+          ratio-label="4.5:1"
+          :background="previewCards.lighter45.background"
+          :text="previewCards.lighter45.text"
+        />
       </div>
     </section>
 

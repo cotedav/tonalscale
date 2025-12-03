@@ -186,6 +186,22 @@ export default {
     accessibility: {
       title: 'Aides accessibilité',
       description: 'Cartes de contraste, WCAG et aperçus arrimés au rail droit.',
+      large_heading: 'Texte large',
+      regular_heading: 'Texte régulier',
+      sample_large: 'Texte exemple 20pt. Un renard magicien bondit vers la TV et trouble la reine.',
+      sample_large_bold:
+        'Texte exemple 14pt gras. Rangez ma boîte avec cinq douzaines de flacons, plaisanta le nain.',
+      sample_regular:
+        'Texte exemple 16pt. Les choucas fantasques adorent mon grand sphinx de quartz, Fred.',
+      sample_regular_bold:
+        'Texte exemple 12pt gras. La grenouille Q., pilote maudit de dirigeable, s’est lâchée au volley.',
+      hex_label: 'Hex',
+      levels: {
+        large_aa: 'AA 3:1',
+        large_aaa: 'AAA 4,5:1',
+        regular_aa: 'AA 4,5:1',
+        regular_aaa: 'AAA 7:1',
+      },
       cards: {
         darker_45: 'AA/AAA à 4,5:1 - base foncée',
         darker_3: 'AA à 3:1 - base foncée',
