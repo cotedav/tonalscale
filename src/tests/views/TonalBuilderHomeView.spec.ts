@@ -32,7 +32,6 @@ describe('TonalBuilderHomeView', () => {
       '#colorcard-lighter45',
       '#dialog-overlay',
       '#dialog',
-      '#copied-message',
     ].forEach((selector) => {
       expect(wrapper.find(selector).exists()).toBe(true);
     });
@@ -46,6 +45,8 @@ describe('TonalBuilderHomeView', () => {
 
     const fullStrip = wrapper.get('[data-cy="scale-strip-full"]');
     expect(fullStrip.findAll('[data-cy="tonal-swatch"]').length).toBeGreaterThan(0);
+
+    expect(wrapper.find('[data-cy="copy-svg"]').exists()).toBe(true);
   });
 
   it('initializes blend controls to the expected defaults', () => {

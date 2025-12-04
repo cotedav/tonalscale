@@ -228,6 +228,33 @@ export default {
       dialog_body: 'Zone de corps de modale',
       close_label: 'Fermer la modale',
     },
+    clipboard: {
+      context_helper:
+        'Clique droit sur un échantillon ou Maj+F10 pour ouvrir les actions contextuelles.',
+      shortcut_helper: 'Raccourci clavier : Maj+F10 (ou touche menu).',
+      copy_color: 'Copier la couleur survolée',
+      copy_aa_pair: 'Copier une paire AA',
+      copy_aaa_pair: 'Copier une paire AAA',
+      svg_helper: 'Exporte les bandes visibles plus l’URL et le JSON des paramètres.',
+      selection_helper:
+        'La dernière couleur survolée et les paires proches alimentent ces actions.',
+      copy_error: 'Impossible de copier la valeur. Vérifiez les permissions du presse-papiers.',
+      missing_selection: 'Survolez un échantillon pour activer les actions.',
+      unsupported: 'Le presse-papiers est indisponible dans ce navigateur.',
+      svg_copied: 'Export SVG copié dans le presse-papiers.',
+      unavailable: 'Aucune correspondance proche',
+      menu_title: 'Options de copie',
+      feedback_helper: 'Les toasts reflètent aussi la pastille d’état flottante.',
+      no_feedback: 'En attente d’une action de copie.',
+      dismiss: 'Fermer',
+      options: {
+        darker_aaa: 'Plus sombre AAA (4,5:1)',
+        darker_aa: 'Plus sombre AA (3:1)',
+        color: 'Couleur',
+        lighter_aa: 'Plus claire AA (3:1)',
+        lighter_aaa: 'Plus claire AAA (4,5:1)',
+      },
+    },
   },
   validation: {
     sample: {

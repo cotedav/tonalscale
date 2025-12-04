@@ -24,7 +24,16 @@
     blendGraphData?: BlendDistribution | null;
   }>();
 
-  const emit = defineEmits<{ 'pairing-change': [PairingSelection] }>();
+  const emit = defineEmits<{
+    'pairing-change': [PairingSelection];
+    'context-request': [
+      {
+        event: MouseEvent | KeyboardEvent;
+        target: HTMLElement | null;
+        selection: PairingSelection;
+      },
+    ];
+  }>();
 
   const { t } = useI18n();
 
@@ -168,6 +177,30 @@
     emit('pairing-change', null);
   };
 
+  const emitContextRequest = (
+    event: MouseEvent | KeyboardEvent,
+    swatch: (typeof swatches.value)[number],
+  ) => {
+    if (!swatch) return;
+
+    setActiveIndex(swatch.indexOnStrip);
+    const selection = resolvedMatches.value;
+
+    emit('context-request', {
+      event,
+      target: (event.currentTarget as HTMLElement | null) ?? null,
+      selection: selection
+        ? {
+            base: swatch.tone,
+            darker3: selection.darker3?.tone ?? null,
+            darker45: selection.darker45?.tone ?? null,
+            lighter3: selection.lighter3?.tone ?? null,
+            lighter45: selection.lighter45?.tone ?? null,
+          }
+        : { base: swatch.tone, darker3: null, darker45: null, lighter3: null, lighter45: null },
+    });
+  };
+
   const adjustOffset = (delta: number) => {
     const next = clamp(state.offset + delta, 0, maxOffset.value);
     if (next === state.offset) return;
@@ -183,6 +216,11 @@
   };
 
   const handleKeydown = (event: KeyboardEvent) => {
+    if (['ContextMenu'].includes(event.key) || (event.shiftKey && event.key === 'F10')) {
+      emitContextRequest(event, swatches.value[state.activeIndex ?? 0]);
+      return;
+    }
+
     if (!['ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowUp'].includes(event.key)) return;
 
     event.preventDefault();
@@ -246,6 +284,7 @@
       @mouseleave="clearActive"
       @wheel="handleWheel"
       @keydown="handleKeydown"
+      @contextmenu.prevent="emitContextRequest($event, swatch)"
     >
       <span class="color-number">{{ swatch.tone.index }}</span>
       <span class="color-hex">{{ swatch.tone.hex }}</span>

@@ -74,4 +74,22 @@ describe('TonalStrip', () => {
     expect(keyPayload.darker3).toEqual(tones[0]);
     expect(keyPayload.lighter3?.index).toBe(tones[2].index);
   });
+
+  it('emits context menu payload with the active swatch', async () => {
+    const wrapper = mount(TonalStrip, {
+      props: {
+        tones,
+        baseIndex: 60,
+      },
+    });
+
+    const swatch = wrapper.findAll('[data-cy="tonal-swatch"]')[1];
+    await swatch.trigger('contextmenu');
+
+    const payload = wrapper.emitted('context-request')?.pop()?.[0] as
+      | { selection: PairingSelection }
+      | undefined;
+    expect(payload?.selection?.base).toEqual(tones[1]);
+    expect(payload?.selection?.darker3).toEqual(tones[0]);
+  });
 });
