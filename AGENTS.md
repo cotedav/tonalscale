@@ -48,6 +48,7 @@
 - State/routing: register Pinia and Vue Router in the app bootstrap (`src/main.ts`); place stores and routes in their respective directories; keep sample stores/routes minimal and non-domain-specific unless requirements dictate.
 - UI patterns: default to Headless UI components (Menu/Popover/Dialog/etc.) styled with Tailwind for interactive overlays, menus, and similar behaviors; reach for fully custom components only when no suitable Headless UI primitive exists or when Headless UI would not improve accessibility/UX.
 - Tooltips: do not use native `title` attributes for hover text; prefer an accessible, prebuilt tooltip/popover pattern (Headless UI equivalent where available) that can be styled with Tailwind.
+- Prefer extracting reusable behavior into dedicated components instead of piling single-use logic into views; if unsure whether a view concern should become a component, call out potential extractions explicitly in the task response.
 - Favor descriptive variable names; reserve single letters for simple loop indices only.
 - Testing: prefer data-cy selectors in Cypress; use Vue Test Utils with jsdom for units. Keep example tests lightweight.
 - Filesystem hygiene: avoid introducing new top-level folders without alignment to the existing structure; keep generated artifacts out of source control.

@@ -1,14 +1,13 @@
 <script setup lang="ts">
   import { useEventListener, useTitle } from '@vueuse/core';
-  import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue';
-  import { computePosition, flip, offset, platform, shift } from '@floating-ui/dom';
-  import { computed, nextTick, reactive, ref, watch, watchEffect } from 'vue';
+  import { computed, ref, watchEffect } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { storeToRefs } from 'pinia';
   import { MoonIcon, SunIcon } from '@heroicons/vue/24/solid';
 
   import ColorPickerCard from '@/components/tonal-builder/ColorPickerCard.vue';
   import ContrastPreviewCard from '@/components/tonal-builder/ContrastPreviewCard.vue';
+  import TonalContextMenu from '@/components/tonal-builder/TonalContextMenu.vue';
   import TonalStrip from '@/components/tonal-builder/TonalStrip.vue';
   import {
     type BlendControlId,
@@ -23,6 +22,12 @@
   import type { TonalStripExport } from '@/utils/tonal/export';
   import type { TonalStep } from '@/utils/tonal/scale';
   import type { PairingSelection } from '@/components/tonal-builder/types';
+
+  type ContextMenuAction = {
+    key: string;
+    label: string;
+    tone: TonalStep | null;
+  };
 
   const { t } = useI18n();
 
@@ -99,17 +104,8 @@
   );
 
   const previewSelection = ref<PairingSelection>(null);
-  const contextMenuState = reactive({
-    open: false,
-    selection: null as PairingSelection | null,
-  });
-
-  const contextMenuPosition = reactive({ x: 0, y: 0 });
-  const contextMenuButton = ref<HTMLButtonElement | null>(null);
-  const contextMenuPanel = ref<HTMLElement | null>(null);
-  const floatingStyles = reactive({ top: '0px', left: '0px' });
-  const contextMenuAnchor = ref<HTMLDivElement | null>(null);
-  const floatingReference = ref<HTMLElement | null>(null);
+  const contextMenuSelection = ref<PairingSelection | null>(null);
+  const contextMenu = ref<InstanceType<typeof TonalContextMenu> | null>(null);
 
   const blendOverlayActive = ref(false);
   const overlayAnnouncement = ref('');
@@ -183,12 +179,12 @@
     unsupported: t('tonal_builder.clipboard.unsupported'),
   }));
 
-  const latestSelection = computed(() => contextMenuState.selection ?? previewSelection.value);
+  const latestSelection = computed(() => contextMenuSelection.value ?? previewSelection.value);
 
-  const contextMenuActions = computed(() => {
+  const contextMenuActions = computed<ContextMenuAction[]>(() => {
     const selection = latestSelection.value;
 
-    if (!selection) return [] as const;
+    if (!selection) return [];
 
     return [
       {
@@ -227,26 +223,6 @@
     return selection.lighter45 ?? selection.darker45 ?? null;
   });
 
-  const updateFloatingPosition = async () => {
-    if (
-      !(floatingReference.value instanceof HTMLElement) ||
-      !(contextMenuPanel.value instanceof HTMLElement)
-    ) {
-      floatingStyles.left = `${contextMenuPosition.x}px`;
-      floatingStyles.top = `${contextMenuPosition.y}px`;
-      return;
-    }
-
-    const { x, y } = await computePosition(floatingReference.value, contextMenuPanel.value, {
-      placement: 'bottom-start',
-      middleware: [offset(8), flip(), shift({ padding: 8 })],
-      platform: { ...platform, isRTL: () => false },
-    });
-
-    floatingStyles.left = `${x}px`;
-    floatingStyles.top = `${y}px`;
-  };
-
   const handleContextMenuRequest = ({
     event,
     target,
@@ -256,81 +232,23 @@
     target: HTMLElement | null;
     selection: PairingSelection;
   }) => {
-    const origin =
-      event instanceof MouseEvent
-        ? { x: event.clientX, y: event.clientY }
-        : (() => {
-            const rect = target?.getBoundingClientRect();
-            if (!rect) return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-            return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-          })();
-
-    contextMenuPosition.x = origin.x;
-    contextMenuPosition.y = origin.y;
-    floatingStyles.left = `${origin.x}px`;
-    floatingStyles.top = `${origin.y}px`;
-    floatingReference.value = contextMenuAnchor.value;
-
-    contextMenuState.open = true;
-    contextMenuState.selection = selection;
+    contextMenuSelection.value = selection;
+    contextMenu.value?.openMenu({ event, target });
   };
 
   const closeContextMenu = () => {
-    contextMenuState.open = false;
-    floatingReference.value = null;
+    contextMenuSelection.value = null;
+    contextMenu.value?.closeMenu();
   };
-
-  watch(
-    () => contextMenuState.open,
-    async (open) => {
-      if (!open) {
-        return;
-      }
-
-      await nextTick();
-      floatingReference.value = contextMenuAnchor.value;
-      contextMenuButton.value?.click();
-      await nextTick();
-      await updateFloatingPosition();
-    },
-  );
-
-  useEventListener(window, 'keydown', (event) => {
-    if ((event as KeyboardEvent).key === 'Escape') {
-      closeContextMenu();
-    }
-  });
-
-  useEventListener(
-    window,
-    'scroll',
-    () => {
-      if (contextMenuState.open) {
-        closeContextMenu();
-      }
-    },
-    { passive: true },
-  );
 
   const copyTone = async (tone: TonalStep | null) => {
     await copyText(tone?.hex ?? '', clipboardMessages.value);
   };
 
-  const handleMenuAction = async (tone: TonalStep | null, close?: () => void) => {
+  const handleMenuAction = async (tone: TonalStep | null) => {
     await copyTone(tone);
-    close?.();
     closeContextMenu();
   };
-
-  useEventListener(window, 'click', (event) => {
-    const target = event.target as HTMLElement | null;
-    if (
-      !target?.closest('[data-cy="context-menu"]') &&
-      !target?.closest('[data-cy="context-menu-button"]')
-    ) {
-      closeContextMenu();
-    }
-  });
 
   const copySvg = async () => {
     await copyScaleSvg(
@@ -1025,81 +943,14 @@
         </Transition>
       </Teleport>
 
-      <Teleport to="body">
-        <Menu
-          v-if="contextMenuState.open"
-          v-slot="{ close }"
-          as="div"
-          class="fixed inset-0 z-50"
-          @click.self="closeContextMenu"
-        >
-          <div
-            ref="contextMenuAnchor"
-            class="pointer-events-none fixed h-1 w-1"
-            :style="{ top: `${contextMenuPosition.y}px`, left: `${contextMenuPosition.x}px` }"
-            aria-hidden="true"
-          />
-          <MenuButton as="template">
-            <button
-              ref="contextMenuButton"
-              type="button"
-              class="sr-only"
-              data-cy="context-menu-button"
-            >
-              {{ t('tonal_builder.clipboard.menu_title') }}
-            </button>
-          </MenuButton>
-          <MenuItems
-            ref="contextMenuPanel"
-            static
-            as="div"
-            class="absolute min-w-[240px] max-w-xs space-y-2 rounded-xl border border-white/15 bg-surface-soft/95 p-3 text-sm text-slate-100 shadow-card"
-            :style="floatingStyles"
-            aria-label="Context menu"
-            data-cy="context-menu"
-            @click.stop
-          >
-            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-              {{ t('tonal_builder.clipboard.menu_title') }}
-            </p>
-            <MenuItem
-              v-for="action in contextMenuActions"
-              :key="action.key"
-              v-slot="{ active, disabled }"
-              :disabled="!action.tone"
-            >
-              <button
-                type="button"
-                class="flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
-                :class="[
-                  'border-white/10',
-                  disabled ? 'opacity-40' : 'hover:border-accent/60 hover:bg-accent/10',
-                  active && !disabled ? 'border-accent/60 bg-accent/10' : '',
-                ]"
-                :disabled="disabled"
-                @click="handleMenuAction(action.tone ?? null, close)"
-              >
-                <span class="text-xs font-semibold">{{ action.label }}</span>
-                <span
-                  v-if="action.tone"
-                  class="text-[11px] font-mono text-slate-300"
-                >
-                  #{{ action.tone.index }} — {{ action.tone.hex }}
-                </span>
-                <span
-                  v-else
-                  class="text-[11px] text-slate-500"
-                >
-                  {{ t('tonal_builder.clipboard.unavailable') }}
-                </span>
-              </button>
-            </MenuItem>
-            <p class="text-[11px] text-slate-500">
-              {{ t('tonal_builder.clipboard.context_helper') }}
-            </p>
-          </MenuItems>
-        </Menu>
-      </Teleport>
+      <TonalContextMenu
+        ref="contextMenu"
+        :actions="contextMenuActions"
+        :helper-text="t('tonal_builder.clipboard.context_helper')"
+        :title="t('tonal_builder.clipboard.menu_title')"
+        @close="contextMenuSelection = null"
+        @select="handleMenuAction"
+      />
     </section>
   </main>
 </template>
