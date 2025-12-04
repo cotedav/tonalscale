@@ -234,7 +234,7 @@
   }) => {
     const origin = (() => {
       if (event instanceof MouseEvent) {
-        return { x: event.clientX + window.scrollX, y: event.clientY + window.scrollY };
+        return { x: event.clientX, y: event.clientY };
       }
 
       const rect = target?.getBoundingClientRect();

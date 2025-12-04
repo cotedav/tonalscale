@@ -95,11 +95,16 @@ describe('TonalBuilderHomeView', () => {
 
     const targetSwatch = swatches[1];
 
-    await targetSwatch.trigger('contextmenu');
+    const coords = { clientX: 150, clientY: 200 };
+
+    await targetSwatch.trigger('contextmenu', coords);
     await nextTick();
 
-    const contextMenu = document.querySelector('[data-cy="context-menu"]');
+    const contextMenu = document.querySelector('[data-cy="context-menu"]') as HTMLElement | null;
     expect(contextMenu).not.toBeNull();
+
+    expect(contextMenu?.style.left).toBe(`${coords.clientX}px`);
+    expect(contextMenu?.style.top).toBe(`${coords.clientY}px`);
 
     const menuItems = contextMenu?.querySelectorAll('[role="menuitem"]') ?? [];
     expect(menuItems.length).toBeGreaterThan(0);
