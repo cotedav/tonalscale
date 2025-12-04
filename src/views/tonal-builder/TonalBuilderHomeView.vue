@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { useEventListener, useTitle } from '@vueuse/core';
   import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue';
-  import { computePosition, flip, offset, shift } from '@floating-ui/dom';
+  import { computePosition, flip, offset, platform, shift } from '@floating-ui/dom';
   import { computed, nextTick, reactive, ref, watch, watchEffect } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { storeToRefs } from 'pinia';
@@ -104,11 +104,11 @@
     selection: null as PairingSelection | null,
   });
 
-  const contextMenuAnchor = ref<HTMLDivElement | null>(null);
   const contextMenuPosition = reactive({ x: 0, y: 0 });
   const contextMenuButton = ref<HTMLButtonElement | null>(null);
   const contextMenuPanel = ref<HTMLElement | null>(null);
   const floatingStyles = reactive({ top: '0px', left: '0px' });
+  const contextMenuAnchor = ref<HTMLDivElement | null>(null);
   const floatingReference = ref<HTMLElement | null>(null);
 
   const blendOverlayActive = ref(false);
@@ -228,18 +228,19 @@
   });
 
   const updateFloatingPosition = async () => {
-    if (!floatingReference.value || !contextMenuPanel.value) return;
-
     if (
       !(floatingReference.value instanceof HTMLElement) ||
       !(contextMenuPanel.value instanceof HTMLElement)
     ) {
+      floatingStyles.left = `${contextMenuPosition.x}px`;
+      floatingStyles.top = `${contextMenuPosition.y}px`;
       return;
     }
 
     const { x, y } = await computePosition(floatingReference.value, contextMenuPanel.value, {
       placement: 'bottom-start',
       middleware: [offset(8), flip(), shift({ padding: 8 })],
+      platform: { ...platform, isRTL: () => false },
     });
 
     floatingStyles.left = `${x}px`;
@@ -266,6 +267,9 @@
 
     contextMenuPosition.x = origin.x;
     contextMenuPosition.y = origin.y;
+    floatingStyles.left = `${origin.x}px`;
+    floatingStyles.top = `${origin.y}px`;
+    floatingReference.value = contextMenuAnchor.value;
 
     contextMenuState.open = true;
     contextMenuState.selection = selection;
