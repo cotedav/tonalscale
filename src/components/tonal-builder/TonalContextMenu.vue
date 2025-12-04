@@ -15,6 +15,9 @@
     title: string;
     helperText: string;
     actions: ContextMenuAction[];
+    closeOnAction?: boolean;
+    closeOnOutside?: boolean;
+    scrollStrategy?: 'close' | 'track-anchor' | 'fixed';
   }>();
 
   const { t } = useI18n();
@@ -48,10 +51,13 @@
     ref="contextMenu"
     :aria-label="title"
     data-cy="context-menu"
+    :close-on-item-activate="props.closeOnAction ?? true"
+    :close-on-outside-pointer="props.closeOnOutside ?? true"
+    :scroll-strategy="props.scrollStrategy ?? 'close'"
     @open="emit('open')"
     @close="emit('close')"
   >
-    <template #default="{ menuItem, close }">
+    <template #default="{ menuItem, closeItem }">
       <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
         {{ title }}
       </p>
@@ -73,7 +79,7 @@
           :disabled="disabled"
           @click="
             emit('select', action.tone ?? null);
-            close();
+            closeItem();
           "
         >
           <span class="text-xs font-semibold">{{ action.label }}</span>

@@ -9,17 +9,23 @@
     target?: HTMLElement | null;
   };
 
-  withDefaults(
+  const props = withDefaults(
     defineProps<{
       ariaLabel?: string;
       panelClass?: string;
       dataCy?: string;
+      closeOnItemActivate?: boolean;
+      closeOnOutsidePointer?: boolean;
+      scrollStrategy?: 'close' | 'track-anchor' | 'fixed';
     }>(),
     {
       ariaLabel: 'Context menu',
       panelClass:
         'absolute min-w-[240px] max-w-xs space-y-2 rounded-xl border border-white/15 bg-surface-soft/95 p-3 text-sm text-slate-100 shadow-card',
       dataCy: 'context-menu',
+      closeOnItemActivate: true,
+      closeOnOutsidePointer: true,
+      scrollStrategy: 'close',
     },
   );
 
@@ -33,6 +39,7 @@
   const contextMenuButton = ref<HTMLButtonElement | null>(null);
   const contextMenuPanel = ref<HTMLElement | null>(null);
   const floatingReference = ref<HTMLElement | null>(null);
+  const scrollPosition = reactive({ x: 0, y: 0 });
 
   const updateFloatingPosition = async () => {
     if (
@@ -61,6 +68,12 @@
     emit('close');
   };
 
+  const handleItemActivate = () => {
+    if (props.closeOnItemActivate) {
+      closeMenu();
+    }
+  };
+
   const openMenu = async ({ event, target }: OpenArgs) => {
     const origin =
       event instanceof MouseEvent
@@ -70,6 +83,9 @@
             if (!rect) return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
             return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
           })();
+
+    scrollPosition.x = window.scrollX;
+    scrollPosition.y = window.scrollY;
 
     contextMenuPosition.x = origin.x;
     contextMenuPosition.y = origin.y;
@@ -111,20 +127,44 @@
     window,
     'scroll',
     () => {
-      if (isOpen.value) {
+      if (!isOpen.value) return;
+
+      const deltaX = window.scrollX - scrollPosition.x;
+      const deltaY = window.scrollY - scrollPosition.y;
+
+      scrollPosition.x = window.scrollX;
+      scrollPosition.y = window.scrollY;
+
+      if (props.scrollStrategy === 'close') {
         closeMenu();
+        return;
+      }
+
+      if (props.scrollStrategy === 'track-anchor') {
+        contextMenuPosition.x -= deltaX;
+        contextMenuPosition.y -= deltaY;
+        floatingStyles.left = `${contextMenuPosition.x}px`;
+        floatingStyles.top = `${contextMenuPosition.y}px`;
+        floatingReference.value = contextMenuAnchor.value;
+        updateFloatingPosition();
       }
     },
     { passive: true },
   );
 
   useEventListener(window, 'pointerdown', (event) => {
-    if (!isOpen.value) return;
+    if (!isOpen.value || !props.closeOnOutsidePointer) return;
     const target = event.target as Node | null;
-    if (
-      target &&
-      (contextMenuPanel.value?.contains(target) || contextMenuButton.value?.contains(target))
-    ) {
+    const isInsidePanel =
+      contextMenuPanel.value instanceof HTMLElement &&
+      target instanceof Node &&
+      contextMenuPanel.value.contains(target);
+    const isInsideButton =
+      contextMenuButton.value instanceof HTMLElement &&
+      target instanceof Node &&
+      contextMenuButton.value.contains(target);
+
+    if (target && (isInsidePanel || isInsideButton)) {
       return;
     }
     closeMenu();
@@ -170,6 +210,7 @@
         <slot
           :menu-item="MenuItem"
           :close="closeMenu"
+          :close-item="handleItemActivate"
         />
       </MenuItems>
     </Menu>
