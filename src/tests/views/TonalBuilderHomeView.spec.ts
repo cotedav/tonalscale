@@ -144,4 +144,44 @@ describe('TonalBuilderHomeView', () => {
 
     expect(document.querySelector('[data-cy="context-menu"]')).toBeNull();
   });
+
+  it('repositions the context menu when invoking it on another swatch while open', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+
+    const wrapper = mount(TonalBuilderHomeView, {
+      attachTo: document.body,
+      global: {
+        plugins: [pinia],
+      },
+    });
+
+    const swatches = wrapper
+      .find('[data-cy="scale-strip-full"]')
+      .findAll('[data-cy="tonal-swatch"]');
+    expect(swatches.length).toBeGreaterThan(2);
+
+    await swatches[1].trigger('contextmenu', { clientX: 30, clientY: 30 });
+    await nextTick();
+
+    const firstMenu = document.querySelector('[data-cy="context-menu"]') as HTMLElement | null;
+    expect(firstMenu).not.toBeNull();
+
+    const firstLeft = Number.parseFloat(firstMenu?.style.left ?? '0');
+    const firstTop = Number.parseFloat(firstMenu?.style.top ?? '0');
+    expect(firstLeft).toBeGreaterThan(0);
+    expect(firstTop).toBeGreaterThan(0);
+
+    await swatches[2].trigger('contextmenu', { clientX: 220, clientY: 180 });
+    await nextTick();
+
+    const menus = document.querySelectorAll('[data-cy="context-menu"]');
+    expect(menus.length).toBe(1);
+
+    const secondMenu = menus[0] as HTMLElement;
+    const secondLeft = Number.parseFloat(secondMenu.style.left);
+    const secondTop = Number.parseFloat(secondMenu.style.top);
+    expect(secondLeft).not.toBe(firstLeft);
+    expect(secondTop).not.toBe(firstTop);
+  });
 });
