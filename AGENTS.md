@@ -46,7 +46,7 @@
 - Naming: prefix base components with `Base` (e.g., `BaseButton`), singletons with `The` (e.g., `TheHeader`). Component directories use **kebab-case** to avoid import-casing issues (e.g., `components/app-shell`).
 - Imports & aliases: use `@/` paths; avoid deeply relative imports. Do not wrap imports in try/catch.
 - State/routing: register Pinia and Vue Router in the app bootstrap (`src/main.ts`); place stores and routes in their respective directories; keep sample stores/routes minimal and non-domain-specific unless requirements dictate.
-- UI patterns: use Vuetify components and tooltips (instead of native `title`) for localization/theming consistency. Favor descriptive variable names; reserve single letters for simple loop indices only.
+- UI patterns: build interactive overlays/menus with Headless UI components (e.g., Menu/Popover) styled using Tailwind for accessibility and focus management; prefer Headless UI over bespoke or Vuetify menu implementations. Favor descriptive variable names; reserve single letters for simple loop indices only.
 - Testing: prefer data-cy selectors in Cypress; use Vue Test Utils with jsdom for units. Keep example tests lightweight.
 - Filesystem hygiene: avoid introducing new top-level folders without alignment to the existing structure; keep generated artifacts out of source control.
 - Commit messages: follow Conventional Commits (`feat:`, `fix:`, `chore:`, etc.).

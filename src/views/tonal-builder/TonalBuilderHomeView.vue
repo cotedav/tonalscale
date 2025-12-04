@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { useEventListener, useTitle } from '@vueuse/core';
-  import { computed, reactive, ref, watchEffect } from 'vue';
+  import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue';
+  import { computed, nextTick, reactive, ref, watch, watchEffect } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { storeToRefs } from 'pinia';
   import { MoonIcon, SunIcon } from '@heroicons/vue/24/solid';
@@ -103,6 +104,8 @@
     y: 0,
     selection: null as PairingSelection | null,
   });
+
+  const contextMenuButton = ref<HTMLButtonElement | null>(null);
 
   const blendOverlayActive = ref(false);
   const overlayAnnouncement = ref('');
@@ -249,6 +252,16 @@
     contextMenuState.open = false;
   };
 
+  watch(
+    () => contextMenuState.open,
+    async (open) => {
+      if (!open) return;
+
+      await nextTick();
+      contextMenuButton.value?.click();
+    },
+  );
+
   useEventListener(window, 'keydown', (event) => {
     if ((event as KeyboardEvent).key === 'Escape') {
       closeContextMenu();
@@ -259,14 +272,18 @@
     await copyText(tone?.hex ?? '', clipboardMessages.value);
   };
 
-  const handleMenuAction = async (tone: TonalStep | null) => {
+  const handleMenuAction = async (tone: TonalStep | null, close?: () => void) => {
     await copyTone(tone);
+    close?.();
     closeContextMenu();
   };
 
   useEventListener(window, 'click', (event) => {
     const target = event.target as HTMLElement | null;
-    if (!target?.closest('[data-cy="context-menu"]')) {
+    if (
+      !target?.closest('[data-cy="context-menu"]') &&
+      !target?.closest('[data-cy="context-menu-button"]')
+    ) {
       closeContextMenu();
     }
   });
@@ -965,15 +982,28 @@
       </Teleport>
 
       <Teleport to="body">
-        <div
+        <Menu
           v-if="contextMenuState.open"
+          v-slot="{ close }"
+          as="div"
           class="fixed inset-0 z-50"
-          @click="closeContextMenu"
+          @click.self="closeContextMenu"
         >
-          <div
+          <MenuButton as="template">
+            <button
+              ref="contextMenuButton"
+              type="button"
+              class="sr-only"
+              data-cy="context-menu-button"
+            >
+              {{ t('tonal_builder.clipboard.menu_title') }}
+            </button>
+          </MenuButton>
+          <MenuItems
+            static
+            as="div"
             class="absolute min-w-[240px] max-w-xs space-y-2 rounded-xl border border-white/15 bg-surface-soft/95 p-3 text-sm text-slate-100 shadow-card"
             :style="{ top: `${contextMenuState.y}px`, left: `${contextMenuState.x}px` }"
-            role="menu"
             aria-label="Context menu"
             data-cy="context-menu"
             @click.stop
@@ -981,34 +1011,43 @@
             <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
               {{ t('tonal_builder.clipboard.menu_title') }}
             </p>
-            <button
+            <MenuItem
               v-for="action in contextMenuActions"
               :key="action.key"
-              type="button"
-              class="flex w-full items-center justify-between rounded-lg border border-white/10 px-3 py-2 text-left transition hover:border-accent/60 hover:bg-accent/10 disabled:opacity-40"
+              v-slot="{ active, disabled }"
               :disabled="!action.tone"
-              role="menuitem"
-              @click="handleMenuAction(action.tone ?? null)"
             >
-              <span class="text-xs font-semibold">{{ action.label }}</span>
-              <span
-                v-if="action.tone"
-                class="text-[11px] font-mono text-slate-300"
+              <button
+                type="button"
+                class="flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                :class="[
+                  'border-white/10',
+                  disabled ? 'opacity-40' : 'hover:border-accent/60 hover:bg-accent/10',
+                  active && !disabled ? 'border-accent/60 bg-accent/10' : '',
+                ]"
+                :disabled="disabled"
+                @click="handleMenuAction(action.tone ?? null, close)"
               >
-                #{{ action.tone.index }} — {{ action.tone.hex }}
-              </span>
-              <span
-                v-else
-                class="text-[11px] text-slate-500"
-              >
-                {{ t('tonal_builder.clipboard.unavailable') }}
-              </span>
-            </button>
+                <span class="text-xs font-semibold">{{ action.label }}</span>
+                <span
+                  v-if="action.tone"
+                  class="text-[11px] font-mono text-slate-300"
+                >
+                  #{{ action.tone.index }} — {{ action.tone.hex }}
+                </span>
+                <span
+                  v-else
+                  class="text-[11px] text-slate-500"
+                >
+                  {{ t('tonal_builder.clipboard.unavailable') }}
+                </span>
+              </button>
+            </MenuItem>
             <p class="text-[11px] text-slate-500">
               {{ t('tonal_builder.clipboard.context_helper') }}
             </p>
-          </div>
-        </div>
+          </MenuItems>
+        </Menu>
       </Teleport>
     </section>
   </main>
