@@ -77,7 +77,7 @@ describe('TonalBuilderHomeView', () => {
     });
   });
 
-  it('opens the context menu with Headless UI and closes on escape', async () => {
+  it('opens the context menu with Headless UI, clamps positioning, and closes on escape', async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
 
@@ -95,7 +95,7 @@ describe('TonalBuilderHomeView', () => {
 
     const targetSwatch = swatches[1];
 
-    const coords = { clientX: 150, clientY: 200 };
+    const coords = { clientX: window.innerWidth - 10, clientY: window.innerHeight - 6 };
 
     await targetSwatch.trigger('contextmenu', coords);
     await nextTick();
@@ -103,8 +103,11 @@ describe('TonalBuilderHomeView', () => {
     const contextMenu = document.querySelector('[data-cy="context-menu"]') as HTMLElement | null;
     expect(contextMenu).not.toBeNull();
 
-    expect(contextMenu?.style.left).toBe(`${coords.clientX}px`);
-    expect(contextMenu?.style.top).toBe(`${coords.clientY}px`);
+    const rect = contextMenu?.getBoundingClientRect();
+    expect(rect?.left).toBeGreaterThanOrEqual(0);
+    expect(rect?.top).toBeGreaterThanOrEqual(0);
+    expect(rect?.right).toBeLessThanOrEqual(window.innerWidth);
+    expect(rect?.bottom).toBeLessThanOrEqual(window.innerHeight);
 
     const menuItems = contextMenu?.querySelectorAll('[role="menuitem"]') ?? [];
     expect(menuItems.length).toBeGreaterThan(0);

@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { useEventListener, useTitle } from '@vueuse/core';
   import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue';
+  import { computePosition, flip, offset, shift } from '@floating-ui/dom';
   import { computed, nextTick, reactive, ref, watch, watchEffect } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { storeToRefs } from 'pinia';
@@ -100,12 +101,15 @@
   const previewSelection = ref<PairingSelection>(null);
   const contextMenuState = reactive({
     open: false,
-    x: 0,
-    y: 0,
     selection: null as PairingSelection | null,
   });
 
+  const contextMenuAnchor = ref<HTMLDivElement | null>(null);
+  const contextMenuPosition = reactive({ x: 0, y: 0 });
   const contextMenuButton = ref<HTMLButtonElement | null>(null);
+  const contextMenuPanel = ref<HTMLElement | null>(null);
+  const floatingStyles = reactive({ top: '0px', left: '0px' });
+  const floatingReference = ref<HTMLElement | null>(null);
 
   const blendOverlayActive = ref(false);
   const overlayAnnouncement = ref('');
@@ -223,6 +227,33 @@
     return selection.lighter45 ?? selection.darker45 ?? null;
   });
 
+  const updateFloatingPosition = async () => {
+    if (!floatingReference.value || !contextMenuPanel.value) return;
+
+    const update = async () => {
+      const reference = floatingReference.value;
+      const panel = contextMenuPanel.value;
+      if (
+        !reference ||
+        !panel ||
+        !(reference instanceof HTMLElement) ||
+        !(panel instanceof HTMLElement)
+      ) {
+        return;
+      }
+
+      const { x, y } = await computePosition(reference, panel, {
+        placement: 'bottom-start',
+        middleware: [offset(8), flip(), shift({ padding: 8 })],
+      });
+
+      floatingStyles.left = `${x}px`;
+      floatingStyles.top = `${y}px`;
+    };
+
+    await update();
+  };
+
   const handleContextMenuRequest = ({
     event,
     target,
@@ -232,33 +263,39 @@
     target: HTMLElement | null;
     selection: PairingSelection;
   }) => {
-    const origin = (() => {
-      if (event instanceof MouseEvent) {
-        return { x: event.clientX, y: event.clientY };
-      }
+    const origin =
+      event instanceof MouseEvent
+        ? { x: event.clientX, y: event.clientY }
+        : (() => {
+            const rect = target?.getBoundingClientRect();
+            if (!rect) return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+            return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+          })();
 
-      const rect = target?.getBoundingClientRect();
-      if (!rect) return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-    })();
+    contextMenuPosition.x = origin.x;
+    contextMenuPosition.y = origin.y;
 
     contextMenuState.open = true;
     contextMenuState.selection = selection;
-    contextMenuState.x = origin.x;
-    contextMenuState.y = origin.y;
   };
 
   const closeContextMenu = () => {
     contextMenuState.open = false;
+    floatingReference.value = null;
   };
 
   watch(
     () => contextMenuState.open,
     async (open) => {
-      if (!open) return;
+      if (!open) {
+        return;
+      }
 
       await nextTick();
+      floatingReference.value = contextMenuAnchor.value;
       contextMenuButton.value?.click();
+      await nextTick();
+      await updateFloatingPosition();
     },
   );
 
@@ -989,6 +1026,12 @@
           class="fixed inset-0 z-50"
           @click.self="closeContextMenu"
         >
+          <div
+            ref="contextMenuAnchor"
+            class="pointer-events-none fixed h-0 w-0"
+            :style="{ top: `${contextMenuPosition.y}px`, left: `${contextMenuPosition.x}px` }"
+            aria-hidden="true"
+          />
           <MenuButton as="template">
             <button
               ref="contextMenuButton"
@@ -1000,10 +1043,11 @@
             </button>
           </MenuButton>
           <MenuItems
+            ref="contextMenuPanel"
             static
             as="div"
             class="absolute min-w-[240px] max-w-xs space-y-2 rounded-xl border border-white/15 bg-surface-soft/95 p-3 text-sm text-slate-100 shadow-card"
-            :style="{ top: `${contextMenuState.y}px`, left: `${contextMenuState.x}px` }"
+            :style="floatingStyles"
             aria-label="Context menu"
             data-cy="context-menu"
             @click.stop
