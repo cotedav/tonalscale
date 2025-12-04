@@ -152,23 +152,28 @@
     { passive: true },
   );
 
-  useEventListener(window, 'pointerdown', (event) => {
-    if (!isOpen.value || !props.closeOnOutsidePointer) return;
-    const target = event.target as Node | null;
-    const isInsidePanel =
-      contextMenuPanel.value instanceof HTMLElement &&
-      target instanceof Node &&
-      contextMenuPanel.value.contains(target);
-    const isInsideButton =
-      contextMenuButton.value instanceof HTMLElement &&
-      target instanceof Node &&
-      contextMenuButton.value.contains(target);
+  useEventListener(
+    window,
+    'pointerdown',
+    (event) => {
+      if (!isOpen.value || !props.closeOnOutsidePointer) return;
+      const target = event.target as Node | null;
+      const isInsidePanel =
+        contextMenuPanel.value instanceof HTMLElement &&
+        target instanceof Node &&
+        contextMenuPanel.value.contains(target);
+      const isInsideButton =
+        contextMenuButton.value instanceof HTMLElement &&
+        target instanceof Node &&
+        contextMenuButton.value.contains(target);
 
-    if (target && (isInsidePanel || isInsideButton)) {
-      return;
-    }
-    closeMenu();
-  });
+      if (target && (isInsidePanel || isInsideButton)) {
+        return;
+      }
+      closeMenu();
+    },
+    { capture: true },
+  );
 
   defineExpose({ openMenu, closeMenu });
 </script>
