@@ -230,28 +230,20 @@
   const updateFloatingPosition = async () => {
     if (!floatingReference.value || !contextMenuPanel.value) return;
 
-    const update = async () => {
-      const reference = floatingReference.value;
-      const panel = contextMenuPanel.value;
-      if (
-        !reference ||
-        !panel ||
-        !(reference instanceof HTMLElement) ||
-        !(panel instanceof HTMLElement)
-      ) {
-        return;
-      }
+    if (
+      !(floatingReference.value instanceof HTMLElement) ||
+      !(contextMenuPanel.value instanceof HTMLElement)
+    ) {
+      return;
+    }
 
-      const { x, y } = await computePosition(reference, panel, {
-        placement: 'bottom-start',
-        middleware: [offset(8), flip(), shift({ padding: 8 })],
-      });
+    const { x, y } = await computePosition(floatingReference.value, contextMenuPanel.value, {
+      placement: 'bottom-start',
+      middleware: [offset(8), flip(), shift({ padding: 8 })],
+    });
 
-      floatingStyles.left = `${x}px`;
-      floatingStyles.top = `${y}px`;
-    };
-
-    await update();
+    floatingStyles.left = `${x}px`;
+    floatingStyles.top = `${y}px`;
   };
 
   const handleContextMenuRequest = ({
@@ -1028,7 +1020,7 @@
         >
           <div
             ref="contextMenuAnchor"
-            class="pointer-events-none fixed h-0 w-0"
+            class="pointer-events-none fixed h-1 w-1"
             :style="{ top: `${contextMenuPosition.y}px`, left: `${contextMenuPosition.x}px` }"
             aria-hidden="true"
           />
