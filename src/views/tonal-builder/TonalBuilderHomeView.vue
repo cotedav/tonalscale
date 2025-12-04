@@ -301,6 +301,17 @@
     }
   });
 
+  useEventListener(
+    window,
+    'scroll',
+    () => {
+      if (contextMenuState.open) {
+        closeContextMenu();
+      }
+    },
+    { passive: true },
+  );
+
   const copyTone = async (tone: TonalStep | null) => {
     await copyText(tone?.hex ?? '', clipboardMessages.value);
   };

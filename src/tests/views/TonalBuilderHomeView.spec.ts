@@ -117,4 +117,31 @@ describe('TonalBuilderHomeView', () => {
 
     expect(document.querySelector('[data-cy="context-menu"]')).toBeNull();
   });
+
+  it('closes the context menu when the page scrolls', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+
+    const wrapper = mount(TonalBuilderHomeView, {
+      attachTo: document.body,
+      global: {
+        plugins: [pinia],
+      },
+    });
+
+    const swatches = wrapper
+      .find('[data-cy="scale-strip-full"]')
+      .findAll('[data-cy="tonal-swatch"]');
+    expect(swatches.length).toBeGreaterThan(1);
+
+    await swatches[1].trigger('contextmenu', { clientX: 30, clientY: 30 });
+    await nextTick();
+
+    expect(document.querySelector('[data-cy="context-menu"]')).not.toBeNull();
+
+    window.dispatchEvent(new Event('scroll'));
+    await nextTick();
+
+    expect(document.querySelector('[data-cy="context-menu"]')).toBeNull();
+  });
 });
