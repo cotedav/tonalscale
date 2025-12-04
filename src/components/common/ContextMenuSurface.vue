@@ -32,6 +32,7 @@
   const emit = defineEmits<{ (e: 'open'): void; (e: 'close'): void }>();
 
   const isOpen = ref(false);
+  const outsideEventsArmed = ref(false);
   const contextMenuPosition = reactive({ x: 0, y: 0 });
   const floatingStyles = reactive({ top: '0px', left: '0px' });
 
@@ -64,6 +65,7 @@
   const closeMenu = () => {
     if (!isOpen.value) return;
     isOpen.value = false;
+    outsideEventsArmed.value = false;
     floatingReference.value = null;
     emit('close');
   };
@@ -94,6 +96,7 @@
     floatingReference.value = contextMenuAnchor.value;
 
     const wasOpen = isOpen.value;
+    outsideEventsArmed.value = false;
     if (!wasOpen) {
       isOpen.value = true;
       emit('open');
@@ -104,6 +107,7 @@
 
     await nextTick();
     await updateFloatingPosition();
+    outsideEventsArmed.value = true;
   };
 
   watch(
@@ -152,28 +156,29 @@
     { passive: true },
   );
 
-  useEventListener(
-    window,
-    'pointerdown',
-    (event) => {
-      if (!isOpen.value || !props.closeOnOutsidePointer) return;
-      const target = event.target as Node | null;
-      const isInsidePanel =
-        contextMenuPanel.value instanceof HTMLElement &&
-        target instanceof Node &&
-        contextMenuPanel.value.contains(target);
-      const isInsideButton =
-        contextMenuButton.value instanceof HTMLElement &&
-        target instanceof Node &&
-        contextMenuButton.value.contains(target);
+  const handleOutsidePointer = (event: Event) => {
+    if (!isOpen.value || !props.closeOnOutsidePointer || !outsideEventsArmed.value) return;
+    const target = event.target as Node | null;
+    const path = typeof event.composedPath === 'function' ? event.composedPath() : [];
+    const isInsidePanel =
+      contextMenuPanel.value instanceof HTMLElement &&
+      (path.includes(contextMenuPanel.value) ||
+        (target instanceof Node && contextMenuPanel.value.contains(target)));
+    const isInsideButton =
+      contextMenuButton.value instanceof HTMLElement &&
+      (path.includes(contextMenuButton.value) ||
+        (target instanceof Node && contextMenuButton.value.contains(target)));
+    const targetElement = target instanceof HTMLElement ? target : null;
+    const isWithinPanelAttribute = targetElement?.closest(`[data-cy="${props.dataCy}"]`);
 
-      if (target && (isInsidePanel || isInsideButton)) {
-        return;
-      }
-      closeMenu();
-    },
-    { capture: true },
-  );
+    if (target && (isInsidePanel || isInsideButton || isWithinPanelAttribute)) {
+      return;
+    }
+    closeMenu();
+  };
+
+  useEventListener(window, 'pointerdown', handleOutsidePointer, { capture: true });
+  useEventListener(window, 'click', handleOutsidePointer, { capture: true });
 
   defineExpose({ openMenu, closeMenu });
 </script>

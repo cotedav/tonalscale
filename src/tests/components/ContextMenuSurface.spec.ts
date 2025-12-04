@@ -84,6 +84,13 @@ describe('ContextMenuSurface', () => {
 
     expect(document.querySelector('[data-cy="context-menu"]')).toBeNull();
 
+    await openMenu(wrapper, { x: 60, y: 70 });
+
+    window.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await nextTick();
+
+    expect(document.querySelector('[data-cy="context-menu"]')).toBeNull();
+
     const blocker = document.createElement('div');
     blocker.id = 'stopper';
     blocker.addEventListener('pointerdown', (event) => event.stopPropagation());
