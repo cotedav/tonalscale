@@ -376,6 +376,7 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
     blendMode,
     controls,
     scale,
+    scaleParams,
     metadata,
     fullStrip,
     extendedStrip,

@@ -187,6 +187,25 @@
 
     descriptionTag.setAttribute('content', pageDescription.value);
   });
+
+  // Export & Clipboard
+  import { useClipboard } from '@/composables/useClipboard';
+  import { useTonalExport } from '@/composables/useTonalExport';
+
+  const { copyToClipboard } = useClipboard();
+  const { generateScaleSvg } = useTonalExport();
+
+  const handleCopySvg = async () => {
+    // Generate SVG from all 3 strips
+    const svg = generateScaleSvg({
+      params: tonalScale.scaleParams,
+      fullStrip: fullStrip.value,
+      extendedStrip: extendedStrip.value,
+      keyStrip: keyStrip.value,
+    });
+
+    await copyToClipboard(svg, 'SVG');
+  };
 </script>
 
 <template>
@@ -266,6 +285,7 @@
             type="button"
             class="inline-flex items-center gap-2 rounded-xl bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 ring-1 ring-inset ring-white/10 transition hover:bg-white/10"
             data-cy="tonal-builder-copy"
+            @click="handleCopySvg"
           >
             {{ t('tonal_builder.actions.copy_svg') }}
           </button>

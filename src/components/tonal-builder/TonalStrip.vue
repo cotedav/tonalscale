@@ -1,5 +1,6 @@
 <script setup lang="ts">
-  import { computed, reactive, watch } from 'vue';
+  import { computed, nextTick, reactive, ref, watch } from 'vue';
+  import { useMouseInElement } from '@vueuse/core';
   import { useI18n } from 'vue-i18n';
 
   import { clamp } from '@/utils/collection';
@@ -8,6 +9,7 @@
   import type { TonalStep } from '@/utils/tonal/scale';
   import BlendDistributionGraph from './BlendDistributionGraph.vue';
   import type { PairingSelection } from './types';
+  import { useContextMenu } from '@/composables/useContextMenu';
 
   type ContrastDirection = 'lighter' | 'darker';
 
@@ -27,6 +29,10 @@
   const emit = defineEmits<{ 'pairing-change': [PairingSelection] }>();
 
   const { t } = useI18n();
+  const { open, isOpen: isMenuOpen, contextData } = useContextMenu();
+
+  const containerRef = ref<HTMLElement | null>(null);
+  const { isOutside } = useMouseInElement(containerRef);
 
   const state = reactive({
     activeIndex: null as number | null,
@@ -163,10 +169,29 @@
   };
 
   const clearActive = () => {
+    // If context menu is open for THIS element, don't clear.
+    if (
+      isMenuOpen.value &&
+      contextData.value?.token === 'tone' &&
+      state.activeIndex !== null &&
+      contextData.value.tone?.index === props.tones[state.activeIndex]?.index
+    ) {
+      return;
+    }
+
     state.activeIndex = null;
     state.offset = 0;
     emit('pairing-change', null);
   };
+
+  // If menu closes, and we are not hovering, clear active.
+  watch(isMenuOpen, (newVal) => {
+    if (!newVal && isOutside.value) {
+      state.activeIndex = null;
+      state.offset = 0;
+      emit('pairing-change', null);
+    }
+  });
 
   const adjustOffset = (delta: number) => {
     const next = clamp(state.offset + delta, 0, maxOffset.value);
@@ -210,10 +235,87 @@
 
   const swatchLabel = (index: number, hex: string) =>
     t('tonal_builder.scales.metadata.swatch_label', { index, hex });
+
+  const handleSwatchContextMenu = (event: MouseEvent, tone: TonalStep, indexOnStrip: number) => {
+    // If we are strictly on a different tone, switch active index.
+    // This resets the offset by definition of setActiveIndex().
+    // But if we are on the SAME tone, we want to preserve the offset (user might have scrolled).
+    if (state.activeIndex !== indexOnStrip) {
+      setActiveIndex(indexOnStrip);
+    }
+
+    // We want to pass the current selection state (which accounts for offset).
+    // We also want to update the menu if this selection changes while the menu is open (e.g. scrolling).
+
+    nextTick(() => {
+      const createMenuData = () => {
+        const selection = resolvedMatches.value;
+        return {
+          token: 'tone' as const,
+          tone,
+          darker3: selection?.darker3
+            ? { index: selection.darker3.tone.index, hex: selection.darker3.tone.hex }
+            : null,
+          darker45: selection?.darker45
+            ? { index: selection.darker45.tone.index, hex: selection.darker45.tone.hex }
+            : null,
+          lighter3: selection?.lighter3
+            ? { index: selection.lighter3.tone.index, hex: selection.lighter3.tone.hex }
+            : null,
+          lighter45: selection?.lighter45
+            ? { index: selection.lighter45.tone.index, hex: selection.lighter45.tone.hex }
+            : null,
+          onScroll: handleWheel,
+        };
+      };
+
+      open(event, createMenuData());
+    });
+  };
+
+  // Watch for changes in resolvedMatches (e.g. via scroll) and update the menu if it's open for this context.
+  watch(resolvedMatches, (newVal) => {
+    // Access the singleton state directly to check if we should update.
+    // We need to be careful not to create a tight coupling, but useContextMenu is global.
+    const { isOpen, contextData, position } = useContextMenu();
+
+    if (
+      isOpen.value &&
+      contextData.value &&
+      contextData.value.token === 'tone' &&
+      state.activeIndex !== null &&
+      // We can't easily check equal tones by reference, but index on strip matching activeIndex is a good proxy
+      // assuming standard usage.
+      contextData.value.tone?.index === props.tones[state.activeIndex].index
+    ) {
+      // Update the context data with new neighbor values in-place
+      // We can't use 'open' as it resets position/isOpen state logic in the composable (toggle).
+      // We must update the reactive state directly or have an 'update' method.
+      // Since useContextMenu returns refs, we can write to contextData.value!
+
+      const selection = newVal;
+      contextData.value = {
+        ...contextData.value,
+        darker3: selection?.darker3
+          ? { index: selection.darker3.tone.index, hex: selection.darker3.tone.hex }
+          : null,
+        darker45: selection?.darker45
+          ? { index: selection.darker45.tone.index, hex: selection.darker45.tone.hex }
+          : null,
+        lighter3: selection?.lighter3
+          ? { index: selection.lighter3.tone.index, hex: selection.lighter3.tone.hex }
+          : null,
+        lighter45: selection?.lighter45
+          ? { index: selection.lighter45.tone.index, hex: selection.lighter45.tone.hex }
+          : null,
+      };
+    }
+  });
 </script>
 
 <template>
   <div
+    ref="containerRef"
     class="color-scale-container"
     data-cy="tonal-strip"
     role="list"
@@ -246,6 +348,7 @@
       @mouseleave="clearActive"
       @wheel="handleWheel"
       @keydown="handleKeydown"
+      @contextmenu.stop.prevent="handleSwatchContextMenu($event, swatch.tone, swatch.indexOnStrip)"
     >
       <span class="color-number">{{ swatch.tone.index }}</span>
       <span class="color-hex">{{ swatch.tone.hex }}</span>

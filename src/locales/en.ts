@@ -268,4 +268,10 @@ export default {
       home: 'Return home',
     },
   },
+  common: {
+    clipboard: {
+      success: 'Copied {label} to clipboard',
+      error: 'Failed to copy to clipboard',
+    },
+  },
 };
