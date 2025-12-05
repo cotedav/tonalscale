@@ -1,5 +1,4 @@
-import type { TonalScaleParams } from '@/utils/tonal/scale';
-import type { TonalStep } from '@/utils/tonal/scale';
+import type { TonalScaleParams, TonalStep } from '@/utils/tonal/scale';
 
 export interface TonalExportInput {
   params: TonalScaleParams;

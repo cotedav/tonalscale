@@ -18,6 +18,8 @@
   import { useTonalScaleStore } from '@/stores/tonalScale';
   import { hexToRgb } from '@/utils/color';
   import type { TonalStep } from '@/utils/tonal/scale';
+  import { useClipboard } from '@/composables/useClipboard';
+  import { useTonalExport } from '@/composables/useTonalExport';
   import type { PairingSelection } from '@/components/tonal-builder/types';
 
   const { t } = useI18n();
@@ -189,8 +191,6 @@
   });
 
   // Export & Clipboard
-  import { useClipboard } from '@/composables/useClipboard';
-  import { useTonalExport } from '@/composables/useTonalExport';
 
   const { copyToClipboard } = useClipboard();
   const { generateScaleSvg } = useTonalExport();

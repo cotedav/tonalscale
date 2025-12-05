@@ -1,10 +1,9 @@
 <script setup lang="ts">
-  import { computed, ref, watch } from 'vue';
+  import { computed, ref, watch, type Component } from 'vue';
   import { useFloating, flip, shift, autoUpdate } from '@floating-ui/vue';
   import { onClickOutside, useEventListener } from '@vueuse/core';
   import { useContextMenu } from '@/composables/useContextMenu';
   import { useClipboard } from '@/composables/useClipboard';
-  import { ClipboardDocumentIcon } from '@heroicons/vue/24/outline';
 
   const { isOpen, position, contextData, close } = useContextMenu();
   const { copyToClipboard } = useClipboard();
@@ -58,7 +57,7 @@
   interface MenuItem {
     label: string;
     action: () => void;
-    icon?: any;
+    icon?: Component;
     sub?: string;
     hex?: string;
     highlight?: boolean;
@@ -142,14 +141,14 @@
       <button
         v-for="(item, idx) in menuItems"
         :key="idx"
-        @click="item.action"
         class="flex w-full flex-col gap-1 rounded px-3 py-2 text-left hover:bg-white/10"
         :class="item.highlight ? 'bg-white/5 border border-white/10' : ''"
+        @click="item.action"
       >
         <div class="flex items-center gap-2">
           <component
-            v-if="item.icon"
             :is="item.icon"
+            v-if="item.icon"
             class="h-4 w-4 text-slate-400"
           />
           <span class="text-sm font-medium text-slate-200">{{ item.label }}</span>

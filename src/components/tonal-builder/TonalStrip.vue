@@ -3,13 +3,13 @@
   import { useMouseInElement } from '@vueuse/core';
   import { useI18n } from 'vue-i18n';
 
+  import { useContextMenu } from '@/composables/useContextMenu';
   import { clamp } from '@/utils/collection';
   import type { BlendDistribution } from '@/stores/tonalScale';
   import { getContrastRatio } from '@/utils/tonal/contrast';
   import type { TonalStep } from '@/utils/tonal/scale';
   import BlendDistributionGraph from './BlendDistributionGraph.vue';
   import type { PairingSelection } from './types';
-  import { useContextMenu } from '@/composables/useContextMenu';
 
   type ContrastDirection = 'lighter' | 'darker';
 
@@ -277,10 +277,9 @@
   watch(resolvedMatches, (newVal) => {
     // Access the singleton state directly to check if we should update.
     // We need to be careful not to create a tight coupling, but useContextMenu is global.
-    const { isOpen, contextData, position } = useContextMenu();
-
+    // contextData is available from top-level scope.
     if (
-      isOpen.value &&
+      isMenuOpen.value &&
       contextData.value &&
       contextData.value.token === 'tone' &&
       state.activeIndex !== null &&
