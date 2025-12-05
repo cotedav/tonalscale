@@ -33,7 +33,6 @@
   const emit = defineEmits<{ (e: 'open'): void; (e: 'close'): void }>();
 
   const isOpen = ref(false);
-  const outsideEventsArmed = ref(false);
   const contextMenuPosition = reactive({ x: 0, y: 0 });
   const floatingStyles = reactive({ top: '0px', left: '0px' });
 
@@ -50,7 +49,7 @@
       !(floatingReference.value instanceof HTMLElement) ||
       !(contextMenuPanel.value instanceof HTMLElement)
     ) {
-      console.debug(logPrefix, 'Skipping Floating UI computePosition; missing elements', {
+      console.log(logPrefix, 'Skipping Floating UI computePosition; missing elements', {
         hasReference: floatingReference.value instanceof HTMLElement,
         hasPanel: contextMenuPanel.value instanceof HTMLElement,
         position: { ...contextMenuPosition },
@@ -68,14 +67,13 @@
 
     floatingStyles.left = `${x}px`;
     floatingStyles.top = `${y}px`;
-    console.debug(logPrefix, 'Updated floating position', { x, y });
+    console.log(logPrefix, 'Updated floating position', { x, y });
   };
 
   const closeMenu = () => {
     if (!isOpen.value) return;
-    console.debug(logPrefix, 'Closing menu');
+    console.log(logPrefix, 'Closing menu');
     isOpen.value = false;
-    outsideEventsArmed.value = false;
     floatingReference.value = null;
     emit('close');
   };
@@ -106,8 +104,7 @@
     floatingReference.value = contextMenuAnchor.value;
 
     const wasOpen = isOpen.value;
-    outsideEventsArmed.value = false;
-    console.debug(logPrefix, 'Opening menu', {
+    console.log(logPrefix, 'Opening menu', {
       wasOpen,
       origin,
       targetTag: (target as HTMLElement | null)?.tagName,
@@ -122,8 +119,7 @@
 
     await nextTick();
     await updateFloatingPosition();
-    console.debug(logPrefix, 'Arming outside events');
-    outsideEventsArmed.value = true;
+    console.log(logPrefix, 'Arming outside events');
   };
 
   watch(
@@ -134,7 +130,7 @@
       await nextTick();
       floatingReference.value = contextMenuAnchor.value;
       await updateFloatingPosition();
-      console.debug(logPrefix, 'Menu opened; updated position after watcher');
+      console.log(logPrefix, 'Menu opened; updated position after watcher');
     },
   );
 
@@ -174,7 +170,7 @@
   );
 
   const handleOutsidePointer = (event: Event) => {
-    if (!isOpen.value || !props.closeOnOutsidePointer || !outsideEventsArmed.value) return;
+    if (!isOpen.value || !props.closeOnOutsidePointer) return;
     const target = event.target as Node | null;
     const path = typeof event.composedPath === 'function' ? event.composedPath() : [];
     const isInsidePanel =
@@ -189,7 +185,7 @@
     const isWithinPanelAttribute = targetElement?.closest(`[data-cy="${props.dataCy}"]`);
 
     if (target && (isInsidePanel || isInsideButton || isWithinPanelAttribute)) {
-      console.debug(logPrefix, 'Outside handler ignored (inside menu/button)', {
+      console.log(logPrefix, 'Outside handler ignored (inside menu/button)', {
         targetTag: targetElement?.tagName,
         isInsidePanel,
         isInsideButton,
@@ -197,16 +193,18 @@
       });
       return;
     }
-    console.debug(logPrefix, 'Outside pointer detected; closing', {
+    console.log(logPrefix, 'Outside pointer detected; closing', {
       targetTag: targetElement?.tagName,
-      armed: outsideEventsArmed.value,
       closeOnOutside: props.closeOnOutsidePointer,
     });
     closeMenu();
   };
 
-  useEventListener(window, 'pointerdown', handleOutsidePointer, { capture: true });
-  useEventListener(window, 'click', handleOutsidePointer, { capture: true });
+  const outsidePointerTargets: Array<Window | Document> = [window, document];
+  outsidePointerTargets.forEach((target) => {
+    useEventListener(target, 'pointerdown', handleOutsidePointer, { capture: true });
+    useEventListener(target, 'click', handleOutsidePointer, { capture: true });
+  });
 
   defineExpose({ openMenu, closeMenu });
 </script>
