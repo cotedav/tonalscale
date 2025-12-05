@@ -3,7 +3,7 @@
   import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue';
   import { useEventListener } from '@vueuse/core';
   import { computePosition, flip, offset, platform, shift } from '@floating-ui/dom';
-  import { nextTick, reactive, ref, watch } from 'vue';
+  import { nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 
   type OpenArgs = {
     event: MouseEvent | KeyboardEvent;
@@ -170,7 +170,13 @@
   );
 
   const handleOutsidePointer = (event: Event) => {
-    if (!isOpen.value || !props.closeOnOutsidePointer) return;
+    if (!props.closeOnOutsidePointer) return;
+    if (!isOpen.value) {
+      console.log(logPrefix, 'Outside handler skipped; menu closed', {
+        targetTag: (event.target as HTMLElement | null)?.tagName,
+      });
+      return;
+    }
     const target = event.target as Node | null;
     const path = typeof event.composedPath === 'function' ? event.composedPath() : [];
     const isInsidePanel =
@@ -200,10 +206,26 @@
     closeMenu();
   };
 
-  const outsidePointerTargets: Array<Window | Document> = [window, document];
-  outsidePointerTargets.forEach((target) => {
-    useEventListener(target, 'pointerdown', handleOutsidePointer, { capture: true });
-    useEventListener(target, 'click', handleOutsidePointer, { capture: true });
+  const detachOutsideListeners: Array<() => void> = [];
+
+  onMounted(() => {
+    const outsidePointerTargets: Array<Window | Document> = [window, document];
+    outsidePointerTargets.forEach((target) => {
+      const pointerHandler = (event: Event) => handleOutsidePointer(event);
+      const clickHandler = (event: Event) => handleOutsidePointer(event);
+      type OutsideListener = (event: Event) => void;
+      const addOutsideListener = (type: 'pointerdown' | 'click', handler: OutsideListener) => {
+        target.addEventListener(type, handler, true);
+        detachOutsideListeners.push(() => target.removeEventListener(type, handler, true));
+      };
+
+      addOutsideListener('pointerdown', pointerHandler);
+      addOutsideListener('click', clickHandler);
+    });
+  });
+
+  onBeforeUnmount(() => {
+    detachOutsideListeners.splice(0).forEach((detach) => detach());
   });
 
   defineExpose({ openMenu, closeMenu });
