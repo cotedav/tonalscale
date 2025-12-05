@@ -3,6 +3,7 @@ import { nextTick } from 'vue';
 
 import TonalStrip from '@/components/tonal-builder/TonalStrip.vue';
 import type { PairingSelection } from '@/components/tonal-builder/types';
+import { useContextMenu } from '@/composables/useContextMenu';
 
 const tones = [
   { index: 0, hex: '#000000' },
@@ -12,6 +13,12 @@ const tones = [
 ];
 
 describe('TonalStrip', () => {
+  const { close } = useContextMenu();
+
+  afterEach(() => {
+    close();
+  });
+
   it('emits pairing data on hover and renders helper dots', async () => {
     const wrapper = mount(TonalStrip, {
       props: {

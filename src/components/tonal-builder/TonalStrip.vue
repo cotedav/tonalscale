@@ -6,6 +6,7 @@
   import type { BlendDistribution } from '@/stores/tonalScale';
   import { getContrastRatio } from '@/utils/tonal/contrast';
   import type { TonalStep } from '@/utils/tonal/scale';
+  import { vContextMenu } from '@/directives/contextMenu';
   import BlendDistributionGraph from './BlendDistributionGraph.vue';
   import type { PairingSelection } from './types';
 
@@ -181,24 +182,28 @@
     event: MouseEvent | KeyboardEvent,
     swatch: (typeof swatches.value)[number],
   ) => {
-    if (!swatch) return;
+    if (!swatch) return null;
 
     setActiveIndex(swatch.indexOnStrip);
     const selection = resolvedMatches.value;
 
+    const selectionPayload = selection
+      ? {
+          base: swatch.tone,
+          darker3: selection.darker3?.tone ?? null,
+          darker45: selection.darker45?.tone ?? null,
+          lighter3: selection.lighter3?.tone ?? null,
+          lighter45: selection.lighter45?.tone ?? null,
+        }
+      : { base: swatch.tone, darker3: null, darker45: null, lighter3: null, lighter45: null };
+
     emit('context-request', {
       event,
       target: (event.currentTarget as HTMLElement | null) ?? null,
-      selection: selection
-        ? {
-            base: swatch.tone,
-            darker3: selection.darker3?.tone ?? null,
-            darker45: selection.darker45?.tone ?? null,
-            lighter3: selection.lighter3?.tone ?? null,
-            lighter45: selection.lighter45?.tone ?? null,
-          }
-        : { base: swatch.tone, darker3: null, darker45: null, lighter3: null, lighter45: null },
+      selection: selectionPayload,
     });
+
+    return selectionPayload;
   };
 
   const adjustOffset = (delta: number) => {
@@ -270,6 +275,7 @@
     <div
       v-for="swatch in swatches"
       :key="swatch.tone.index"
+      v-context-menu="(event: MouseEvent) => emitContextRequest(event, swatch)"
       class="color-box"
       :style="{ backgroundColor: swatch.tone.hex }"
       data-cy="tonal-swatch"
@@ -284,7 +290,6 @@
       @mouseleave="clearActive"
       @wheel="handleWheel"
       @keydown="handleKeydown"
-      @contextmenu.prevent="emitContextRequest($event, swatch)"
     >
       <span class="color-number">{{ swatch.tone.index }}</span>
       <span class="color-hex">{{ swatch.tone.hex }}</span>

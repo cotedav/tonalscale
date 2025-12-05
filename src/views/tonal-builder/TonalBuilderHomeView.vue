@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { useEventListener, useTitle } from '@vueuse/core';
-  import { computed, ref, watchEffect } from 'vue';
+  import { computed, ref, watch, watchEffect } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { storeToRefs } from 'pinia';
   import { MoonIcon, SunIcon } from '@heroicons/vue/24/solid';
@@ -14,6 +14,7 @@
     type ControlError,
     useTonalBuilderControls,
   } from '@/composables/useTonalBuilderControls';
+  import { useContextMenu, useContextMenuState } from '@/composables/useContextMenu';
   import { useTonalBuilderEngine } from '@/composables/useTonalBuilderEngine';
   import { useTonalBuilderColors } from '@/composables/useTonalBuilderColors';
   import { useClipboardActions } from '@/composables/useClipboardActions';
@@ -105,7 +106,12 @@
 
   const previewSelection = ref<PairingSelection>(null);
   const contextMenuSelection = ref<PairingSelection | null>(null);
-  const contextMenu = ref<InstanceType<typeof TonalContextMenu> | null>(null);
+  const {
+    open: openContextMenu,
+    close: closeContextMenuState,
+    isOpen: isContextMenuOpen,
+  } = useContextMenu();
+  const { state: contextMenuState } = useContextMenuState();
 
   const blendOverlayActive = ref(false);
   const overlayAnnouncement = ref('');
@@ -233,13 +239,44 @@
     selection: PairingSelection;
   }) => {
     contextMenuSelection.value = selection;
-    contextMenu.value?.openMenu({ event, target });
+    if (event instanceof KeyboardEvent || !event.defaultPrevented) {
+      openContextMenu(event, target, selection);
+    }
   };
 
   const closeContextMenu = () => {
     contextMenuSelection.value = null;
-    contextMenu.value?.closeMenu();
+    closeContextMenuState();
   };
+
+  useEventListener(
+    window,
+    'scroll',
+    () => {
+      if (isContextMenuOpen.value) {
+        closeContextMenu();
+      }
+    },
+    { passive: true },
+  );
+
+  watch(
+    () => isContextMenuOpen.value,
+    (open) => {
+      if (!open) {
+        contextMenuSelection.value = null;
+      }
+    },
+  );
+
+  watch(
+    () => contextMenuState.value?.payload as PairingSelection | null,
+    (payload) => {
+      if (payload) {
+        contextMenuSelection.value = payload;
+      }
+    },
+  );
 
   const copyTone = async (tone: TonalStep | null) => {
     await copyText(tone?.hex ?? '', clipboardMessages.value);
@@ -944,7 +981,6 @@
       </Teleport>
 
       <TonalContextMenu
-        ref="contextMenu"
         :actions="contextMenuActions"
         :helper-text="t('tonal_builder.clipboard.context_helper')"
         :title="t('tonal_builder.clipboard.menu_title')"

@@ -1,11 +1,15 @@
 import { mount } from '@vue/test-utils';
 import { h, nextTick } from 'vue';
-import { vi } from 'vitest';
+import { beforeEach, vi } from 'vitest';
 
 import ContextMenuSurface from '@/components/common/ContextMenuSurface.vue';
+import { useContextMenu } from '@/composables/useContextMenu';
 
 describe('ContextMenuSurface', () => {
-  afterEach(() => {
+  const { open, close } = useContextMenu();
+
+  beforeEach(() => {
+    close();
     vi.restoreAllMocks();
   });
 
@@ -35,21 +39,14 @@ describe('ContextMenuSurface', () => {
     });
   };
 
-  const openMenu = async (wrapper: ReturnType<typeof buildWrapper>, coords = { x: 40, y: 50 }) => {
-    const api = wrapper.vm as unknown as {
-      openMenu: (args: { event: MouseEvent }) => Promise<void>;
-      closeMenu: () => void;
-    };
-
-    await api.openMenu({
-      event: new MouseEvent('contextmenu', { clientX: coords.x, clientY: coords.y }),
-    });
+  const openMenu = async (coords = { x: 40, y: 50 }) => {
+    open(new MouseEvent('contextmenu', { clientX: coords.x, clientY: coords.y }));
     await nextTick();
   };
 
   it('closes on menu item activate by default and can stay open when disabled', async () => {
     const wrapper = buildWrapper();
-    await openMenu(wrapper);
+    await openMenu();
 
     const menuBefore = document.querySelector('[data-cy="context-menu"]');
     expect(menuBefore).not.toBeNull();
@@ -61,8 +58,10 @@ describe('ContextMenuSurface', () => {
 
     expect(document.querySelector('[data-cy="context-menu"]')).toBeNull();
 
+    wrapper.unmount();
+
     const wrapperStayOpen = buildWrapper({ closeOnItemActivate: false });
-    await openMenu(wrapperStayOpen, { x: 80, y: 90 });
+    await openMenu({ x: 80, y: 90 });
     const persistentButton = document.querySelector(
       '[data-test="menu-item"]',
     ) as HTMLButtonElement | null;
@@ -71,85 +70,55 @@ describe('ContextMenuSurface', () => {
 
     expect(document.querySelector('[data-cy="context-menu"]')).not.toBeNull();
 
-    wrapper.unmount();
     wrapperStayOpen.unmount();
   });
 
-  it('closes on outside pointer by default and can remain open when disabled', async () => {
+  it('closes on outside pointer and contextmenu by default and can remain open when disabled', async () => {
     const wrapper = buildWrapper();
-    await openMenu(wrapper);
+    await openMenu();
 
-    window.dispatchEvent(new MouseEvent('pointerdown', { button: 2 }));
+    window.dispatchEvent(new MouseEvent('pointerdown', { button: 0 }));
     await nextTick();
 
     expect(document.querySelector('[data-cy="context-menu"]')).toBeNull();
 
-    await openMenu(wrapper, { x: 60, y: 70 });
+    wrapper.unmount();
 
-    window.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await openMenu({ x: 60, y: 70 });
+    window.dispatchEvent(new MouseEvent('contextmenu', { clientX: 10, clientY: 10 }));
     await nextTick();
-
     expect(document.querySelector('[data-cy="context-menu"]')).toBeNull();
 
-    const blocker = document.createElement('div');
-    blocker.id = 'stopper';
-    blocker.addEventListener('pointerdown', (event) => event.stopPropagation());
-    document.body.appendChild(blocker);
-
-    await openMenu(wrapper, { x: 180, y: 190 });
-    blocker.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
-    await nextTick();
-
-    expect(document.querySelector('[data-cy="context-menu"]')).toBeNull();
-    blocker.remove();
-
-    const wrapperAllow = buildWrapper({ closeOnOutsidePointer: false });
-    await openMenu(wrapperAllow, { x: 120, y: 130 });
-
+    const wrapperAllow = buildWrapper({ closeOnOutside: false });
+    await openMenu({ x: 120, y: 130 });
     window.dispatchEvent(new MouseEvent('pointerdown', { button: 0 }));
     await nextTick();
 
     expect(document.querySelector('[data-cy="context-menu"]')).not.toBeNull();
 
-    wrapper.unmount();
     wrapperAllow.unmount();
   });
 
-  it('respects scroll strategies', async () => {
-    let scrollX = 0;
-    let scrollY = 0;
+  it('closes on scroll by default and can be configured to stay open', async () => {
+    const closableWrapper = buildWrapper();
+    await openMenu({ x: 160, y: 170 });
 
-    vi.spyOn(window, 'scrollX', 'get').mockImplementation(() => scrollX);
-    vi.spyOn(window, 'scrollY', 'get').mockImplementation(() => scrollY);
+    window.dispatchEvent(new Event('scroll'));
+    await nextTick();
 
-    const fixedWrapper = buildWrapper({ scrollStrategy: 'fixed' });
-    await openMenu(fixedWrapper, { x: 160, y: 170 });
+    expect(document.querySelector('[data-cy="context-menu"]')).toBeNull();
 
-    scrollY = 50;
+    closableWrapper.unmount();
+
+    const persistentWrapper = buildWrapper({ closeOnScroll: false });
+    await openMenu({ x: 200, y: 210 });
+
     window.dispatchEvent(new Event('scroll'));
     await nextTick();
 
     expect(document.querySelector('[data-cy="context-menu"]')).not.toBeNull();
 
-    fixedWrapper.unmount();
-
-    const trackingWrapper = buildWrapper({ scrollStrategy: 'track-anchor' });
-    await openMenu(trackingWrapper, { x: 200, y: 210 });
-
-    const menuBefore = document.querySelector('[data-cy="context-menu"]') as HTMLElement | null;
-    const initialTop = Number.parseFloat(menuBefore?.style.top ?? '0');
-
-    scrollY = 110;
-    scrollX = 25;
-    window.dispatchEvent(new Event('scroll'));
-    await nextTick();
-
-    const menuAfter = document.querySelector('[data-cy="context-menu"]') as HTMLElement | null;
-    const afterTop = Number.parseFloat(menuAfter?.style.top ?? '0');
-
-    expect(menuAfter).not.toBeNull();
-    expect(afterTop).not.toBe(initialTop);
-
-    trackingWrapper.unmount();
+    closableWrapper.unmount();
+    persistentWrapper.unmount();
   });
 });

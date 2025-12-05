@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { useI18n } from 'vue-i18n';
-  import { computed, ref } from 'vue';
+  import { computed } from 'vue';
 
   import ContextMenuSurface from '@/components/common/ContextMenuSurface.vue';
   import type { TonalStep } from '@/utils/tonal/scale';
@@ -17,7 +17,7 @@
     actions: ContextMenuAction[];
     closeOnAction?: boolean;
     closeOnOutside?: boolean;
-    scrollStrategy?: 'close' | 'track-anchor' | 'fixed';
+    closeOnScroll?: boolean;
   }>();
 
   const { t } = useI18n();
@@ -28,32 +28,16 @@
     (e: 'close'): void;
   }>();
 
-  const contextMenu = ref<InstanceType<typeof ContextMenuSurface> | null>(null);
-
   const anyEnabled = computed(() => props.actions.some((action) => !!action.tone));
-
-  const openMenu = (payload: {
-    event: MouseEvent | KeyboardEvent;
-    target?: HTMLElement | null;
-  }) => {
-    contextMenu.value?.openMenu(payload);
-  };
-
-  const closeMenu = () => {
-    contextMenu.value?.closeMenu();
-  };
-
-  defineExpose({ openMenu, closeMenu });
 </script>
 
 <template>
   <ContextMenuSurface
-    ref="contextMenu"
     :aria-label="title"
     data-cy="context-menu"
     :close-on-item-activate="props.closeOnAction ?? true"
-    :close-on-outside-pointer="props.closeOnOutside ?? true"
-    :scroll-strategy="props.scrollStrategy ?? 'close'"
+    :close-on-outside="props.closeOnOutside ?? true"
+    :close-on-scroll="props.closeOnScroll ?? true"
     @open="emit('open')"
     @close="emit('close')"
   >

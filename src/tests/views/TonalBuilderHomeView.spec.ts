@@ -1,15 +1,32 @@
-import { mount } from '@vue/test-utils';
+import { mount, type VueWrapper } from '@vue/test-utils';
 import { nextTick } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
 
 import TonalBuilderHomeView from '@/views/tonal-builder/TonalBuilderHomeView.vue';
+import { useContextMenu } from '@/composables/useContextMenu';
 
 describe('TonalBuilderHomeView', () => {
+  const { close } = useContextMenu();
+  const mountedWrappers: VueWrapper[] = [];
+
+  const mountView = (options?: Parameters<typeof mount>[1]) => {
+    const wrapper = mount(TonalBuilderHomeView, options);
+    mountedWrappers.push(wrapper);
+    return wrapper;
+  };
+
+  afterEach(() => {
+    close();
+    while (mountedWrappers.length) {
+      mountedWrappers.pop()?.unmount();
+    }
+  });
+
   it('renders tonal builder shell aligned to the prototype layout', () => {
     const pinia = createPinia();
     setActivePinia(pinia);
 
-    const wrapper = mount(TonalBuilderHomeView, {
+    const wrapper = mountView({
       global: {
         plugins: [pinia],
       },
@@ -54,7 +71,7 @@ describe('TonalBuilderHomeView', () => {
     const pinia = createPinia();
     setActivePinia(pinia);
 
-    const wrapper = mount(TonalBuilderHomeView, {
+    const wrapper = mountView({
       global: {
         plugins: [pinia],
       },
@@ -81,7 +98,7 @@ describe('TonalBuilderHomeView', () => {
     const pinia = createPinia();
     setActivePinia(pinia);
 
-    const wrapper = mount(TonalBuilderHomeView, {
+    const wrapper = mountView({
       attachTo: document.body,
       global: {
         plugins: [pinia],
@@ -103,11 +120,12 @@ describe('TonalBuilderHomeView', () => {
     const contextMenu = document.querySelector('[data-cy="context-menu"]') as HTMLElement | null;
     expect(contextMenu).not.toBeNull();
 
-    const rect = contextMenu?.getBoundingClientRect();
-    expect(rect?.left).toBeGreaterThanOrEqual(0);
-    expect(rect?.top).toBeGreaterThanOrEqual(0);
-    expect(rect?.right).toBeLessThanOrEqual(window.innerWidth);
-    expect(rect?.bottom).toBeLessThanOrEqual(window.innerHeight);
+    const left = Number.parseFloat(contextMenu?.style.left ?? '0');
+    const top = Number.parseFloat(contextMenu?.style.top ?? '0');
+    expect(left).toBeGreaterThanOrEqual(0);
+    expect(top).toBeGreaterThanOrEqual(0);
+    expect(left).toBeLessThanOrEqual(window.innerWidth);
+    expect(top).toBeLessThanOrEqual(window.innerHeight);
 
     const menuItems = contextMenu?.querySelectorAll('[role="menuitem"]') ?? [];
     expect(menuItems.length).toBeGreaterThan(0);
@@ -122,7 +140,7 @@ describe('TonalBuilderHomeView', () => {
     const pinia = createPinia();
     setActivePinia(pinia);
 
-    const wrapper = mount(TonalBuilderHomeView, {
+    const wrapper = mountView({
       attachTo: document.body,
       global: {
         plugins: [pinia],
@@ -149,7 +167,7 @@ describe('TonalBuilderHomeView', () => {
     const pinia = createPinia();
     setActivePinia(pinia);
 
-    const wrapper = mount(TonalBuilderHomeView, {
+    const wrapper = mountView({
       attachTo: document.body,
       global: {
         plugins: [pinia],
