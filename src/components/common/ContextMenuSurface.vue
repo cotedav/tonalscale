@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  /* eslint-disable no-console */
   import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue';
   import { useEventListener } from '@vueuse/core';
   import { computePosition, flip, offset, platform, shift } from '@floating-ui/dom';
@@ -42,11 +43,18 @@
   const floatingReference = ref<HTMLElement | null>(null);
   const scrollPosition = reactive({ x: 0, y: 0 });
 
+  const logPrefix = '[ContextMenuSurface]';
+
   const updateFloatingPosition = async () => {
     if (
       !(floatingReference.value instanceof HTMLElement) ||
       !(contextMenuPanel.value instanceof HTMLElement)
     ) {
+      console.debug(logPrefix, 'Skipping Floating UI computePosition; missing elements', {
+        hasReference: floatingReference.value instanceof HTMLElement,
+        hasPanel: contextMenuPanel.value instanceof HTMLElement,
+        position: { ...contextMenuPosition },
+      });
       floatingStyles.left = `${contextMenuPosition.x}px`;
       floatingStyles.top = `${contextMenuPosition.y}px`;
       return;
@@ -60,10 +68,12 @@
 
     floatingStyles.left = `${x}px`;
     floatingStyles.top = `${y}px`;
+    console.debug(logPrefix, 'Updated floating position', { x, y });
   };
 
   const closeMenu = () => {
     if (!isOpen.value) return;
+    console.debug(logPrefix, 'Closing menu');
     isOpen.value = false;
     outsideEventsArmed.value = false;
     floatingReference.value = null;
@@ -97,6 +107,11 @@
 
     const wasOpen = isOpen.value;
     outsideEventsArmed.value = false;
+    console.debug(logPrefix, 'Opening menu', {
+      wasOpen,
+      origin,
+      targetTag: (target as HTMLElement | null)?.tagName,
+    });
     if (!wasOpen) {
       isOpen.value = true;
       emit('open');
@@ -107,6 +122,7 @@
 
     await nextTick();
     await updateFloatingPosition();
+    console.debug(logPrefix, 'Arming outside events');
     outsideEventsArmed.value = true;
   };
 
@@ -118,6 +134,7 @@
       await nextTick();
       floatingReference.value = contextMenuAnchor.value;
       await updateFloatingPosition();
+      console.debug(logPrefix, 'Menu opened; updated position after watcher');
     },
   );
 
@@ -172,8 +189,19 @@
     const isWithinPanelAttribute = targetElement?.closest(`[data-cy="${props.dataCy}"]`);
 
     if (target && (isInsidePanel || isInsideButton || isWithinPanelAttribute)) {
+      console.debug(logPrefix, 'Outside handler ignored (inside menu/button)', {
+        targetTag: targetElement?.tagName,
+        isInsidePanel,
+        isInsideButton,
+        isWithinPanelAttribute: Boolean(isWithinPanelAttribute),
+      });
       return;
     }
+    console.debug(logPrefix, 'Outside pointer detected; closing', {
+      targetTag: targetElement?.tagName,
+      armed: outsideEventsArmed.value,
+      closeOnOutside: props.closeOnOutsidePointer,
+    });
     closeMenu();
   };
 
