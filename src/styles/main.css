@@ -6,12 +6,74 @@
 
 @layer base {
   :root {
-    color-scheme: dark;
+    color-scheme: light;
     --content-width: 1100px;
+
+    /* Light Mode Palette */
+    --color-surface: 255 255 255;
+    /* #ffffff */
+    --color-surface-strong: 248 250 252;
+    /* Slate 50 */
+    --color-surface-soft: 241 245 249;
+    /* Slate 100 */
+
+    --color-text-primary: 15 23 42;
+    /* Slate 900 */
+    --color-text-secondary: 71 85 105;
+    /* Slate 600 */
+    --color-text-tertiary: 148 163 184;
+    /* Slate 400 */
+
+    --color-border-dim: 226 232 240;
+    /* Slate 200 */
+    --color-border-highlight: 203 213 225;
+    /* Slate 300 */
+    --color-border-glass: 15 23 42;
+    /* Slate 900 (for alpha) */
+
+    --color-accent: 168 85 247;
+    /* #a855f7 (Purple 500) */
+    --color-accent-strong: 124 58 237;
+    /* #7c3aed (Purple 600) */
+    --color-accent-soft: 196 181 253;
+    /* #c4b5fd (Purple 300) */
+  }
+
+  .dark {
+    color-scheme: dark;
+
+    /* Dark Mode Palette */
+    --color-surface: 12 18 36;
+    /* #0c1224 */
+    --color-surface-strong: 15 23 42;
+    /* #0f172a */
+    --color-surface-soft: 17 26 47;
+    /* #111a2f */
+
+    --color-text-primary: 241 245 249;
+    /* Slate 100 */
+    --color-text-secondary: 148 163 184;
+    /* Slate 400 */
+    --color-text-tertiary: 100 116 139;
+    /* Slate 500 */
+
+    --color-border-dim: 30 41 59;
+    /* Slate 800 */
+    --color-border-highlight: 51 65 85;
+    /* Slate 700 */
+    --color-border-glass: 255 255 255;
+    /* White (for alpha) */
+
+    --color-accent: 168 85 247;
+    /* #a855f7 */
+    --color-accent-strong: 124 58 237;
+    /* #7c3aed */
+    --color-accent-soft: 196 181 253;
+    /* #c4b5fd */
   }
 
   body {
-    @apply bg-surface text-slate-100 antialiased;
+    @apply bg-surface-strong text-slate-800 dark:text-slate-100 antialiased transition-colors duration-300;
   }
 
   a {

@@ -4,6 +4,7 @@
   import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
   import { useI18n } from 'vue-i18n';
 
+  import { isDark } from '@/composables/useTheme';
   import type { SliderMode } from '@/composables/useTonalBuilderColors';
   import {
     hexToHsv,
@@ -90,6 +91,14 @@
 
   type PickerLayout = Array<{ component: unknown; options?: Record<string, unknown> }>;
 
+  // We need to react to theme changes to update the picker border
+  const pickerBorderColor = computed(() => {
+    // Return semantic colors:
+    // Dark: Slate 700 (#334155) - matches border-highlight in dark mode approx
+    // Light: Slate 200 (#e2e8f0) - matches border-dim in light mode
+    return isDark.value ? '#334155' : '#e2e8f0';
+  });
+
   const createPicker = (target: HTMLElement | null, layout: PickerLayout) => {
     if (!target) return null;
 
@@ -97,7 +106,7 @@
       color: hexInput.value,
       layout,
       borderWidth: 1,
-      borderColor: '#0f172a',
+      borderColor: pickerBorderColor.value,
       handleRadius: 8,
       layoutDirection: 'vertical',
     });
@@ -105,6 +114,15 @@
     picker.on('input:change', handlePickerInput);
     return picker;
   };
+
+  const updatePickerOptions = () => {
+    const color = pickerBorderColor.value;
+    [boxPicker, hsvPicker, rgbPicker].forEach((picker) => {
+      picker?.setOptions({ borderColor: color });
+    });
+  };
+
+  watch(isDark, updatePickerOptions);
 
   const resizePickers = () => {
     requestAnimationFrame(() => {
@@ -181,14 +199,14 @@
     <div class="flex items-start justify-between gap-3">
       <div class="space-y-1">
         <p
-          class="text-sm font-semibold text-slate-100"
+          class="text-sm font-semibold text-primary"
           data-cy="picker-title"
         >
           {{ label }}
         </p>
         <p
           v-if="description"
-          class="text-xs text-slate-400"
+          class="text-xs text-tertiary"
         >
           {{ description }}
         </p>
@@ -204,14 +222,14 @@
     <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
       <div class="space-y-3">
         <label
-          class="text-xs font-semibold uppercase tracking-wide text-slate-400"
+          class="text-xs font-semibold uppercase tracking-wide text-tertiary"
           :for="`${id}-hex-input`"
         >
           Hex
         </label>
         <div class="flex flex-wrap items-center gap-3">
           <span
-            class="h-12 w-12 rounded-2xl border border-white/10 shadow-inner"
+            class="h-12 w-12 rounded-2xl border border-dim shadow-inner"
             :style="swatchStyle"
             data-cy="color-swatch"
             role="img"
@@ -222,7 +240,7 @@
               :id="`${id}-hex-input`"
               v-model="hexInput"
               type="text"
-              class="h-12 flex-1 rounded-xl border border-white/10 bg-surface px-3 text-sm text-slate-100 shadow-inner"
+              class="h-12 flex-1 rounded-xl border border-dim bg-surface px-3 text-sm text-primary shadow-inner"
               maxlength="7"
               spellcheck="false"
               inputmode="text"
@@ -234,7 +252,7 @@
             />
             <span
               v-if="hexError"
-              class="text-xs font-semibold text-rose-300"
+              class="text-xs font-semibold text-rose-500 dark:text-rose-300"
               data-cy="hex-error"
             >
               {{ hexError }}
@@ -243,7 +261,7 @@
         </div>
 
         <div
-          class="overflow-hidden rounded-2xl border border-white/10 bg-surface/70"
+          class="overflow-hidden rounded-2xl border border-dim bg-surface"
           data-cy="color-box"
         >
           <div
@@ -255,19 +273,17 @@
 
       <div class="space-y-3">
         <div class="flex items-center justify-between gap-2">
-          <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+          <p class="text-xs font-semibold uppercase tracking-wide text-tertiary">
             {{ t('tonal_builder.pickers.slider_modes') }}
           </p>
           <div
-            class="inline-flex items-center gap-2 rounded-full bg-surface/70 p-1 text-xs font-semibold text-slate-200"
+            class="inline-flex items-center gap-2 rounded-full bg-surface p-1 text-xs font-semibold text-secondary"
           >
             <button
               type="button"
               class="rounded-full px-3 py-1 transition"
               :class="
-                mode === 'hsv'
-                  ? 'bg-accent-strong/30 text-slate-900 shadow-glow'
-                  : 'hover:bg-white/5'
+                mode === 'hsv' ? 'bg-accent-strong/30 text-primary shadow-glow' : 'hover:bg-glass/5'
               "
               data-cy="mode-hsv"
               @click="setMode('hsv')"
@@ -278,9 +294,7 @@
               type="button"
               class="rounded-full px-3 py-1 transition"
               :class="
-                mode === 'rgb'
-                  ? 'bg-accent-strong/30 text-slate-900 shadow-glow'
-                  : 'hover:bg-white/5'
+                mode === 'rgb' ? 'bg-accent-strong/30 text-primary shadow-glow' : 'hover:bg-glass/5'
               "
               data-cy="mode-rgb"
               @click="setMode('rgb')"
@@ -290,7 +304,7 @@
           </div>
         </div>
 
-        <div class="rounded-2xl border border-white/10 bg-surface/70 p-3 shadow-inner">
+        <div class="rounded-2xl border border-dim bg-surface p-3 shadow-inner">
           <div
             v-show="mode === 'hsv'"
             ref="hsvRef"
@@ -308,3 +322,4 @@
     </div>
   </section>
 </template>
+```

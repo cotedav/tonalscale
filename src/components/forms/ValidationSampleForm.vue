@@ -88,12 +88,12 @@
 
 <template>
   <div class="card-surface space-y-4">
-    <div class="flex items-center gap-2 text-sm font-semibold text-slate-100">
+    <div class="flex items-center gap-2 text-sm font-semibold text-primary">
       <ShieldCheckIcon class="h-5 w-5 text-accent-strong" />
       <span>{{ t('validation.sample.title') }}</span>
     </div>
 
-    <p class="text-sm text-slate-400">
+    <p class="text-sm text-tertiary">
       {{ t('validation.sample.description') }}
     </p>
 
@@ -109,14 +109,14 @@
       data-cy="validation-form"
       @submit.prevent="onSubmit"
     >
-      <label class="flex flex-col gap-2 text-sm text-slate-200">
-        <span class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+      <label class="flex flex-col gap-2 text-sm text-secondary">
+        <span class="text-xs font-semibold uppercase tracking-wide text-tertiary">
           {{ t('validation.sample.fields.full_name.label') }}
         </span>
         <input
           v-model="fullName"
           type="text"
-          class="rounded-lg border border-slate-700 bg-surface-soft px-3 py-2 text-sm text-slate-100 shadow-inner focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent-strong/30"
+          class="rounded-lg border border-dim bg-surface-soft px-3 py-2 text-sm text-primary shadow-inner focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent-strong/30"
           autocomplete="name"
           data-cy="full-name-input"
           :aria-invalid="fullNameErrors.length > 0"
@@ -124,20 +124,20 @@
         />
         <p
           v-if="fullNameErrors.length"
-          class="text-xs text-rose-300"
+          class="text-xs text-rose-600 dark:text-rose-300"
         >
           {{ fullNameErrors[0] }}
         </p>
       </label>
 
-      <label class="flex flex-col gap-2 text-sm text-slate-200">
-        <span class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+      <label class="flex flex-col gap-2 text-sm text-secondary">
+        <span class="text-xs font-semibold uppercase tracking-wide text-tertiary">
           {{ t('validation.sample.fields.email.label') }}
         </span>
         <input
           v-model="email"
           type="email"
-          class="rounded-lg border border-slate-700 bg-surface-soft px-3 py-2 text-sm text-slate-100 shadow-inner focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent-strong/30"
+          class="rounded-lg border border-dim bg-surface-soft px-3 py-2 text-sm text-primary shadow-inner focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent-strong/30"
           autocomplete="email"
           data-cy="email-input"
           :aria-invalid="emailErrors.length > 0"
@@ -145,7 +145,7 @@
         />
         <p
           v-if="emailErrors.length"
-          class="text-xs text-rose-300"
+          class="text-xs text-rose-600 dark:text-rose-300"
         >
           {{ emailErrors[0] }}
         </p>
@@ -163,7 +163,7 @@
 
         <button
           type="button"
-          class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-100 ring-1 ring-inset ring-slate-700 transition hover:bg-slate-700"
+          class="rounded-lg bg-surface-strong px-4 py-2 text-sm font-semibold text-primary ring-1 ring-inset ring-dim transition hover:bg-surface"
           data-cy="reset-button"
           @click="onReset"
         >
@@ -173,7 +173,7 @@
 
       <div
         v-if="visibleErrors.length"
-        class="rounded-xl border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-50"
+        class="rounded-xl border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-700 dark:text-rose-50"
         data-cy="validation-errors"
       >
         <ul class="list-disc space-y-1 pl-4">
@@ -189,7 +189,7 @@
 
     <div
       v-if="submissionMessage"
-      class="rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-50"
+      class="rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-50"
       data-cy="submission-message"
     >
       {{ submissionMessage }}

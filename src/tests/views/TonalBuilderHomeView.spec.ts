@@ -1,7 +1,13 @@
+import { describe, it, expect, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 
 import TonalBuilderHomeView from '@/views/tonal-builder/TonalBuilderHomeView.vue';
+
+// Mock useTonalUrlSync to avoid router dependency
+vi.mock('@/composables/useTonalUrlSync', () => ({
+  default: vi.fn(),
+}));
 
 describe('TonalBuilderHomeView', () => {
   it('renders tonal builder shell aligned to the prototype layout', () => {
@@ -30,9 +36,6 @@ describe('TonalBuilderHomeView', () => {
       '#colorcard-darker3',
       '#colorcard-lighter3',
       '#colorcard-lighter45',
-      '#dialog-overlay',
-      '#dialog',
-      '#copied-message',
     ].forEach((selector) => {
       expect(wrapper.find(selector).exists()).toBe(true);
     });

@@ -51,16 +51,16 @@
 <template>
   <section class="space-y-4">
     <div class="card-surface space-y-3">
-      <div class="flex items-center gap-2 text-sm font-semibold text-slate-100">
+      <div class="flex items-center gap-2 text-sm font-semibold text-primary">
         <ClockIcon class="h-5 w-5 text-accent-strong" />
         {{ t('home.utilities.clock.title') }}
       </div>
-      <p class="text-sm text-slate-400">
+      <p class="text-sm text-tertiary">
         {{ t('home.utilities.clock.description') }}
       </p>
 
       <div
-        class="flex items-center justify-between gap-4 rounded-xl border border-slate-800 bg-surface-soft/60 px-4 py-3"
+        class="flex items-center justify-between gap-4 rounded-xl border border-dim bg-surface-soft/60 px-4 py-3"
       >
         <div
           class="text-2xl font-semibold tracking-tight"
@@ -80,16 +80,16 @@
     </div>
 
     <div class="card-surface space-y-4">
-      <div class="flex items-center gap-2 text-sm font-semibold text-slate-100">
+      <div class="flex items-center gap-2 text-sm font-semibold text-primary">
         <Squares2X2Icon class="h-5 w-5 text-accent-strong" />
         {{ t('home.utilities.collections.title') }}
       </div>
-      <p class="text-sm text-slate-400">
+      <p class="text-sm text-tertiary">
         {{ t('home.utilities.collections.description') }}
       </p>
 
       <div class="space-y-3">
-        <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+        <div class="text-xs font-semibold uppercase tracking-wide text-tertiary">
           {{ t('home.utilities.collections.chunkedLabel') }}
         </div>
         <div class="space-y-2">
@@ -101,7 +101,7 @@
             <div
               v-for="number in row"
               :key="`chunk-item-${number}`"
-              class="rounded-xl border border-slate-800 bg-surface-soft px-3 py-2 text-center text-sm font-semibold text-slate-100"
+              class="rounded-xl border border-dim bg-surface-soft px-3 py-2 text-center text-sm font-semibold text-primary"
             >
               {{ number }}
             </div>
@@ -109,10 +109,10 @@
         </div>
       </div>
 
-      <div class="h-px bg-slate-800" />
+      <div class="h-px bg-dim" />
 
       <div class="space-y-3">
-        <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+        <div class="text-xs font-semibold uppercase tracking-wide text-tertiary">
           {{ t('home.utilities.collections.uniqueLabel') }}
         </div>
         <div class="flex flex-wrap gap-2">
@@ -129,31 +129,29 @@
     </div>
 
     <div class="card-surface space-y-4">
-      <div class="flex items-center gap-2 text-sm font-semibold text-slate-100">
+      <div class="flex items-center gap-2 text-sm font-semibold text-primary">
         <CalendarDaysIcon class="h-5 w-5 text-accent-strong" />
         {{ t('home.utilities.dates.title') }}
       </div>
-      <p class="text-sm text-slate-400">
+      <p class="text-sm text-tertiary">
         {{ t('home.utilities.dates.description') }}
       </p>
 
       <div class="space-y-3">
-        <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+        <div class="text-xs font-semibold uppercase tracking-wide text-tertiary">
           {{ t('home.utilities.dates.formattedLabel') }}
         </div>
-        <div
-          class="rounded-xl border border-slate-800 bg-surface-soft px-3 py-2 text-sm text-slate-100"
-        >
+        <div class="rounded-xl border border-dim bg-surface-soft px-3 py-2 text-sm text-primary">
           {{ formattedLaunchDate }}
         </div>
       </div>
 
       <div class="space-y-3">
-        <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+        <div class="text-xs font-semibold uppercase tracking-wide text-tertiary">
           {{ t('home.utilities.dates.utcLabel') }}
         </div>
         <div
-          class="rounded-xl border border-slate-800 bg-surface-soft px-3 py-2 text-sm text-slate-100"
+          class="rounded-xl border border-dim bg-surface-soft px-3 py-2 text-sm text-primary"
           data-cy="utc-timestamp"
         >
           {{ utcLaunchTimestamp }}
@@ -162,18 +160,18 @@
     </div>
 
     <div class="card-surface space-y-3">
-      <div class="flex items-center gap-2 text-sm font-semibold text-slate-100">
+      <div class="flex items-center gap-2 text-sm font-semibold text-primary">
         <SparklesIcon class="h-5 w-5 text-accent-strong" />
         {{ t('home.utilities.dialog.title') }}
       </div>
-      <p class="text-sm text-slate-400">
+      <p class="text-sm text-tertiary">
         {{ t('home.utilities.dialog.description') }}
       </p>
 
       <div class="flex flex-wrap gap-3">
         <button
           type="button"
-          class="rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold text-slate-100 ring-1 ring-inset ring-slate-700 transition hover:bg-white/15"
+          class="rounded-lg bg-glass/10 px-4 py-2 text-sm font-semibold text-primary ring-1 ring-inset ring-dim transition hover:bg-glass/15"
           data-cy="sample-dialog-trigger"
           @click="openDialog"
         >
@@ -214,20 +212,20 @@
                 leave-to="opacity-0 translate-y-2 scale-95"
               >
                 <DialogPanel
-                  class="w-full max-w-lg rounded-2xl border border-slate-800 bg-surface-soft p-6 shadow-2xl"
+                  class="w-full max-w-lg rounded-2xl border border-dim bg-surface-soft p-6 shadow-2xl"
                 >
                   <div class="flex items-start justify-between gap-4">
                     <div class="space-y-2">
-                      <Dialog.Title class="text-lg font-semibold text-slate-50">
+                      <Dialog.Title class="text-lg font-semibold text-primary">
                         {{ t('home.utilities.dialog.title') }}
                       </Dialog.Title>
-                      <Dialog.Description class="text-sm text-slate-400">
+                      <Dialog.Description class="text-sm text-tertiary">
                         {{ t('home.utilities.dialog.body') }}
                       </Dialog.Description>
                     </div>
                     <button
                       type="button"
-                      class="rounded-full bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:bg-slate-700"
+                      class="rounded-full bg-surface-strong px-3 py-2 text-xs font-semibold text-secondary transition hover:bg-surface"
                       @click="closeDialog"
                     >
                       {{ t('home.utilities.dialog.close') }}
@@ -235,7 +233,7 @@
                   </div>
 
                   <div
-                    class="mt-4 rounded-xl border border-slate-800 bg-surface-soft px-4 py-3 text-sm text-slate-200"
+                    class="mt-4 rounded-xl border border-dim bg-surface-soft px-4 py-3 text-sm text-secondary"
                   >
                     {{ t('home.utilities.dialog.helper') }}
                   </div>

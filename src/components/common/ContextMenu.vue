@@ -136,26 +136,26 @@
     @wheel.stop.prevent="contextData?.onScroll?.($event)"
   >
     <div
-      class="flex flex-col rounded-xl border border-white/10 bg-surface-soft/90 p-1 shadow-card backdrop-blur-xl"
+      class="flex flex-col rounded-xl border border-glass/15 bg-surface-soft/90 p-1 shadow-card backdrop-blur-xl"
     >
       <button
         v-for="(item, idx) in menuItems"
         :key="idx"
-        class="flex w-full flex-col gap-1 rounded px-3 py-2 text-left hover:bg-white/10"
-        :class="item.highlight ? 'bg-white/5 border border-white/10' : ''"
+        class="flex w-full flex-col gap-1 rounded px-3 py-2 text-left hover:bg-glass/5"
+        :class="item.highlight ? 'bg-glass/5 border border-dim' : ''"
         @click="item.action"
       >
         <div class="flex items-center gap-2">
           <component
             :is="item.icon"
             v-if="item.icon"
-            class="h-4 w-4 text-slate-400"
+            class="h-4 w-4 text-tertiary"
           />
-          <span class="text-sm font-medium text-slate-200">{{ item.label }}</span>
+          <span class="text-sm font-medium text-primary">{{ item.label }}</span>
         </div>
         <div
           v-if="item.sub"
-          class="text-xs font-mono text-slate-400 pl-6?"
+          class="text-xs font-mono text-tertiary"
         >
           {{ item.sub }}
         </div>

@@ -3,11 +3,11 @@
   import { computed, ref, watchEffect } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { storeToRefs } from 'pinia';
-  import { MoonIcon, SunIcon } from '@heroicons/vue/24/solid';
 
   import ColorPickerCard from '@/components/tonal-builder/ColorPickerCard.vue';
   import ContrastPreviewCard from '@/components/tonal-builder/ContrastPreviewCard.vue';
   import TonalStrip from '@/components/tonal-builder/TonalStrip.vue';
+  import ThemeToggle from '@/components/common/ThemeToggle.vue';
   import {
     type BlendControlId,
     type ControlError,
@@ -20,9 +20,12 @@
   import type { TonalStep } from '@/utils/tonal/scale';
   import { useClipboard } from '@/composables/useClipboard';
   import { useTonalExport } from '@/composables/useTonalExport';
+  import useTonalUrlSync from '@/composables/useTonalUrlSync';
+  import TheImportExportModal from '@/components/tonal-builder/TheImportExportModal.vue';
   import type { PairingSelection } from '@/components/tonal-builder/types';
 
   const { t } = useI18n();
+  const isImportModalOpen = ref(false);
 
   const pageTitle = computed(() => t('tonal_builder.meta.title'));
   const pageDescription = computed(() => t('tonal_builder.meta.description'));
@@ -31,6 +34,7 @@
     useTonalBuilderColors();
 
   const tonalScale = useTonalScaleStore();
+  useTonalUrlSync(tonalScale);
   const { blendDistribution, extendedStrip, fullStrip, keyStrip, scale } = storeToRefs(tonalScale);
 
   const {
@@ -214,6 +218,10 @@
     aria-labelledby="tonal-builder-heading"
     data-cy="tonal-builder-home"
   >
+    <TheImportExportModal
+      :is-open="isImportModalOpen"
+      @close="isImportModalOpen = false"
+    />
     <h1
       id="tonal-builder-heading"
       class="sr-only"
@@ -233,17 +241,17 @@
         <div class="flex flex-wrap items-center gap-3">
           <div
             id="baseColorPickerInput"
-            class="flex items-center gap-3 rounded-2xl border border-dashed border-accent-soft/40 bg-surface-soft/80 px-4 py-3 shadow-card"
+            class="flex items-center gap-3 rounded-2xl border border-dashed border-dim/50 bg-surface-soft/80 px-4 py-3 shadow-card"
           >
             <div
-              class="h-10 w-10 rounded-full border border-white/10"
+              class="h-10 w-10 rounded-full border border-dim"
               :style="baseSwatchStyle"
             />
             <div class="space-y-1">
-              <p class="text-sm font-semibold text-slate-100">
+              <p class="text-sm font-semibold text-primary">
                 {{ t('tonal_builder.pickers.base.title') }}
               </p>
-              <p class="text-xs text-slate-400">
+              <p class="text-xs text-tertiary">
                 {{ baseHex }}
               </p>
             </div>
@@ -251,17 +259,17 @@
 
           <div
             id="blendColorPickerInput"
-            class="flex items-center gap-3 rounded-2xl border border-dashed border-accent-soft/40 bg-surface-soft/80 px-4 py-3 shadow-card"
+            class="flex items-center gap-3 rounded-2xl border border-dashed border-dim/50 bg-surface-soft/80 px-4 py-3 shadow-card"
           >
             <div
-              class="h-10 w-10 rounded-full border border-white/10"
+              class="h-10 w-10 rounded-full border border-dim"
               :style="blendSwatchStyle"
             />
             <div class="space-y-1">
-              <p class="text-sm font-semibold text-slate-100">
+              <p class="text-sm font-semibold text-primary">
                 {{ t('tonal_builder.pickers.blend.title') }}
               </p>
-              <p class="text-xs text-slate-400">
+              <p class="text-xs text-tertiary">
                 {{ blendHex }}
               </p>
             </div>
@@ -277,32 +285,25 @@
             type="button"
             class="inline-flex items-center gap-2 rounded-xl bg-accent-strong/20 px-4 py-2 text-sm font-semibold text-accent-strong shadow-glow ring-1 ring-inset ring-accent-strong/30 backdrop-blur transition hover:bg-accent-strong/30"
             data-cy="tonal-builder-import"
+            @click="isImportModalOpen = true"
           >
             {{ t('tonal_builder.actions.import_export') }}
           </button>
           <button
             id="copy-button"
             type="button"
-            class="inline-flex items-center gap-2 rounded-xl bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 ring-1 ring-inset ring-white/10 transition hover:bg-white/10"
+            class="inline-flex items-center gap-2 rounded-xl bg-surface-soft px-4 py-2 text-sm font-semibold text-primary ring-1 ring-inset ring-glass/10 transition hover:bg-surface-strong"
             data-cy="tonal-builder-copy"
             @click="handleCopySvg"
           >
             {{ t('tonal_builder.actions.copy_svg') }}
           </button>
-          <button
+
+          <ThemeToggle
             id="theme-toggle"
-            type="button"
-            class="inline-flex h-12 w-12 items-center justify-center rounded-full border border-slate-700 bg-surface-soft/60 text-slate-200 ring-1 ring-inset ring-white/10 transition hover:bg-white/5"
-            :aria-label="t('tonal_builder.actions.theme_toggle')"
+            class="!h-12 !w-12 !rounded-full !bg-surface-soft !text-secondary ring-1 ring-inset ring-glass/10 hover:!bg-surface-strong"
             data-cy="tonal-builder-theme-toggle"
-          >
-            <div
-              class="icon-holder flex h-full w-full flex-col items-center justify-center overflow-hidden text-lg"
-            >
-              <MoonIcon class="moon h-5 w-5" />
-              <SunIcon class="sun h-5 w-5" />
-            </div>
-          </button>
+          />
         </div>
       </div>
 
@@ -336,10 +337,10 @@
         <p class="text-sm uppercase tracking-wide text-accent-soft">
           {{ t('tonal_builder.scales.badge') }}
         </p>
-        <p class="text-lg font-semibold text-slate-100">
+        <p class="text-lg font-semibold text-primary">
           {{ t('tonal_builder.scales.title') }}
         </p>
-        <p class="text-sm text-slate-400">{{ t('tonal_builder.scales.description') }}</p>
+        <p class="text-sm text-tertiary">{{ t('tonal_builder.scales.description') }}</p>
         <p
           class="sr-only"
           role="status"
@@ -352,10 +353,10 @@
       <div class="space-y-4">
         <div class="space-y-2">
           <div class="flex items-center justify-between">
-            <span class="text-sm font-semibold text-slate-100">
+            <span class="text-sm font-semibold text-primary">
               {{ t('tonal_builder.scales.full') }}
             </span>
-            <span class="text-xs text-slate-500">{{ t('tonal_builder.scales.full_helper') }}</span>
+            <span class="text-xs text-secondary">{{ t('tonal_builder.scales.full_helper') }}</span>
           </div>
           <TonalStrip
             id="color-scale-container-full"
@@ -372,10 +373,10 @@
 
         <div class="space-y-2">
           <div class="flex items-center justify-between">
-            <span class="text-sm font-semibold text-slate-100">
+            <span class="text-sm font-semibold text-primary">
               {{ t('tonal_builder.scales.extended') }}
             </span>
-            <span class="text-xs text-slate-500">{{
+            <span class="text-xs text-secondary">{{
               t('tonal_builder.scales.extended_helper')
             }}</span>
           </div>
@@ -391,10 +392,10 @@
 
         <div class="space-y-2">
           <div class="flex items-center justify-between">
-            <span class="text-sm font-semibold text-slate-100">
+            <span class="text-sm font-semibold text-primary">
               {{ t('tonal_builder.scales.key') }}
             </span>
-            <span class="text-xs text-slate-500">{{ t('tonal_builder.scales.key_helper') }}</span>
+            <span class="text-xs text-secondary">{{ t('tonal_builder.scales.key_helper') }}</span>
           </div>
           <TonalStrip
             id="color-scale-container-key"
@@ -412,16 +413,16 @@
       class="space-y-3"
       :aria-label="t('tonal_builder.controls.title')"
     >
-      <p class="text-lg font-semibold text-slate-100">{{ t('tonal_builder.controls.title') }}</p>
-      <p class="text-sm text-slate-400">{{ t('tonal_builder.controls.description') }}</p>
+      <p class="text-lg font-semibold text-primary">{{ t('tonal_builder.controls.title') }}</p>
+      <p class="text-sm text-tertiary">{{ t('tonal_builder.controls.description') }}</p>
 
       <div
         id="gradient-controls"
-        class="grid grid-cols-1 items-center gap-3 rounded-3xl border border-dashed border-white/15 bg-surface-soft/80 p-4 sm:grid-cols-[auto_minmax(0,1fr)_88px]"
+        class="grid grid-cols-1 items-center gap-3 rounded-3xl border border-dashed border-dim/50 bg-surface-soft/80 p-4 sm:grid-cols-[auto_minmax(0,1fr)_88px]"
         data-cy="gradient-controls"
       >
         <label
-          class="text-sm font-semibold text-slate-100"
+          class="text-sm font-semibold text-primary"
           for="blendmode"
         >
           {{ t('tonal_builder.controls.labels.blend_mode') }}
@@ -430,7 +431,7 @@
           id="blendmode"
           v-model="blendModeModel"
           name="blendmode"
-          class="h-11 w-full rounded-xl border border-white/10 bg-surface px-3 text-sm text-slate-100 shadow-inner"
+          class="h-11 w-full rounded-xl border border-dim bg-surface px-3 text-sm text-primary shadow-inner"
           data-cy="blendmode-select"
         >
           <option
@@ -447,7 +448,7 @@
         />
 
         <label
-          class="flex items-center gap-2 text-sm font-semibold text-slate-100"
+          class="flex items-center gap-2 text-sm font-semibold text-primary"
           for="blendColorPickerInput"
         >
           <span class="h-3 w-3 rounded-full bg-accent-soft" />
@@ -460,19 +461,19 @@
             data-cy="blend-color-input"
           >
             <span
-              class="h-8 w-8 rounded-xl border border-white/10"
+              class="h-8 w-8 rounded-xl border border-dim"
               :style="blendSwatchStyle"
               role="img"
               :aria-label="t('tonal_builder.pickers.blend.title')"
             />
-            <span class="text-xs font-semibold text-slate-200">{{ blendHex }}</span>
+            <span class="text-xs font-semibold text-secondary">{{ blendHex }}</span>
           </div>
           <div
             id="blendColorPicker"
             class="flex h-11 flex-1 items-center justify-between rounded-xl border border-dashed border-accent-soft/40 bg-surface/70 px-3"
             data-cy="blend-color-picker"
           >
-            <span class="text-xs font-semibold uppercase tracking-wide text-slate-300">
+            <span class="text-xs font-semibold uppercase tracking-wide text-tertiary">
               {{ t('tonal_builder.controls.labels.blend_mode') }}
             </span>
             <span class="text-xs font-semibold text-accent-soft">{{ blendModeModel }}</span>
@@ -485,7 +486,7 @@
         >
           <label
             :for="control.range.id"
-            class="text-sm font-semibold text-slate-100"
+            class="text-sm font-semibold text-primary"
           >
             {{ control.label }}
           </label>
@@ -513,7 +514,7 @@
             :min="control.number.min"
             :max="control.number.max"
             :step="control.number.step"
-            class="h-11 w-full rounded-xl border border-white/10 bg-surface px-3 text-sm text-slate-100 shadow-inner"
+            class="h-11 w-full rounded-xl border border-dim bg-surface px-3 text-sm text-primary shadow-inner"
             :aria-label="control.label"
             :data-cy="`${control.id}-value`"
             @input="onControlInput(control.id, ($event.target as HTMLInputElement).value)"
@@ -541,10 +542,10 @@
       :aria-label="t('tonal_builder.accessibility.title')"
     >
       <div class="flex flex-wrap items-baseline gap-2">
-        <p class="text-lg font-semibold text-slate-100">
+        <p class="text-lg font-semibold text-primary">
           {{ t('tonal_builder.accessibility.title') }}
         </p>
-        <p class="text-sm text-slate-400">
+        <p class="text-sm text-tertiary">
           {{ t('tonal_builder.accessibility.description') }}
         </p>
       </div>
@@ -584,148 +585,6 @@
       </div>
     </section>
 
-    <section
-      class="space-y-4"
-      :aria-label="t('tonal_builder.overlays.title')"
-    >
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <p class="text-lg font-semibold text-slate-100">
-            {{ t('tonal_builder.overlays.title') }}
-          </p>
-          <p class="text-sm text-slate-400">{{ t('tonal_builder.overlays.description') }}</p>
-        </div>
-        <span class="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-slate-100">
-          {{ t('tonal_builder.overlays.badge') }}
-        </span>
-      </div>
-
-      <div class="grid gap-3 lg:grid-cols-2">
-        <div
-          class="card-surface relative overflow-visible border-dashed border-white/15 bg-surface-soft/80"
-          data-cy="interactive-overlays-placeholder"
-        >
-          <p class="text-sm font-semibold text-slate-100">
-            {{ t('tonal_builder.overlays.hover') }}
-          </p>
-          <p class="text-sm text-slate-400">{{ t('tonal_builder.overlays.hover_helper') }}</p>
-          <div class="mt-3 h-32 rounded-xl border border-white/10 bg-surface/60" />
-        </div>
-
-        <div
-          class="card-surface relative overflow-visible border-dashed border-white/15 bg-surface-soft/80"
-          data-cy="context-menus-placeholder"
-        >
-          <p class="text-sm font-semibold text-slate-100">
-            {{ t('tonal_builder.overlays.menus') }}
-          </p>
-          <p class="text-sm text-slate-400">{{ t('tonal_builder.overlays.menus_helper') }}</p>
-          <div class="mt-3 h-32 rounded-xl border border-white/10 bg-surface/60" />
-        </div>
-      </div>
-    </section>
-
-    <section
-      class="space-y-3"
-      :aria-label="t('tonal_builder.modals.title')"
-    >
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p class="text-lg font-semibold text-slate-100">{{ t('tonal_builder.modals.title') }}</p>
-          <p class="text-sm text-slate-400">{{ t('tonal_builder.modals.description') }}</p>
-        </div>
-        <span
-          class="rounded-full bg-accent-strong/20 px-3 py-1 text-xs font-semibold text-accent-strong"
-        >
-          {{ t('tonal_builder.modals.badge') }}
-        </span>
-      </div>
-
-      <div class="grid gap-3 lg:grid-cols-3">
-        <div
-          class="card-surface relative overflow-visible border-dashed border-white/15 bg-surface-soft/80"
-          data-cy="modal-dialog-placeholder"
-        >
-          <p class="text-sm font-semibold text-slate-100">
-            {{ t('tonal_builder.modals.dialogs') }}
-          </p>
-          <p class="text-sm text-slate-400">{{ t('tonal_builder.modals.dialogs_helper') }}</p>
-          <div class="mt-3 h-24 rounded-xl border border-white/10 bg-surface/60" />
-        </div>
-        <div
-          class="card-surface relative overflow-visible border-dashed border-white/15 bg-surface-soft/80"
-          data-cy="clipboard-placeholder"
-        >
-          <p class="text-sm font-semibold text-slate-100">
-            {{ t('tonal_builder.modals.clipboard') }}
-          </p>
-          <p class="text-sm text-slate-400">{{ t('tonal_builder.modals.clipboard_helper') }}</p>
-          <div class="mt-3 h-24 rounded-xl border border-white/10 bg-surface/60" />
-        </div>
-        <div
-          class="card-surface relative overflow-visible border-dashed border-white/15 bg-surface-soft/80"
-          data-cy="toast-area-placeholder"
-        >
-          <p class="text-sm font-semibold text-slate-100">
-            {{ t('tonal_builder.modals.toast_area') }}
-          </p>
-          <p class="text-sm text-slate-400">{{ t('tonal_builder.modals.toast_helper') }}</p>
-          <div class="mt-3 h-24 rounded-xl border border-white/10 bg-surface/60" />
-        </div>
-      </div>
-
-      <div
-        id="dialog-overlay"
-        class="fixed inset-0 z-20 hidden bg-black/60"
-        aria-hidden="true"
-        data-cy="dialog-overlay"
-      />
-      <div
-        id="dialog"
-        class="fixed inset-x-4 top-20 z-30 hidden space-y-4 rounded-2xl border border-white/15 bg-surface-soft/95 p-4 shadow-card"
-        role="dialog"
-        aria-labelledby="dialog-title"
-        data-cy="dialog-shell"
-      >
-        <div
-          id="dialog-header"
-          class="flex items-center justify-between gap-3"
-        >
-          <label
-            id="dialog-title"
-            class="text-base font-semibold text-slate-100"
-          >
-            {{ t('tonal_builder.modals.dialog_title') }}
-          </label>
-          <button
-            id="dialog-close"
-            type="button"
-            class="rounded-full border border-white/10 px-3 py-1 text-lg text-slate-100 hover:bg-white/5"
-            :aria-label="t('tonal_builder.modals.close_label')"
-          >
-            &times;
-          </button>
-        </div>
-        <div
-          id="dialog-body"
-          class="min-h-[120px] rounded-xl border border-dashed border-white/10 bg-surface/60"
-          :aria-label="t('tonal_builder.modals.dialog_body')"
-        />
-        <div
-          id="dialog-footer"
-          class="min-h-[56px] rounded-xl border border-white/10 bg-surface/50"
-        />
-      </div>
-
-      <div
-        id="copied-message"
-        class="fixed left-1/2 top-6 z-40 hidden -translate-x-1/2 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-slate-900 shadow-card"
-        role="status"
-        aria-live="polite"
-        data-cy="copied-message"
-      >
-        {{ t('tonal_builder.actions.copied_message') }}
-      </div>
-    </section>
+    <!-- Scaffolding sections removed -->
   </main>
 </template>

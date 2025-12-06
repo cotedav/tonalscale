@@ -4,15 +4,26 @@ import forms from '@tailwindcss/forms';
 
 const config: Config = {
   content: ['./index.html', './src/**/*.{vue,ts,tsx,js,jsx}'],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        surface: '#0c1224',
-        'surface-strong': '#0f172a',
-        'surface-soft': '#111a2f',
-        accent: '#a855f7',
-        'accent-strong': '#7c3aed',
-        'accent-soft': '#c4b5fd',
+        surface: 'rgb(var(--color-surface) / <alpha-value>)',
+        'surface-strong': 'rgb(var(--color-surface-strong) / <alpha-value>)',
+        'surface-soft': 'rgb(var(--color-surface-soft) / <alpha-value>)',
+        accent: 'rgb(var(--color-accent) / <alpha-value>)',
+        'accent-strong': 'rgb(var(--color-accent-strong) / <alpha-value>)',
+        'accent-soft': 'rgb(var(--color-accent-soft) / <alpha-value>)',
+      },
+      textColor: {
+        primary: 'rgb(var(--color-text-primary) / <alpha-value>)',
+        secondary: 'rgb(var(--color-text-secondary) / <alpha-value>)',
+        tertiary: 'rgb(var(--color-text-tertiary) / <alpha-value>)',
+      },
+      borderColor: {
+        dim: 'rgb(var(--color-border-dim) / <alpha-value>)',
+        highlight: 'rgb(var(--color-border-highlight) / <alpha-value>)',
+        glass: 'rgb(var(--color-border-glass) / <alpha-value>)',
       },
       fontFamily: {
         sans: ['"Inter Variable"', ...defaultTheme.fontFamily.sans],

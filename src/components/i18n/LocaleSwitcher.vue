@@ -30,23 +30,23 @@
     data-cy="locale-switcher"
   >
     <div class="flex items-center justify-between">
-      <div class="text-sm font-semibold text-slate-100">
+      <div class="text-sm font-semibold text-primary">
         {{ t('i18n.switcher.label') }}
       </div>
       <span
-        class="rounded-full bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-200"
+        class="rounded-full bg-surface-strong px-3 py-1 text-xs font-semibold text-secondary"
         data-cy="current-locale"
       >
         {{ t(`i18n.locales.${currentLocale}`) }}
       </span>
     </div>
 
-    <label class="flex flex-col gap-2 text-xs text-slate-400">
+    <label class="flex flex-col gap-2 text-xs text-tertiary">
       <span>{{ t('i18n.switcher.helper') }}</span>
       <div class="relative">
         <select
           :value="currentLocale"
-          class="w-full appearance-none rounded-lg border border-slate-700 bg-surface-soft px-3 py-2 text-sm font-medium text-slate-100 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent-strong/30"
+          class="w-full appearance-none rounded-lg border border-dim bg-surface-soft px-3 py-2 text-sm font-medium text-primary focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent-strong/30"
           data-cy="locale-select"
           @change="updateLocale"
         >
@@ -54,13 +54,12 @@
             v-for="option in options"
             :key="option.value"
             :value="option.value"
-            class="bg-surface-strong text-slate-100"
+            class="bg-surface-strong text-primary"
           >
             {{ option.title }}
           </option>
         </select>
-        <span
-          class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-500"
+        <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-tertiary"
           >⌄</span
         >
       </div>

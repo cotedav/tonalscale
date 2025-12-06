@@ -464,7 +464,7 @@
       @keydown="handleKeydown"
       @contextmenu.stop.prevent="handleSwatchContextMenu($event, swatch.tone, swatch.indexOnStrip)"
     >
-      <span class="color-number">{{ swatch.tone.index }}</span>
+      <span class="color-number text-tertiary">{{ swatch.tone.index }}</span>
       <span class="color-hex">{{ swatch.tone.hex }}</span>
       <div
         v-if="swatch.isBase"

@@ -40,8 +40,8 @@
   });
 
   const styles = computed(() => ({
-    '--bkg': props.background?.hex ?? '#77777e',
-    '--txt': props.text?.hex ?? '#e2e2e4',
+    '--bkg': props.background?.hex ?? '#334155', // Slate 700
+    '--txt': props.text?.hex ?? '#e2e8f0', // Slate 200
     opacity: hasPair.value ? 1 : 0.2,
   }));
 
