@@ -3,7 +3,7 @@ import { clamp } from './collection';
 export type RgbColor = { r: number; g: number; b: number };
 export type HsvColor = { h: number; s: number; v: number };
 
-const HEX_REGEX = /^#?[0-9a-fA-F]{6}$/;
+const HEX_REGEX = /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
 export function isValidHex(hex: string): boolean {
   return HEX_REGEX.test(hex.trim());

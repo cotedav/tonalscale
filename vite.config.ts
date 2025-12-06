@@ -77,6 +77,26 @@ export default defineConfig(({ mode }) => {
         provider: 'v8',
         reporter: ['text', 'json-summary', 'html'],
         reportsDirectory: 'coverage/unit',
+        exclude: [
+          'temp/**',
+          'src/js/**',
+          'dist/**',
+          'cypress/**',
+          '**/*.d.ts',
+          '**/*.config.{js,ts,cjs,mjs}',
+          '**/.eslintrc.cjs',
+          '**/.stylelintrc.cjs',
+          'src/main.ts',
+          'src/tests/**',
+        ],
+        thresholds: {
+          global: {
+            statements: 90,
+            branches: 90,
+            functions: 90,
+            lines: 90,
+          },
+        },
       },
     },
   };
