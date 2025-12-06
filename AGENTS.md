@@ -7,7 +7,7 @@
 
 ## Project overview
 
-- Vue 3 + TypeScript single-page PWA scaffold built with Vite and Vuetify 3. Supporting libraries include Pinia, Vue Router, Vue I18n, Vee-Validate (+Yup), VueUse, Lodash, and Luxon.
+- Vue 3 + TypeScript single-page PWA scaffold built with Vite, Tailwind CSS, and Headless UI. Supporting libraries include Pinia, Vue Router, Vue I18n, Vee-Validate (+Yup), VueUse, Lodash, and Luxon.
 - Testing stack: Vitest + Vue Test Utils (jsdom) for unit tests; Cypress for E2E/component tests. Linting via ESLint (Airbnb + Prettier) and Stylelint (SCSS + Vue SFCs).
 - PWA support uses `vite-plugin-pwa` with auto-update service worker and manifest placeholders. Main app shell lives in `src/App.vue`; routing in `src/router`; global styling in `src/styles`.
 - Business north star: Segic Plan Member Portal should become a holistic, multilingual, wellness-aware companion for plan members and a communication/automation engine for clients (insurers, brokers, unions). Keep code flexible for health, claims, marketplace, and guidance features.
@@ -46,7 +46,7 @@
 - Naming: prefix base components with `Base` (e.g., `BaseButton`), singletons with `The` (e.g., `TheHeader`). Component directories use **kebab-case** to avoid import-casing issues (e.g., `components/app-shell`).
 - Imports & aliases: use `@/` paths; avoid deeply relative imports. Do not wrap imports in try/catch.
 - State/routing: register Pinia and Vue Router in the app bootstrap (`src/main.ts`); place stores and routes in their respective directories; keep sample stores/routes minimal and non-domain-specific unless requirements dictate.
-- UI patterns: use Vuetify components and tooltips (instead of native `title`) for localization/theming consistency. Favor descriptive variable names; reserve single letters for simple loop indices only.
+- UI patterns: use Tailwind CSS utilities and Headless UI components. Use custom accessible tooltips (instead of native `title`) for localization/theming consistency. Favor descriptive variable names; reserve single letters for simple loop indices only.
 - Testing: prefer data-cy selectors in Cypress; use Vue Test Utils with jsdom for units. Keep example tests lightweight.
 - Filesystem hygiene: avoid introducing new top-level folders without alignment to the existing structure; keep generated artifacts out of source control.
 - Commit messages: follow Conventional Commits (`feat:`, `fix:`, `chore:`, etc.).
@@ -65,7 +65,7 @@
 
 - Build/config: `vite.config.ts`, lint configs, test runners, and CI stubs should only change when necessary and with careful review.
 - Generated assets: avoid editing compiled outputs or Cypress/Vitest snapshots without intent.
-- Shared UI shell (`src/App.vue`) and entry bootstrap (`src/main.ts`): maintain compatibility with Pinia, Router, I18n, Vuetify.
+- Shared UI shell (`src/App.vue`) and entry bootstrap (`src/main.ts`): maintain compatibility with Pinia, Router, I18n.
 
 ## Collaboration & PR guidelines
 
