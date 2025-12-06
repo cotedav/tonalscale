@@ -56,13 +56,17 @@
     return `calc(100% / ${count})`;
   });
 
-  const findMatches = (direction: ContrastDirection, ratio: number): ContrastMatch[] => {
-    if (state.activeIndex === null) return [];
+  /*
+   * Returns the closest tone index (to the active index) that satisfies the contrast ratio.
+   * "closest" means the first match found when searching outwards from the base.
+   */
+  const findClosestMatch = (direction: ContrastDirection, ratio: number): ContrastMatch | null => {
+    if (state.activeIndex === null) return null;
 
-    const matches: ContrastMatch[] = [];
     const increment = direction === 'lighter' ? 1 : -1;
     const baseTone = props.tones[state.activeIndex];
 
+    // Search outwards from active index
     for (
       let cursor = state.activeIndex + increment;
       cursor >= 0 && cursor < props.tones.length;
@@ -72,48 +76,162 @@
       const ratioValue = getContrastRatio(baseTone.hex, candidate.hex);
 
       if (ratioValue >= ratio) {
-        matches.push({ tone: candidate, ratio: ratioValue });
+        return { tone: candidate, ratio: ratioValue };
       }
     }
 
-    return matches;
+    return null;
   };
 
-  const matchBuckets = computed(() => {
+  const anchors = computed(() => {
     if (state.activeIndex === null) return null;
 
     return {
-      darker3: findMatches('darker', 3),
-      darker45: findMatches('darker', 4.5),
-      lighter3: findMatches('lighter', 3),
-      lighter45: findMatches('lighter', 4.5),
+      darker3: findClosestMatch('darker', 3),
+      darker45: findClosestMatch('darker', 4.5),
+      lighter3: findClosestMatch('lighter', 3),
+      lighter45: findClosestMatch('lighter', 4.5),
     };
   });
 
-  const maxOffset = computed(() => {
-    const lengths = Object.values(matchBuckets.value ?? {}).map((bucket) =>
-      Math.max(0, bucket.length - 1),
-    );
-
-    return lengths.length ? Math.max(...lengths) : 0;
-  });
-
-  const resolveWithOffset = (matches: ContrastMatch[]): ContrastMatch | null => {
-    if (!matches.length) return null;
-    const targetIndex = clamp(state.offset, 0, matches.length - 1);
-    return matches[targetIndex];
+  // Helper to safely get tone at index
+  const getToneAtIndex = (index: number): ContrastMatch | null => {
+    if (index < 0 || index >= props.tones.length) return null;
+    const tone = props.tones[index];
+    // Re-calculate ratio for this strictly spatial match
+    if (state.activeIndex === null) return null;
+    const baseTone = props.tones[state.activeIndex];
+    const ratio = getContrastRatio(baseTone.hex, tone.hex);
+    return { tone, ratio };
   };
 
   const resolvedMatches = computed(() => {
-    if (!matchBuckets.value || state.activeIndex === null) return null;
+    if (!anchors.value || state.activeIndex === null) return null;
+    const { darker3, darker45, lighter3, lighter45 } = anchors.value;
+
+    // For darker matches, increasing offset moves AWAY from base (lower index)
+    // For lighter matches, increasing offset moves AWAY from base (higher index)
+    const resolve = (anchor: ContrastMatch | null, direction: ContrastDirection) => {
+      if (!anchor) return null;
+      // Index delta: if darker, we substract offset. If lighter, we add offset.
+      // But we must also ensure we don't cross the base or go out of bounds.
+      // Actually, wait. The offset is always positive in the UI (it's a magnitude).
+      // Let's look at index.js: `closestIndex - offset` (darker) and `closestIndex + offset` (lighter).
+      // And offset is a positive integer derived from scroll.
+
+      const sign = direction === 'lighter' ? 1 : -1;
+      const targetIndex = props.tones.indexOf(anchor.tone) + sign * state.offset;
+
+      // Now clamp to bounds.
+      // Darker must be < activeIndex and >= 0
+      // Lighter must be > activeIndex and < tones.length
+      if (direction === 'darker') {
+        // Clamp between 0 and activeIndex - 1
+        const clampedIndex = clamp(targetIndex, 0, state.activeIndex! - 1);
+        return getToneAtIndex(clampedIndex);
+      } else {
+        // Clamp between activeIndex + 1 and length - 1
+        const clampedIndex = clamp(targetIndex, state.activeIndex! + 1, props.tones.length - 1);
+        return getToneAtIndex(clampedIndex);
+      }
+    };
 
     return {
-      darker3: resolveWithOffset(matchBuckets.value.darker3),
-      darker45: resolveWithOffset(matchBuckets.value.darker45),
-      lighter3: resolveWithOffset(matchBuckets.value.lighter3),
-      lighter45: resolveWithOffset(matchBuckets.value.lighter45),
+      darker3: resolve(darker3, 'darker'),
+      darker45: resolve(darker45, 'darker'),
+      lighter3: resolve(lighter3, 'lighter'),
+      lighter45: resolve(lighter45, 'lighter'),
     };
   });
+
+  // Calculate limits for the offset
+  const offsetLimits = computed(() => {
+    if (state.activeIndex === null || !anchors.value) return { min: 0, max: 0 };
+
+    const { darker3, darker45, lighter3, lighter45 } = anchors.value;
+    const baseIndex = state.activeIndex;
+    const totalTones = props.tones.length;
+
+    // We need to find the most restrictive limits that still allow movement.
+    // Actually, we want the most permissive limits that stay within bounds?
+    // No, "offset" is global. If we set offset to -10, ALL markers shift by -10.
+    // We must ensure that correctly shifting BY -10 keeps ALL active markers in bounds?
+    // Or do we stop them individually?
+    // The previous `resolve` logic clamps individually.
+    // So `state.offset` can technically go as far as we want, and markers just pile up at the edge.
+    // BUT to prevent "dead scrolling" (scrolling where nothing moves), we should limit `state.offset`
+    // to the range where AT LEAST ONE marker is still moving.
+    //
+    // For Min Offset (contraction towards base):
+    // We can decrease offset until the "furthest" marker hits the base neighbor?
+    // Or until the "closest" marker hits the base neighbor?
+    // If we have markers at 40 and 20 (Base 50).
+    // offset 0: 40, 20.
+    // offset -5: 45, 25.
+    // offset -9: 49, 29.
+    // offset -10: 50 (CLASH), 30.
+    // The previous clamping logic handles the clash.
+    // So we can let offset go to -Infinity and they just stick.
+    // But for UX, we probably want to stop scrolling when the *last* moving thing stops.
+    // Or just pick a reasonable range.
+    // Let's calculate the theoretical max range for each anchor.
+
+    // Darker anchors (index < base):
+    // Move towards base (negative offset): max move is (baseIndex - 1) - anchorIndex.
+    // Move away (positive offset): max move is anchorIndex - 0.
+
+    // Lighter anchors (index > base):
+    // Move towards base (negative offset): max move is anchorIndex - (baseIndex + 1).
+    // Move away (positive offset): max move is (length - 1) - anchorIndex.
+
+    // We want the range [min, max] where min is negative.
+    // Min limit is the negative of the maximum possible contraction.
+    // Max limit is the maximum possible expansion.
+
+    let maxContraction = 0; // Absolute value
+    let maxExpansion = 0;
+
+    const check = (anchorIndex: number, isDarker: boolean) => {
+      if (isDarker) {
+        // Anchor < Base
+        // Contraction (move to Base-1): Distance = (baseIndex - 1) - anchorIndex
+        maxContraction = Math.max(maxContraction, Math.max(0, baseIndex - 1 - anchorIndex));
+        // Expansion (move to 0): Distance = anchorIndex
+        // For darker, expansion (positive offset) moves to 0?
+        // Wait, `target = anchor - offset`. Positive offset reduces index.
+        // Yes. So max positive offset = anchorIndex.
+        maxExpansion = Math.max(maxExpansion, anchorIndex);
+      } else {
+        // Anchor > Base
+        // Contraction (move to Base+1): Distance = anchorIndex - (baseIndex + 1)
+        maxContraction = Math.max(maxContraction, Math.max(0, anchorIndex - (baseIndex + 1)));
+        // Expansion (move to End): Distance = (total - 1) - anchorIndex.
+        // `target = anchor + offset`. Positive offset increases index.
+        maxExpansion = Math.max(maxExpansion, totalTones - 1 - anchorIndex);
+      }
+    };
+
+    if (darker3) check(darker3.tone.index, true);
+    if (darker45) check(darker45.tone.index, true);
+    if (lighter3) check(lighter3.tone.index, false);
+    if (lighter45) check(lighter45.tone.index, false);
+
+    return {
+      min: -maxContraction,
+      max: maxExpansion,
+    };
+  });
+
+  const maxOffset = computed(() => offsetLimits.value.max); // Kept for compat if needed, but we use limits now
+
+  const adjustOffset = (delta: number) => {
+    // Current logic: state.offset
+    // New logic: clamp between min and max
+    const { min, max } = offsetLimits.value;
+    const next = clamp(state.offset + delta, min, max);
+    if (next === state.offset) return;
+    state.offset = next;
+  };
 
   const helperDots = computed(() => {
     const dots = new Map<
@@ -193,12 +311,6 @@
     }
   });
 
-  const adjustOffset = (delta: number) => {
-    const next = clamp(state.offset + delta, 0, maxOffset.value);
-    if (next === state.offset) return;
-    state.offset = next;
-  };
-
   const handleWheel = (event: WheelEvent) => {
     if (state.activeIndex === null) return;
     event.preventDefault();
@@ -225,10 +337,12 @@
     }
   };
 
-  watch(matchBuckets, () => {
-    if (state.offset > maxOffset.value) {
-      state.offset = maxOffset.value;
-    }
+  watch(state, (newState) => {
+    if (state.activeIndex === null) return;
+    // Ensure offset stays within dynamic limits if context changes
+    const { min, max } = offsetLimits.value;
+    if (newState.offset < min) state.offset = min;
+    if (newState.offset > max) state.offset = max;
   });
 
   watch([resolvedMatches, () => state.activeIndex, () => state.offset], emitSelection);
