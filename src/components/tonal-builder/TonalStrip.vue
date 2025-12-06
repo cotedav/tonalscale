@@ -129,11 +129,10 @@
         // Clamp between 0 and activeIndex - 1
         const clampedIndex = clamp(targetIndex, 0, state.activeIndex! - 1);
         return getToneAtIndex(clampedIndex);
-      } else {
-        // Clamp between activeIndex + 1 and length - 1
-        const clampedIndex = clamp(targetIndex, state.activeIndex! + 1, props.tones.length - 1);
-        return getToneAtIndex(clampedIndex);
       }
+      // Clamp between activeIndex + 1 and length - 1
+      const clampedIndex = clamp(targetIndex, state.activeIndex! + 1, props.tones.length - 1);
+      return getToneAtIndex(clampedIndex);
     };
 
     return {
@@ -211,18 +210,16 @@
       }
     };
 
-    if (darker3) check(darker3.tone.index, true);
-    if (darker45) check(darker45.tone.index, true);
-    if (lighter3) check(lighter3.tone.index, false);
-    if (lighter45) check(lighter45.tone.index, false);
+    if (darker3) check(props.tones.indexOf(darker3.tone), true);
+    if (darker45) check(props.tones.indexOf(darker45.tone), true);
+    if (lighter3) check(props.tones.indexOf(lighter3.tone), false);
+    if (lighter45) check(props.tones.indexOf(lighter45.tone), false);
 
     return {
       min: -maxContraction,
       max: maxExpansion,
     };
   });
-
-  const maxOffset = computed(() => offsetLimits.value.max); // Kept for compat if needed, but we use limits now
 
   const adjustOffset = (delta: number) => {
     // Current logic: state.offset
@@ -231,6 +228,18 @@
     const next = clamp(state.offset + delta, min, max);
     if (next === state.offset) return;
     state.offset = next;
+  };
+
+  const handleWheel = (event: WheelEvent) => {
+    if (state.activeIndex === null) {
+      console.error('DEBUG: handleWheel activeIndex is null');
+      return;
+    }
+    event.preventDefault();
+    const step = event.shiftKey ? 2 : 1;
+    const delta = Math.sign(event.deltaY) * step;
+
+    adjustOffset(delta);
   };
 
   const helperDots = computed(() => {
@@ -310,14 +319,6 @@
       emit('pairing-change', null);
     }
   });
-
-  const handleWheel = (event: WheelEvent) => {
-    if (state.activeIndex === null) return;
-    event.preventDefault();
-    const step = event.shiftKey ? 2 : 1;
-    const delta = Math.sign(event.deltaY) * step;
-    adjustOffset(delta);
-  };
 
   const handleKeydown = (event: KeyboardEvent) => {
     if (!['ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowUp'].includes(event.key)) return;
