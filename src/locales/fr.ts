@@ -181,6 +181,7 @@ export default {
     surface_preview: {
       title: 'Apercu des surfaces Material',
       helper: 'Tons generes appliques a un espace operationnel',
+      dark_mode: 'Utiliser les surfaces sombres dans l apercu',
       app_name: 'Grand livre',
       navigation: 'Navigation de l apercu',
       nav: {

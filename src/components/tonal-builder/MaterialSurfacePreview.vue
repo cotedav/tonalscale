@@ -1,11 +1,13 @@
 <script setup lang="ts">
-  import { computed } from 'vue';
+  import { computed, ref } from 'vue';
   import {
     BellIcon,
     ChevronDownIcon,
     EllipsisVerticalIcon,
     MagnifyingGlassIcon,
+    MoonIcon,
     PlusIcon,
+    SunIcon,
   } from '@heroicons/vue/24/outline';
   import { useI18n } from 'vue-i18n';
 
@@ -16,25 +18,44 @@
   }>();
 
   const { t } = useI18n();
+  const isDarkMode = ref(false);
 
   const toneAt = (index: number, fallback: string) =>
     props.tones.find((tone) => tone.index === index)?.hex ?? fallback;
 
-  const surfaceStyles = computed(() => ({
-    '--preview-surface': toneAt(98, '#fafafa'),
-    '--preview-surface-dim': toneAt(90, '#e5e5e5'),
-    '--preview-surface-container-low': toneAt(95, '#f2f2f2'),
-    '--preview-surface-container': toneAt(92, '#ebebeb'),
-    '--preview-surface-container-high': toneAt(86, '#d9d9d9'),
-    '--preview-surface-container-highest': toneAt(80, '#cccccc'),
-    '--preview-inverse-surface': toneAt(20, '#333333'),
-    '--preview-on-surface': toneAt(10, '#1a1a1a'),
-    '--preview-on-surface-variant': toneAt(35, '#595959'),
-    '--preview-on-inverse': toneAt(98, '#fafafa'),
-    '--preview-outline': toneAt(70, '#b3b3b3'),
-    '--preview-primary': toneAt(40, '#666666'),
-    '--preview-on-primary': toneAt(100, '#ffffff'),
-  }));
+  const surfaceStyles = computed(() =>
+    isDarkMode.value
+      ? {
+          '--preview-surface': toneAt(6, '#101010'),
+          '--preview-surface-dim': toneAt(4, '#0a0a0a'),
+          '--preview-surface-container-low': toneAt(10, '#1a1a1a'),
+          '--preview-surface-container': toneAt(12, '#1f1f1f'),
+          '--preview-surface-container-high': toneAt(17, '#2b2b2b'),
+          '--preview-surface-container-highest': toneAt(22, '#383838'),
+          '--preview-inverse-surface': toneAt(90, '#e5e5e5'),
+          '--preview-on-surface': toneAt(90, '#e5e5e5'),
+          '--preview-on-surface-variant': toneAt(80, '#cccccc'),
+          '--preview-on-inverse': toneAt(20, '#333333'),
+          '--preview-outline': toneAt(60, '#999999'),
+          '--preview-primary': toneAt(80, '#cccccc'),
+          '--preview-on-primary': toneAt(20, '#333333'),
+        }
+      : {
+          '--preview-surface': toneAt(98, '#fafafa'),
+          '--preview-surface-dim': toneAt(90, '#e5e5e5'),
+          '--preview-surface-container-low': toneAt(95, '#f2f2f2'),
+          '--preview-surface-container': toneAt(92, '#ebebeb'),
+          '--preview-surface-container-high': toneAt(86, '#d9d9d9'),
+          '--preview-surface-container-highest': toneAt(80, '#cccccc'),
+          '--preview-inverse-surface': toneAt(20, '#333333'),
+          '--preview-on-surface': toneAt(10, '#1a1a1a'),
+          '--preview-on-surface-variant': toneAt(35, '#595959'),
+          '--preview-on-inverse': toneAt(98, '#fafafa'),
+          '--preview-outline': toneAt(70, '#b3b3b3'),
+          '--preview-primary': toneAt(40, '#666666'),
+          '--preview-on-primary': toneAt(100, '#ffffff'),
+        },
+  );
 
   const rows = computed(() => [
     {
@@ -74,14 +95,38 @@
       <h2 class="text-sm font-semibold text-primary">
         {{ t('tonal_builder.surface_preview.title') }}
       </h2>
-      <span class="text-xs text-secondary">
-        {{ t('tonal_builder.surface_preview.helper') }}
-      </span>
+      <div class="flex items-center gap-4">
+        <span class="hidden text-xs text-secondary sm:inline">
+          {{ t('tonal_builder.surface_preview.helper') }}
+        </span>
+        <label
+          class="preview-theme-toggle"
+          for="surface-preview-dark-mode"
+        >
+          <SunIcon aria-hidden="true" />
+          <input
+            id="surface-preview-dark-mode"
+            v-model="isDarkMode"
+            type="checkbox"
+            class="peer sr-only"
+            data-cy="surface-preview-dark-mode"
+          />
+          <span
+            class="preview-theme-track"
+            aria-hidden="true"
+          >
+            <span class="preview-theme-thumb" />
+          </span>
+          <MoonIcon aria-hidden="true" />
+          <span class="sr-only">{{ t('tonal_builder.surface_preview.dark_mode') }}</span>
+        </label>
+      </div>
     </div>
 
     <div
       class="preview-shell"
       :style="surfaceStyles"
+      :data-theme="isDarkMode ? 'dark' : 'light'"
       data-cy="surface-preview-shell"
     >
       <header
@@ -249,6 +294,60 @@
     color: var(--preview-on-surface);
     box-shadow: 0 12px 32px rgb(0 0 0 / 14%);
     font-size: 11px;
+    transition:
+      background-color 180ms ease,
+      color 180ms ease,
+      border-color 180ms ease;
+  }
+
+  .preview-theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: rgb(var(--color-text-secondary));
+    cursor: pointer;
+  }
+
+  .preview-theme-toggle > svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .preview-theme-track {
+    position: relative;
+    width: 38px;
+    height: 21px;
+    border: 1px solid rgb(var(--color-border-dim));
+    border-radius: 999px;
+    background: rgb(var(--color-surface-strong));
+    transition: background-color 160ms ease;
+  }
+
+  .preview-theme-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: rgb(var(--color-text-secondary));
+    transition:
+      transform 160ms ease,
+      background-color 160ms ease;
+  }
+
+  .peer:checked + .preview-theme-track {
+    background: rgb(var(--color-accent-strong));
+  }
+
+  .peer:checked + .preview-theme-track .preview-theme-thumb {
+    background: white;
+    transform: translateX(17px);
+  }
+
+  .peer:focus-visible + .preview-theme-track {
+    outline: 2px solid rgb(var(--color-accent));
+    outline-offset: 2px;
   }
 
   .preview-topbar,

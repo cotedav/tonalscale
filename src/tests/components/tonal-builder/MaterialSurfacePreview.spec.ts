@@ -27,4 +27,24 @@ describe('MaterialSurfacePreview', () => {
     expect(shell.attributes('style')).toContain(`--preview-surface: ${updatedTones[98].hex}`);
     expect(shell.attributes('style')).toContain(`--preview-primary: ${updatedTones[40].hex}`);
   });
+
+  it('inverts Material surface roles when dark mode is enabled', async () => {
+    const tones = buildTones('33');
+    const wrapper = mount(MaterialSurfacePreview, {
+      props: { tones },
+    });
+
+    const shell = wrapper.get('[data-cy="surface-preview-shell"]');
+    const toggle = wrapper.get('[data-cy="surface-preview-dark-mode"]');
+    await toggle.setValue(true);
+
+    expect(shell.attributes('data-theme')).toBe('dark');
+    expect(shell.attributes('style')).toContain(`--preview-surface: ${tones[6].hex}`);
+    expect(shell.attributes('style')).toContain(
+      `--preview-surface-container-highest: ${tones[22].hex}`,
+    );
+    expect(shell.attributes('style')).toContain(`--preview-on-surface: ${tones[90].hex}`);
+    expect(shell.attributes('style')).toContain(`--preview-primary: ${tones[80].hex}`);
+    expect(shell.attributes('style')).toContain(`--preview-on-primary: ${tones[20].hex}`);
+  });
 });

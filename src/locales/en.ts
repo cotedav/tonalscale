@@ -182,6 +182,7 @@ export default {
     surface_preview: {
       title: 'Material surface preview',
       helper: 'Generated tones applied to an operational workspace',
+      dark_mode: 'Use dark surfaces in the app preview',
       app_name: 'Ledger',
       navigation: 'Preview navigation',
       nav: {
