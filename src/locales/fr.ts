@@ -182,6 +182,18 @@ export default {
       title: 'Apercu des surfaces Material',
       helper: 'Tons generes appliques a un espace operationnel',
       dark_mode: 'Utiliser les surfaces sombres dans l apercu',
+      surface_tooltip: '{role}, ton {tone}',
+      roles: {
+        surface: 'Surface',
+        surface_bright: 'Surface claire',
+        surface_dim: 'Surface attenuee',
+        container_lowest: 'Conteneur de surface minimal',
+        container_low: 'Conteneur de surface bas',
+        container: 'Conteneur de surface',
+        container_high: 'Conteneur de surface haut',
+        container_highest: 'Conteneur de surface maximal',
+        inverse_surface: 'Surface inversee',
+      },
       app_name: 'Grand livre',
       navigation: 'Navigation de l apercu',
       nav: {
@@ -213,6 +225,8 @@ export default {
         customer: 'Client',
         status: 'Statut',
         total: 'Total',
+        showing: 'Affichage de 4 factures sur 38',
+        page_total: 'Total de la page',
       },
       status: {
         review: 'En revision',
@@ -228,13 +242,19 @@ export default {
       details: {
         title: 'Details de la facture',
         customer: 'Client',
+        customer_since: 'Client depuis 2021',
         due: 'Date d echeance',
         owner: 'Responsable',
+      },
+      health: {
+        title: 'Sante des paiements',
+        helper: 'Paiements a temps pour les 12 dernieres factures',
       },
       activity: {
         title: 'Activite',
         approved: 'Facture approuvee par les finances',
         sent: 'Rappel de paiement envoye',
+        created: 'Facture creee depuis un forfait recurrent',
       },
     },
     overlays: {

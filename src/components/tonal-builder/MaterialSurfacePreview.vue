@@ -7,6 +7,7 @@
     MagnifyingGlassIcon,
     MoonIcon,
     PlusIcon,
+    ShieldCheckIcon,
     SunIcon,
   } from '@heroicons/vue/24/outline';
   import { useI18n } from 'vue-i18n';
@@ -19,20 +20,64 @@
 
   const { t } = useI18n();
   const isDarkMode = ref(false);
+  const shellRef = ref<HTMLElement | null>(null);
+  const hoveredSurface = ref('');
+  const tooltipPosition = ref({ x: 0, y: 0 });
+
+  type SurfaceRole =
+    | 'surface'
+    | 'surface_bright'
+    | 'surface_dim'
+    | 'container_lowest'
+    | 'container_low'
+    | 'container'
+    | 'container_high'
+    | 'container_highest'
+    | 'inverse_surface';
 
   const toneAt = (index: number, fallback: string) =>
     props.tones.find((tone) => tone.index === index)?.hex ?? fallback;
 
-  const surfaceStyles = computed(() =>
+  const surfaceTones = computed<Record<SurfaceRole, number>>(() =>
     isDarkMode.value
       ? {
-          '--preview-surface': toneAt(6, '#101010'),
-          '--preview-surface-dim': toneAt(4, '#0a0a0a'),
-          '--preview-surface-container-low': toneAt(10, '#1a1a1a'),
-          '--preview-surface-container': toneAt(12, '#1f1f1f'),
-          '--preview-surface-container-high': toneAt(17, '#2b2b2b'),
-          '--preview-surface-container-highest': toneAt(22, '#383838'),
-          '--preview-inverse-surface': toneAt(90, '#e5e5e5'),
+          surface: 6,
+          surface_bright: 24,
+          surface_dim: 6,
+          container_lowest: 4,
+          container_low: 10,
+          container: 12,
+          container_high: 17,
+          container_highest: 22,
+          inverse_surface: 90,
+        }
+      : {
+          surface: 98,
+          surface_bright: 98,
+          surface_dim: 87,
+          container_lowest: 100,
+          container_low: 96,
+          container: 94,
+          container_high: 92,
+          container_highest: 90,
+          inverse_surface: 20,
+        },
+  );
+
+  const surfaceStyles = computed(() => {
+    const tones = surfaceTones.value;
+
+    return isDarkMode.value
+      ? {
+          '--preview-surface': toneAt(tones.surface, '#101010'),
+          '--preview-surface-bright': toneAt(tones.surface_bright, '#3d3d3d'),
+          '--preview-surface-dim': toneAt(tones.surface_dim, '#101010'),
+          '--preview-surface-container-lowest': toneAt(tones.container_lowest, '#0a0a0a'),
+          '--preview-surface-container-low': toneAt(tones.container_low, '#1a1a1a'),
+          '--preview-surface-container': toneAt(tones.container, '#1f1f1f'),
+          '--preview-surface-container-high': toneAt(tones.container_high, '#2b2b2b'),
+          '--preview-surface-container-highest': toneAt(tones.container_highest, '#383838'),
+          '--preview-inverse-surface': toneAt(tones.inverse_surface, '#e5e5e5'),
           '--preview-on-surface': toneAt(90, '#e5e5e5'),
           '--preview-on-surface-variant': toneAt(80, '#cccccc'),
           '--preview-on-inverse': toneAt(20, '#333333'),
@@ -41,21 +86,46 @@
           '--preview-on-primary': toneAt(20, '#333333'),
         }
       : {
-          '--preview-surface': toneAt(98, '#fafafa'),
-          '--preview-surface-dim': toneAt(90, '#e5e5e5'),
-          '--preview-surface-container-low': toneAt(95, '#f2f2f2'),
-          '--preview-surface-container': toneAt(92, '#ebebeb'),
-          '--preview-surface-container-high': toneAt(86, '#d9d9d9'),
-          '--preview-surface-container-highest': toneAt(80, '#cccccc'),
-          '--preview-inverse-surface': toneAt(20, '#333333'),
+          '--preview-surface': toneAt(tones.surface, '#fafafa'),
+          '--preview-surface-bright': toneAt(tones.surface_bright, '#fafafa'),
+          '--preview-surface-dim': toneAt(tones.surface_dim, '#dedede'),
+          '--preview-surface-container-lowest': toneAt(tones.container_lowest, '#ffffff'),
+          '--preview-surface-container-low': toneAt(tones.container_low, '#f5f5f5'),
+          '--preview-surface-container': toneAt(tones.container, '#f0f0f0'),
+          '--preview-surface-container-high': toneAt(tones.container_high, '#ebebeb'),
+          '--preview-surface-container-highest': toneAt(tones.container_highest, '#e5e5e5'),
+          '--preview-inverse-surface': toneAt(tones.inverse_surface, '#333333'),
           '--preview-on-surface': toneAt(10, '#1a1a1a'),
           '--preview-on-surface-variant': toneAt(35, '#595959'),
           '--preview-on-inverse': toneAt(98, '#fafafa'),
           '--preview-outline': toneAt(70, '#b3b3b3'),
           '--preview-primary': toneAt(40, '#666666'),
           '--preview-on-primary': toneAt(100, '#ffffff'),
-        },
-  );
+        };
+  });
+
+  const surfaceTooltip = (role: SurfaceRole) =>
+    t('tonal_builder.surface_preview.surface_tooltip', {
+      role: t(`tonal_builder.surface_preview.roles.${role}`),
+      tone: surfaceTones.value[role],
+    });
+
+  const handleSurfacePointerMove = (event: PointerEvent) => {
+    const shell = shellRef.value;
+    const target = event.target as Element | null;
+    const surface = target?.closest<HTMLElement>('[data-surface-tooltip]');
+    if (!shell || !surface || !shell.contains(surface)) {
+      hoveredSurface.value = '';
+      return;
+    }
+
+    const shellRect = shell.getBoundingClientRect();
+    hoveredSurface.value = surface.dataset.surfaceTooltip ?? '';
+    tooltipPosition.value = {
+      x: Math.min(event.clientX - shellRect.left + 12, shellRect.width - 170),
+      y: Math.max(8, event.clientY - shellRect.top - 34),
+    };
+  };
 
   const rows = computed(() => [
     {
@@ -124,14 +194,18 @@
     </div>
 
     <div
+      ref="shellRef"
       class="preview-shell"
       :style="surfaceStyles"
       :data-theme="isDarkMode ? 'dark' : 'light'"
       data-cy="surface-preview-shell"
+      @pointermove="handleSurfacePointerMove"
+      @pointerleave="hoveredSurface = ''"
     >
       <header
         class="preview-topbar"
-        data-tone="95"
+        data-surface-role="surface-container-low"
+        :data-surface-tooltip="surfaceTooltip('container_low')"
       >
         <div class="preview-brand">
           <span class="preview-brand-mark">TS</span>
@@ -157,7 +231,8 @@
 
       <div
         class="preview-toolbar"
-        data-tone="92"
+        data-surface-role="surface-container"
+        :data-surface-tooltip="surfaceTooltip('container')"
       >
         <div>
           <p class="preview-eyebrow">{{ t('tonal_builder.surface_preview.eyebrow') }}</p>
@@ -172,7 +247,8 @@
       <div class="preview-workspace">
         <aside
           class="preview-filters"
-          data-tone="90"
+          data-surface-role="surface-dim"
+          :data-surface-tooltip="surfaceTooltip('surface_dim')"
         >
           <div class="preview-panel-heading">
             <span>{{ t('tonal_builder.surface_preview.filters.title') }}</span>
@@ -181,7 +257,11 @@
 
           <label>
             <span>{{ t('tonal_builder.surface_preview.filters.search') }}</span>
-            <span class="preview-input">
+            <span
+              class="preview-input"
+              data-surface-role="surface-container-lowest"
+              :data-surface-tooltip="surfaceTooltip('container_lowest')"
+            >
               <MagnifyingGlassIcon aria-hidden="true" />
               {{ t('tonal_builder.surface_preview.filters.placeholder') }}
             </span>
@@ -190,21 +270,28 @@
           <div class="preview-filter-grid">
             <label>
               <span>{{ t('tonal_builder.surface_preview.filters.status') }}</span>
-              <span class="preview-input">{{
-                t('tonal_builder.surface_preview.filters.all')
-              }}</span>
+              <span
+                class="preview-input"
+                data-surface-role="surface-container-lowest"
+                :data-surface-tooltip="surfaceTooltip('container_lowest')"
+                >{{ t('tonal_builder.surface_preview.filters.all') }}</span
+              >
             </label>
             <label>
               <span>{{ t('tonal_builder.surface_preview.filters.period') }}</span>
-              <span class="preview-input">{{
-                t('tonal_builder.surface_preview.filters.month')
-              }}</span>
+              <span
+                class="preview-input"
+                data-surface-role="surface-container-lowest"
+                :data-surface-tooltip="surfaceTooltip('container_lowest')"
+                >{{ t('tonal_builder.surface_preview.filters.month') }}</span
+              >
             </label>
           </div>
 
           <div
             class="preview-summary"
-            data-tone="86"
+            data-surface-role="surface-container-high"
+            :data-surface-tooltip="surfaceTooltip('container_high')"
           >
             <span>{{ t('tonal_builder.surface_preview.summary.label') }}</span>
             <strong>$42,350</strong>
@@ -214,15 +301,28 @@
 
         <main
           class="preview-table-panel"
-          data-tone="98"
+          data-surface-role="surface"
+          :data-surface-tooltip="surfaceTooltip('surface')"
         >
-          <div class="preview-table-tools">
+          <div
+            class="preview-table-tools"
+            data-surface-role="surface-bright"
+            :data-surface-tooltip="surfaceTooltip('surface_bright')"
+          >
             <strong>{{ t('tonal_builder.surface_preview.table.title') }}</strong>
             <EllipsisVerticalIcon aria-hidden="true" />
           </div>
 
-          <div class="preview-table">
-            <div class="preview-table-row preview-table-header">
+          <div
+            class="preview-table"
+            data-surface-role="surface-container-lowest"
+            :data-surface-tooltip="surfaceTooltip('container_lowest')"
+          >
+            <div
+              class="preview-table-row preview-table-header"
+              data-surface-role="surface-container-low"
+              :data-surface-tooltip="surfaceTooltip('container_low')"
+            >
               <span>{{ t('tonal_builder.surface_preview.table.invoice') }}</span>
               <span>{{ t('tonal_builder.surface_preview.table.customer') }}</span>
               <span>{{ t('tonal_builder.surface_preview.table.status') }}</span>
@@ -233,6 +333,8 @@
               :key="row.code"
               class="preview-table-row"
               :class="{ 'preview-table-row-selected': index === 1 }"
+              :data-surface-role="index === 1 ? 'inverse-surface' : undefined"
+              :data-surface-tooltip="index === 1 ? surfaceTooltip('inverse_surface') : undefined"
             >
               <strong>{{ row.code }}</strong>
               <span>{{ row.customer }}</span>
@@ -240,44 +342,107 @@
               <span>{{ row.total }}</span>
             </div>
           </div>
-        </main>
-      </div>
 
-      <div
-        class="preview-detail-rail"
-        data-tone="80"
-      >
-        <section data-tone="95">
+          <div
+            class="preview-table-footer"
+            data-surface-role="surface-container-low"
+            :data-surface-tooltip="surfaceTooltip('container_low')"
+          >
+            <span>{{ t('tonal_builder.surface_preview.table.showing') }}</span>
+            <strong>{{ t('tonal_builder.surface_preview.table.page_total') }} $42,350</strong>
+          </div>
+
+          <div
+            class="preview-snackbar"
+            data-surface-role="inverse-surface"
+            :data-surface-tooltip="surfaceTooltip('inverse_surface')"
+          >
+            <span>{{ t('tonal_builder.surface_preview.activity.approved') }}</span>
+          </div>
+        </main>
+
+        <aside
+          class="preview-inspector"
+          data-surface-role="surface-container-highest"
+          :data-surface-tooltip="surfaceTooltip('container_highest')"
+        >
           <div class="preview-panel-heading">
             <span>{{ t('tonal_builder.surface_preview.details.title') }}</span>
             <EllipsisVerticalIcon aria-hidden="true" />
           </div>
-          <dl>
-            <div>
-              <dt>{{ t('tonal_builder.surface_preview.details.customer') }}</dt>
-              <dd>{{ t('tonal_builder.surface_preview.rows.studio') }}</dd>
-            </div>
-            <div>
-              <dt>{{ t('tonal_builder.surface_preview.details.due') }}</dt>
-              <dd>2026-07-15</dd>
-            </div>
-            <div>
-              <dt>{{ t('tonal_builder.surface_preview.details.owner') }}</dt>
-              <dd>D. Cote</dd>
-            </div>
-          </dl>
-        </section>
 
-        <section
-          class="preview-activity"
-          data-tone="92"
-        >
-          <div class="preview-panel-heading">
-            <span>{{ t('tonal_builder.surface_preview.activity.title') }}</span>
-          </div>
-          <p>{{ t('tonal_builder.surface_preview.activity.approved') }}</p>
-          <p>{{ t('tonal_builder.surface_preview.activity.sent') }}</p>
-        </section>
+          <section
+            class="preview-inspector-card"
+            data-surface-role="surface-container-low"
+            :data-surface-tooltip="surfaceTooltip('container_low')"
+          >
+            <div class="preview-customer">
+              <span class="preview-avatar">AS</span>
+              <div>
+                <strong>{{ t('tonal_builder.surface_preview.rows.studio') }}</strong>
+                <small>{{ t('tonal_builder.surface_preview.details.customer_since') }}</small>
+              </div>
+            </div>
+            <dl>
+              <div>
+                <dt>{{ t('tonal_builder.surface_preview.details.due') }}</dt>
+                <dd>2026-07-15</dd>
+              </div>
+              <div>
+                <dt>{{ t('tonal_builder.surface_preview.details.owner') }}</dt>
+                <dd>D. Cote</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section
+            class="preview-health-card"
+            data-surface-role="surface-container-high"
+            :data-surface-tooltip="surfaceTooltip('container_high')"
+          >
+            <div class="preview-health-heading">
+              <ShieldCheckIcon aria-hidden="true" />
+              <span>{{ t('tonal_builder.surface_preview.health.title') }}</span>
+              <strong>92%</strong>
+            </div>
+            <div class="preview-health-track">
+              <span />
+            </div>
+            <small>{{ t('tonal_builder.surface_preview.health.helper') }}</small>
+          </section>
+
+          <section
+            class="preview-activity"
+            data-surface-role="surface-container"
+            :data-surface-tooltip="surfaceTooltip('container')"
+          >
+            <div class="preview-panel-heading">
+              <span>{{ t('tonal_builder.surface_preview.activity.title') }}</span>
+            </div>
+            <p>
+              <span />
+              {{ t('tonal_builder.surface_preview.activity.approved') }}
+            </p>
+            <p>
+              <span />
+              {{ t('tonal_builder.surface_preview.activity.sent') }}
+            </p>
+            <p>
+              <span />
+              {{ t('tonal_builder.surface_preview.activity.created') }}
+            </p>
+          </section>
+        </aside>
+      </div>
+
+      <div
+        v-if="hoveredSurface"
+        class="preview-surface-tooltip"
+        role="tooltip"
+        :style="{ left: `${tooltipPosition.x}px`, top: `${tooltipPosition.y}px` }"
+        data-cy="surface-tooltip"
+      >
+        {{ hoveredSurface }}
       </div>
     </div>
   </section>
@@ -285,6 +450,7 @@
 
 <style scoped>
   .preview-shell {
+    position: relative;
     width: 100%;
     height: 470px;
     overflow: hidden;
@@ -298,6 +464,22 @@
       background-color 180ms ease,
       color 180ms ease,
       border-color 180ms ease;
+  }
+
+  .preview-surface-tooltip {
+    position: absolute;
+    z-index: 20;
+    max-width: 160px;
+    border: 1px solid var(--preview-outline);
+    border-radius: 4px;
+    padding: 5px 7px;
+    background: var(--preview-inverse-surface);
+    color: var(--preview-on-inverse);
+    box-shadow: 0 4px 12px rgb(0 0 0 / 24%);
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1.3;
+    pointer-events: none;
   }
 
   .preview-theme-toggle {
@@ -451,6 +633,7 @@
     font-weight: 700;
   }
 
+  .preview-health-heading svg,
   .preview-input svg,
   .preview-toolbar button svg {
     width: 14px;
@@ -459,8 +642,8 @@
 
   .preview-workspace {
     display: grid;
-    height: 228px;
-    grid-template-columns: minmax(180px, 0.34fr) minmax(0, 1fr);
+    height: 366px;
+    grid-template-columns: minmax(170px, 0.3fr) minmax(280px, 1fr) minmax(190px, 0.34fr);
     gap: 1px;
     background: var(--preview-outline);
   }
@@ -491,7 +674,7 @@
     border: 1px solid var(--preview-outline);
     border-radius: 4px;
     padding: 0 9px;
-    background: var(--preview-surface);
+    background: var(--preview-surface-container-lowest);
     color: var(--preview-on-surface-variant);
     font-weight: 400;
   }
@@ -521,6 +704,7 @@
   }
 
   .preview-table-panel {
+    position: relative;
     min-width: 0;
     background: var(--preview-surface);
   }
@@ -529,11 +713,13 @@
     height: 40px;
     justify-content: space-between;
     padding: 0 12px;
+    background: var(--preview-surface-bright);
     border-bottom: 1px solid var(--preview-outline);
   }
 
   .preview-table {
     overflow: hidden;
+    background: var(--preview-surface-container-lowest);
   }
 
   .preview-table-row {
@@ -567,38 +753,94 @@
     color: var(--preview-on-inverse);
   }
 
-  .preview-detail-rail {
-    display: grid;
-    height: 138px;
-    grid-template-columns: 1fr 1fr;
-    gap: 1px;
-    background: var(--preview-surface-container-highest);
-    border-top: 1px solid var(--preview-outline);
+  .preview-table-footer {
+    display: flex;
+    height: 39px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 10px;
+    background: var(--preview-surface-container-low);
+    color: var(--preview-on-surface-variant);
+    font-size: 9px;
   }
 
-  .preview-detail-rail section {
-    padding: 12px 14px;
+  .preview-table-footer strong {
+    color: var(--preview-on-surface);
+  }
+
+  .preview-inspector {
+    min-width: 0;
+    padding: 12px;
+    background: var(--preview-surface-container-highest);
+  }
+
+  .preview-inspector-card,
+  .preview-health-card,
+  .preview-activity {
+    border-radius: 4px;
+    padding: 10px;
+  }
+
+  .preview-inspector-card {
     background: var(--preview-surface-container-low);
   }
 
-  .preview-detail-rail dl {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
-    margin: 0;
+  .preview-customer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
-  .preview-detail-rail dl div {
+  .preview-customer div {
+    display: grid;
+    min-width: 0;
+    gap: 2px;
+  }
+
+  .preview-customer strong,
+  .preview-customer small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .preview-customer small {
+    color: var(--preview-on-surface-variant);
+    font-size: 8px;
+  }
+
+  .preview-avatar {
+    display: grid;
+    width: 28px;
+    height: 28px;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--preview-primary);
+    color: var(--preview-on-primary);
+    font-size: 9px;
+    font-weight: 700;
+  }
+
+  .preview-inspector dl {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin: 10px 0 0;
+  }
+
+  .preview-inspector dl div {
     min-width: 0;
   }
 
-  .preview-detail-rail dt {
+  .preview-inspector dt {
     margin-bottom: 4px;
     color: var(--preview-on-surface-variant);
     font-size: 9px;
   }
 
-  .preview-detail-rail dd {
+  .preview-inspector dd {
     overflow: hidden;
     margin: 0;
     font-weight: 650;
@@ -606,15 +848,79 @@
     white-space: nowrap;
   }
 
+  .preview-health-card {
+    margin-top: 9px;
+    background: var(--preview-surface-container-high);
+  }
+
+  .preview-health-heading {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .preview-health-heading strong {
+    font-size: 13px;
+  }
+
+  .preview-health-track {
+    height: 4px;
+    margin: 8px 0 6px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--preview-surface-container-lowest);
+  }
+
+  .preview-health-track span {
+    display: block;
+    width: 92%;
+    height: 100%;
+    background: var(--preview-primary);
+  }
+
+  .preview-health-card small {
+    color: var(--preview-on-surface-variant);
+    font-size: 8px;
+  }
+
   .preview-activity {
+    margin-top: 9px;
     background: var(--preview-surface-container) !important;
   }
 
   .preview-activity p {
+    display: flex;
+    align-items: center;
+    gap: 7px;
     margin: 0;
     border-top: 1px solid var(--preview-outline);
     padding: 7px 0;
     color: var(--preview-on-surface-variant);
+  }
+
+  .preview-activity p > span {
+    width: 5px;
+    height: 5px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: var(--preview-primary);
+  }
+
+  .preview-snackbar {
+    position: absolute;
+    right: 12px;
+    bottom: 9px;
+    display: flex;
+    min-width: 210px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    border-radius: 4px;
+    padding: 8px 10px;
+    background: var(--preview-inverse-surface);
+    color: var(--preview-on-inverse);
+    box-shadow: 0 6px 16px rgb(0 0 0 / 24%);
   }
 
   @media (width <= 760px) {
@@ -623,7 +929,7 @@
     }
 
     .preview-workspace {
-      grid-template-columns: minmax(160px, 0.4fr) minmax(0, 1fr);
+      grid-template-columns: minmax(150px, 0.38fr) minmax(0, 1fr) minmax(170px, 0.38fr);
     }
 
     .preview-table-row {

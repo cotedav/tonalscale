@@ -183,6 +183,18 @@ export default {
       title: 'Material surface preview',
       helper: 'Generated tones applied to an operational workspace',
       dark_mode: 'Use dark surfaces in the app preview',
+      surface_tooltip: '{role}, tone {tone}',
+      roles: {
+        surface: 'Surface',
+        surface_bright: 'Surface bright',
+        surface_dim: 'Surface dim',
+        container_lowest: 'Surface container lowest',
+        container_low: 'Surface container low',
+        container: 'Surface container',
+        container_high: 'Surface container high',
+        container_highest: 'Surface container highest',
+        inverse_surface: 'Inverse surface',
+      },
       app_name: 'Ledger',
       navigation: 'Preview navigation',
       nav: {
@@ -214,6 +226,8 @@ export default {
         customer: 'Customer',
         status: 'Status',
         total: 'Total',
+        showing: 'Showing 4 of 38 invoices',
+        page_total: 'Page total',
       },
       status: {
         review: 'In review',
@@ -229,13 +243,19 @@ export default {
       details: {
         title: 'Invoice details',
         customer: 'Customer',
+        customer_since: 'Customer since 2021',
         due: 'Due date',
         owner: 'Owner',
+      },
+      health: {
+        title: 'Payment health',
+        helper: 'Paid on time across the last 12 invoices',
       },
       activity: {
         title: 'Activity',
         approved: 'Invoice approved by Finance',
         sent: 'Payment reminder sent',
+        created: 'Invoice created from recurring plan',
       },
     },
 
