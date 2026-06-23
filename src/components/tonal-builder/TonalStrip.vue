@@ -26,7 +26,10 @@
     blendGraphData?: BlendDistribution | null;
   }>();
 
-  const emit = defineEmits<{ 'pairing-change': [PairingSelection] }>();
+  const emit = defineEmits<{
+    'pairing-change': [PairingSelection];
+    'pairing-select': [PairingSelection];
+  }>();
 
   const { t } = useI18n();
   const { open, isOpen: isMenuOpen, contextData } = useContextMenu();
@@ -36,6 +39,8 @@
 
   const state = reactive({
     activeIndex: null as number | null,
+    selectedIndex: null as number | null,
+    selectedOffset: 0,
     offset: 0,
   });
 
@@ -228,6 +233,9 @@
     const next = clamp(state.offset + delta, min, max);
     if (next === state.offset) return;
     state.offset = next;
+    if (state.activeIndex === state.selectedIndex) {
+      state.selectedOffset = next;
+    }
   };
 
   const handleWheel = (event: WheelEvent) => {
@@ -269,31 +277,64 @@
     return dots;
   });
 
-  const emitSelection = () => {
+  const getSelection = (): PairingSelection => {
     if (state.activeIndex === null) {
-      emit('pairing-change', null);
-      return;
+      return null;
     }
 
     const selection = resolvedMatches.value;
     if (!selection) {
-      emit('pairing-change', null);
-      return;
+      return null;
     }
 
-    emit('pairing-change', {
+    return {
       base: props.tones[state.activeIndex],
       darker3: selection.darker3?.tone ?? null,
       darker45: selection.darker45?.tone ?? null,
       lighter3: selection.lighter3?.tone ?? null,
       lighter45: selection.lighter45?.tone ?? null,
-    });
+    };
   };
 
-  const setActiveIndex = (index: number) => {
-    state.activeIndex = index;
-    state.offset = 0;
+  const emitSelection = () => {
+    emit('pairing-change', getSelection());
   };
+
+  const setActiveIndex = (index: number, offset = 0) => {
+    state.activeIndex = index;
+    state.offset = offset;
+  };
+
+  const selectIndex = (index: number) => {
+    if (state.activeIndex !== index) {
+      setActiveIndex(index);
+    }
+    state.selectedIndex = index;
+    state.selectedOffset = state.offset;
+    emit('pairing-select', getSelection());
+  };
+
+  const restoreSelected = () => {
+    if (state.selectedIndex === null) {
+      state.activeIndex = null;
+      state.offset = 0;
+      emit('pairing-change', null);
+      return;
+    }
+
+    setActiveIndex(state.selectedIndex, state.selectedOffset);
+  };
+
+  const clearSelection = () => {
+    state.activeIndex = null;
+    state.selectedIndex = null;
+    state.selectedOffset = 0;
+    state.offset = 0;
+    emit('pairing-select', null);
+    emit('pairing-change', null);
+  };
+
+  defineExpose({ clearSelection });
 
   const clearActive = () => {
     // If context menu is open for THIS element, don't clear.
@@ -306,21 +347,25 @@
       return;
     }
 
-    state.activeIndex = null;
-    state.offset = 0;
-    emit('pairing-change', null);
+    restoreSelected();
   };
 
   // If menu closes, and we are not hovering, clear active.
   watch(isMenuOpen, (newVal) => {
     if (!newVal && isOutside.value) {
-      state.activeIndex = null;
-      state.offset = 0;
-      emit('pairing-change', null);
+      restoreSelected();
     }
   });
 
   const handleKeydown = (event: KeyboardEvent) => {
+    if (['Enter', ' '].includes(event.key)) {
+      event.preventDefault();
+      if (state.activeIndex !== null) {
+        selectIndex(state.activeIndex);
+      }
+      return;
+    }
+
     if (!['ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowUp'].includes(event.key)) return;
 
     event.preventDefault();
@@ -453,11 +498,14 @@
       data-cy="tonal-swatch"
       :data-index="swatch.tone.index"
       :data-active="state.activeIndex === swatch.indexOnStrip"
+      :data-selected="state.selectedIndex === swatch.indexOnStrip"
+      :aria-selected="state.selectedIndex === swatch.indexOnStrip"
       role="listitem"
       tabindex="0"
       :aria-label="swatchLabel(swatch.tone.index, swatch.tone.hex)"
       @mouseenter="setActiveIndex(swatch.indexOnStrip)"
       @focus="setActiveIndex(swatch.indexOnStrip)"
+      @click="selectIndex(swatch.indexOnStrip)"
       @blur="handleBlur"
       @mouseleave="clearActive"
       @wheel="handleWheel"

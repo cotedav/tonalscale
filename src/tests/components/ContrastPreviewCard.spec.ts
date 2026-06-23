@@ -47,7 +47,7 @@ describe('ContrastPreviewCard', () => {
     expect(card.attributes('style')).toContain('opacity: 0.2');
   });
 
-  it('updates contrast previews from tonal strip interactions and resets on blur/leave', async () => {
+  it('keeps contrast previews active after a clicked tonal swatch loses hover or focus', async () => {
     const tones = [
       { index: 0, hex: '#000000' },
       { index: 60, hex: '#787878' },
@@ -93,6 +93,7 @@ describe('ContrastPreviewCard', () => {
             :base-index="60"
             data-cy="tonal-strip"
             @pairing-change="handlePairingChange"
+            @pairing-select="handlePairingChange"
           />
           <div class="grid">
             <ContrastPreviewCard
@@ -168,10 +169,12 @@ describe('ContrastPreviewCard', () => {
     expect(lighter3Levels[1].classes()).toContain('colorcard-wcaglevel_fail');
     expect(lighter3Levels[3].classes()).toContain('colorcard-wcaglevel_fail');
 
+    await baseSwatch.trigger('click');
     await baseSwatch.trigger('mouseleave');
     await nextTick();
 
-    expectClearedCards();
+    expect(wrapper.get('#colorcard-darker45 h1').text()).toBe(formatContrastRatio(darker45Ratio));
+    expect(wrapper.get('#colorcard-lighter3 h1').text()).toBe(formatContrastRatio(lighter3Ratio));
 
     const darkestSwatch = swatches[0];
     await darkestSwatch.trigger('focus');
@@ -190,6 +193,7 @@ describe('ContrastPreviewCard', () => {
     await darkestSwatch.trigger('blur');
     await nextTick();
 
-    expectClearedCards();
+    expect(wrapper.get('#colorcard-darker45 h1').text()).toBe(formatContrastRatio(darker45Ratio));
+    expect(wrapper.get('#colorcard-lighter3 h1').text()).toBe(formatContrastRatio(lighter3Ratio));
   });
 });

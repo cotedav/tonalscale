@@ -102,6 +102,10 @@
   );
 
   const previewSelection = ref<PairingSelection>(null);
+  const selectedPreview = ref<PairingSelection>(null);
+  const fullStripRef = ref<InstanceType<typeof TonalStrip> | null>(null);
+  const extendedStripRef = ref<InstanceType<typeof TonalStrip> | null>(null);
+  const keyStripRef = ref<InstanceType<typeof TonalStrip> | null>(null);
 
   const blendOverlayActive = ref(false);
   const overlayAnnouncement = ref('');
@@ -112,7 +116,23 @@
   };
 
   const handlePairingChange = (payload: PairingSelection) => {
+    previewSelection.value = payload ?? selectedPreview.value;
+  };
+
+  const handlePairingSelect = (payload: PairingSelection) => {
+    selectedPreview.value = payload;
     previewSelection.value = payload;
+  };
+
+  const handleSwatchesPanelClick = (event: MouseEvent) => {
+    const target = event.target as Element | null;
+    if (target?.closest('[data-cy="tonal-swatch"]')) return;
+
+    fullStripRef.value?.clearSelection();
+    extendedStripRef.value?.clearSelection();
+    keyStripRef.value?.clearSelection();
+    selectedPreview.value = null;
+    previewSelection.value = null;
   };
 
   const previewCards = computed(() => {
@@ -280,6 +300,8 @@
         <div
           class="min-h-0 overflow-y-auto bg-surface-soft px-4 py-6 sm:px-8 lg:px-10"
           :aria-label="t('tonal_builder.scales.title')"
+          data-cy="swatches-panel"
+          @click="handleSwatchesPanelClick"
         >
           <section
             class="space-y-4"
@@ -306,6 +328,7 @@
                 </div>
                 <TonalStrip
                   id="color-scale-container-full"
+                  ref="fullStripRef"
                   :tones="fullStrip"
                   :base-index="baseLuminanceIndex"
                   class="min-h-[96px]"
@@ -314,6 +337,7 @@
                   :show-blend-dist-graph="true"
                   data-cy="scale-strip-full"
                   @pairing-change="handlePairingChange"
+                  @pairing-select="handlePairingSelect"
                 />
               </div>
 
@@ -328,11 +352,13 @@
                 </div>
                 <TonalStrip
                   id="color-scale-container-custom"
+                  ref="extendedStripRef"
                   :tones="extendedStrip"
                   :base-index="baseLuminanceIndex"
                   class="min-h-[72px]"
                   data-cy="scale-strip-extended"
                   @pairing-change="handlePairingChange"
+                  @pairing-select="handlePairingSelect"
                 />
               </div>
 
@@ -347,11 +373,13 @@
                 </div>
                 <TonalStrip
                   id="color-scale-container-key"
+                  ref="keyStripRef"
                   :tones="keyStrip"
                   :base-index="baseLuminanceIndex"
                   class="min-h-[72px]"
                   data-cy="scale-strip-key"
                   @pairing-change="handlePairingChange"
+                  @pairing-select="handlePairingSelect"
                 />
               </div>
             </div>

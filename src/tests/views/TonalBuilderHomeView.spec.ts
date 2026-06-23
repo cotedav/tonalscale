@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
+import { nextTick } from 'vue';
 
 import TonalBuilderHomeView from '@/views/tonal-builder/TonalBuilderHomeView.vue';
 
@@ -79,6 +80,36 @@ describe('TonalBuilderHomeView', () => {
 
       expect((slider.element as HTMLInputElement).value).toBe(value);
       expect((number.element as HTMLInputElement).value).toBe(value);
+    });
+  });
+
+  it('clears a selected tone only when clicking outside a tone in the swatches panel', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+
+    const wrapper = mount(TonalBuilderHomeView, {
+      global: {
+        plugins: [pinia],
+      },
+    });
+
+    const swatch = wrapper.get('[data-cy="scale-strip-key"] [data-cy="tonal-swatch"]');
+    await swatch.trigger('click');
+    await nextTick();
+
+    expect(swatch.attributes('data-selected')).toBe('true');
+
+    await wrapper.get('#gradient-controls').trigger('click');
+    await nextTick();
+
+    expect(swatch.attributes('data-selected')).toBe('true');
+
+    await wrapper.get('[data-cy="swatches-panel"]').trigger('click');
+    await nextTick();
+
+    expect(swatch.attributes('data-selected')).toBe('false');
+    wrapper.findAll('[data-cy="contrast-preview-card"]').forEach((card) => {
+      expect(card.attributes('style')).toContain('opacity: 0.2');
     });
   });
 });

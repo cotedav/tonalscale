@@ -74,4 +74,28 @@ describe('TonalStrip', () => {
     expect(keyPayload.darker3).toEqual(tones[0]);
     expect(keyPayload.lighter3?.index).toBe(tones[2].index);
   });
+
+  it('keeps a clicked swatch and its helper dots active after the pointer leaves', async () => {
+    const wrapper = mount(TonalStrip, {
+      props: {
+        tones,
+        baseIndex: 60,
+      },
+    });
+
+    const swatch = wrapper.findAll('[data-cy="tonal-swatch"]')[1];
+    await swatch.trigger('mouseenter');
+    await swatch.trigger('click');
+    await swatch.trigger('mouseleave');
+    await nextTick();
+
+    expect(swatch.attributes('data-active')).toBe('true');
+    expect(swatch.attributes('data-selected')).toBe('true');
+    expect(wrapper.findAll('[data-cy="contrast-helper-dot"]').length).toBeGreaterThan(0);
+
+    const selectedPayload = wrapper.emitted('pairing-select')?.at(-1)?.[0] as PairingSelection;
+    const activePayload = wrapper.emitted('pairing-change')?.at(-1)?.[0] as PairingSelection;
+    expect(selectedPayload?.base).toEqual(tones[1]);
+    expect(activePayload?.base).toEqual(tones[1]);
+  });
 });
