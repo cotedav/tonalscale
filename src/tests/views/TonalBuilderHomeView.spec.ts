@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { nextTick } from 'vue';
 
+import { useTonalScaleStore } from '@/stores/tonalScale';
 import TonalBuilderHomeView from '@/views/tonal-builder/TonalBuilderHomeView.vue';
 
 // Mock useTonalUrlSync to avoid router dependency
@@ -32,6 +33,7 @@ describe('TonalBuilderHomeView', () => {
       '#color-scale-container-full',
       '#color-scale-container-custom',
       '#color-scale-container-key',
+      '[data-cy="material-surface-preview"]',
       '#gradient-controls',
       '[data-cy="accessibility-dock"]',
       '#colorcard-darker45',
@@ -47,7 +49,7 @@ describe('TonalBuilderHomeView', () => {
     expect(wrapper.get('#gradient-controls').find('#blendColorPicker').exists()).toBe(true);
     expect(wrapper.find('[data-cy="blend-mode-summary"]').exists()).toBe(false);
     expect(wrapper.find('[data-cy="blend-enabled-toggle"]').exists()).toBe(true);
-    expect(wrapper.find('#baseColorPickerInput').text()).toContain('#7c3aed');
+    expect(wrapper.find('#baseColorPickerInput').text()).toContain('#8000ff');
 
     expect(wrapper.findAll('[type="range"]').length).toBe(5);
     expect(wrapper.findAll('[data-cy$="-value"]').length).toBe(5);
@@ -111,5 +113,49 @@ describe('TonalBuilderHomeView', () => {
     wrapper.findAll('[data-cy="contrast-preview-card"]').forEach((card) => {
       expect(card.attributes('style')).toContain('opacity: 0.2');
     });
+  });
+
+  it('reflects imported store parameters in every color and blend control', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+
+    const wrapper = mount(TonalBuilderHomeView, {
+      global: {
+        plugins: [pinia],
+      },
+    });
+    const store = useTonalScaleStore();
+
+    store.importState({
+      colorHex: '#123456',
+      blendMode: 'multiply',
+      blendStrength: 64,
+      blendR: 101,
+      blendG: 67,
+      blendB: 33,
+      middle: -18,
+      spread: 72,
+      satDarker: 23,
+      satLighter: 41,
+    });
+    await nextTick();
+
+    expect(wrapper.get('#baseColorPickerInput').text()).toContain('#123456');
+    expect(wrapper.get('#blendColorPickerInput').text()).toContain('#654321');
+    expect((wrapper.get('#blendmode').element as HTMLSelectElement).value).toBe('multiply');
+    expect((wrapper.get('[data-cy="strength-value"]').element as HTMLInputElement).value).toBe(
+      '64',
+    );
+    expect((wrapper.get('[data-cy="middle-value"]').element as HTMLInputElement).value).toBe('-18');
+    expect((wrapper.get('[data-cy="spread-value"]').element as HTMLInputElement).value).toBe('72');
+    expect((wrapper.get('[data-cy="satDarker-value"]').element as HTMLInputElement).value).toBe(
+      '23',
+    );
+    expect((wrapper.get('[data-cy="satLighter-value"]').element as HTMLInputElement).value).toBe(
+      '41',
+    );
+    expect(
+      (wrapper.get('[data-cy="blend-enabled-toggle"]').element as HTMLInputElement).checked,
+    ).toBe(true);
   });
 });

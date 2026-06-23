@@ -6,6 +6,7 @@
 
   import ColorPickerCard from '@/components/tonal-builder/ColorPickerCard.vue';
   import ContrastPreviewCard from '@/components/tonal-builder/ContrastPreviewCard.vue';
+  import MaterialSurfacePreview from '@/components/tonal-builder/MaterialSurfacePreview.vue';
   import TonalStrip from '@/components/tonal-builder/TonalStrip.vue';
   import ThemeToggle from '@/components/common/ThemeToggle.vue';
   import {
@@ -34,12 +35,14 @@
   const pageTitle = computed(() => t('tonal_builder.meta.title'));
   const pageDescription = computed(() => t('tonal_builder.meta.description'));
 
-  const { baseHex, blendHex, sliderMode, updateBase, updateBlend, setSliderMode } =
-    useTonalBuilderColors();
-
   const tonalScale = useTonalScaleStore();
   useTonalUrlSync(tonalScale);
   const { blendDistribution, extendedStrip, fullStrip, keyStrip, scale } = storeToRefs(tonalScale);
+
+  const { baseHex, blendHex, sliderMode, updateBase, updateBlend, setSliderMode } =
+    useTonalBuilderColors();
+  updateBase(tonalScale.baseHex);
+  updateBlend(tonalScale.blendHex);
 
   const {
     blendMode,
@@ -49,7 +52,34 @@
     hasErrors,
     setBlendMode,
     updateControl,
-  } = useTonalBuilderControls();
+  } = useTonalBuilderControls(tonalScale.blendMode);
+
+  Object.entries(tonalScale.controls).forEach(([id, value]) => {
+    updateControl(id as BlendControlId, value);
+  });
+
+  let isApplyingLocalState = false;
+
+  watch(
+    () => ({
+      baseHex: tonalScale.baseHex,
+      blendHex: tonalScale.blendHex,
+      blendMode: tonalScale.blendMode,
+      controls: { ...tonalScale.controls },
+    }),
+    (storeState) => {
+      if (isApplyingLocalState) return;
+
+      updateBase(storeState.baseHex);
+      updateBlend(storeState.blendHex);
+      setBlendMode(storeState.blendMode);
+      Object.entries(storeState.controls).forEach(([id, value]) => {
+        updateControl(id as BlendControlId, value);
+      });
+      isBlendEnabled.value = storeState.controls.strength > 0;
+    },
+    { deep: true, flush: 'sync' },
+  );
 
   const baseHexModel = computed({
     get: () => baseHex.value,
@@ -179,18 +209,23 @@
   const applyTonalPayload = (payload: TonalEnginePayload) => {
     const blendChannels = hexToRgb(payload.blendHex);
 
-    tonalScale.importState({
-      colorHex: payload.baseHex,
-      blendMode: payload.blendMode,
-      blendStrength: isBlendEnabled.value ? payload.strength : 0,
-      blendR: blendChannels.r,
-      blendG: blendChannels.g,
-      blendB: blendChannels.b,
-      middle: payload.middle,
-      spread: payload.spread,
-      satDarker: payload.satDarker,
-      satLighter: payload.satLighter,
-    });
+    isApplyingLocalState = true;
+    try {
+      tonalScale.importState({
+        colorHex: payload.baseHex,
+        blendMode: payload.blendMode,
+        blendStrength: isBlendEnabled.value ? payload.strength : 0,
+        blendR: blendChannels.r,
+        blendG: blendChannels.g,
+        blendB: blendChannels.b,
+        middle: payload.middle,
+        spread: payload.spread,
+        satDarker: payload.satDarker,
+        satLighter: payload.satLighter,
+      });
+    } finally {
+      isApplyingLocalState = false;
+    }
   };
 
   const tonalEngine = useTonalBuilderEngine(
@@ -383,6 +418,11 @@
                 />
               </div>
             </div>
+
+            <MaterialSurfacePreview
+              class="pt-4"
+              :tones="fullStrip"
+            />
           </section>
         </div>
 

@@ -179,6 +179,64 @@ export default {
         swatch_label: 'Tonal swatch {index} at {hex}',
       },
     },
+    surface_preview: {
+      title: 'Material surface preview',
+      helper: 'Generated tones applied to an operational workspace',
+      app_name: 'Ledger',
+      navigation: 'Preview navigation',
+      nav: {
+        dashboard: 'Dashboard',
+        orders: 'Orders',
+        billing: 'Billing',
+      },
+      eyebrow: 'Finance workspace',
+      heading: 'Invoices',
+      actions: {
+        add: 'New invoice',
+      },
+      filters: {
+        title: 'Filters',
+        search: 'Search',
+        placeholder: 'Invoice or customer',
+        status: 'Status',
+        all: 'All statuses',
+        period: 'Period',
+        month: 'This month',
+      },
+      summary: {
+        label: 'Outstanding balance',
+        helper: 'Across 12 open invoices',
+      },
+      table: {
+        title: 'Recent invoices',
+        invoice: 'Invoice',
+        customer: 'Customer',
+        status: 'Status',
+        total: 'Total',
+      },
+      status: {
+        review: 'In review',
+        approved: 'Approved',
+        pending: 'Pending',
+      },
+      rows: {
+        northwind: 'Northwind Supply',
+        studio: 'Atlas Studio',
+        market: 'Cedar Market',
+        foundry: 'Union Foundry',
+      },
+      details: {
+        title: 'Invoice details',
+        customer: 'Customer',
+        due: 'Due date',
+        owner: 'Owner',
+      },
+      activity: {
+        title: 'Activity',
+        approved: 'Invoice approved by Finance',
+        sent: 'Payment reminder sent',
+      },
+    },
 
     accessibility: {
       title: 'Accessibility helpers',
