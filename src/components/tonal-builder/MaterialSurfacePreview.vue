@@ -18,12 +18,6 @@
     tones: TonalStep[];
   }>();
 
-  const { t } = useI18n();
-  const isDarkMode = ref(false);
-  const shellRef = ref<HTMLElement | null>(null);
-  const hoveredSurface = ref('');
-  const tooltipPosition = ref({ x: 0, y: 0 });
-
   type SurfaceRole =
     | 'surface'
     | 'surface_bright'
@@ -34,6 +28,12 @@
     | 'container_high'
     | 'container_highest'
     | 'inverse_surface';
+
+  const { t } = useI18n();
+  const isDarkMode = ref(false);
+  const shellRef = ref<HTMLElement | null>(null);
+  const hoveredSurfaceRole = ref<SurfaceRole | null>(null);
+  const tooltipPosition = ref({ x: 0, y: 0 });
 
   const toneAt = (index: number, fallback: string) =>
     props.tones.find((tone) => tone.index === index)?.hex ?? fallback;
@@ -110,20 +110,61 @@
       tone: surfaceTones.value[role],
     });
 
+  const surfaceCards = computed(() => {
+    const roles: Array<{ role: SurfaceRole; cssVariable: string }> = [
+      { role: 'surface', cssVariable: '--preview-surface' },
+      { role: 'surface_bright', cssVariable: '--preview-surface-bright' },
+      { role: 'surface_dim', cssVariable: '--preview-surface-dim' },
+      { role: 'container_lowest', cssVariable: '--preview-surface-container-lowest' },
+      { role: 'container_low', cssVariable: '--preview-surface-container-low' },
+      { role: 'container', cssVariable: '--preview-surface-container' },
+      { role: 'container_high', cssVariable: '--preview-surface-container-high' },
+      { role: 'container_highest', cssVariable: '--preview-surface-container-highest' },
+      { role: 'inverse_surface', cssVariable: '--preview-inverse-surface' },
+    ];
+
+    return roles.map(({ role, cssVariable }) => {
+      const tone = surfaceTones.value[role];
+
+      return {
+        role,
+        cssVariable,
+        tone,
+        hex: toneAt(tone, '#000000'),
+      };
+    });
+  });
+
+  const hoveredSurfaceCard = computed(
+    () => surfaceCards.value.find((card) => card.role === hoveredSurfaceRole.value) ?? null,
+  );
+
+  const surfaceRoleNames: Record<string, SurfaceRole> = {
+    surface: 'surface',
+    'surface-bright': 'surface_bright',
+    'surface-dim': 'surface_dim',
+    'surface-container-lowest': 'container_lowest',
+    'surface-container-low': 'container_low',
+    'surface-container': 'container',
+    'surface-container-high': 'container_high',
+    'surface-container-highest': 'container_highest',
+    'inverse-surface': 'inverse_surface',
+  };
+
   const handleSurfacePointerMove = (event: PointerEvent) => {
     const shell = shellRef.value;
     const target = event.target as Element | null;
-    const surface = target?.closest<HTMLElement>('[data-surface-tooltip]');
+    const surface = target?.closest<HTMLElement>('[data-surface-role]');
     if (!shell || !surface || !shell.contains(surface)) {
-      hoveredSurface.value = '';
+      hoveredSurfaceRole.value = null;
       return;
     }
 
     const shellRect = shell.getBoundingClientRect();
-    hoveredSurface.value = surface.dataset.surfaceTooltip ?? '';
+    hoveredSurfaceRole.value = surfaceRoleNames[surface.dataset.surfaceRole ?? ''] ?? null;
     tooltipPosition.value = {
-      x: Math.min(event.clientX - shellRect.left + 12, shellRect.width - 170),
-      y: Math.max(8, event.clientY - shellRect.top - 34),
+      x: Math.min(event.clientX - shellRect.left + 12, shellRect.width - 180),
+      y: Math.max(8, event.clientY - shellRect.top - 82),
     };
   };
 
@@ -158,6 +199,8 @@
 <template>
   <section
     class="space-y-3"
+    :style="surfaceStyles"
+    :data-theme="isDarkMode ? 'dark' : 'light'"
     :aria-label="t('tonal_builder.surface_preview.title')"
     data-cy="material-surface-preview"
   >
@@ -194,13 +237,38 @@
     </div>
 
     <div
+      class="preview-surface-cards"
+      :aria-label="t('tonal_builder.surface_preview.surface_cards')"
+      data-cy="surface-role-cards"
+    >
+      <article
+        v-for="card in surfaceCards"
+        :key="card.role"
+        class="preview-surface-card"
+        :class="{ 'preview-surface-card-inverse': card.role === 'inverse_surface' }"
+        :style="{ backgroundColor: `var(${card.cssVariable})` }"
+        :data-surface-card="card.role"
+      >
+        <strong>{{ t(`tonal_builder.surface_preview.roles.${card.role}`) }}</strong>
+        <span>
+          {{
+            t('tonal_builder.surface_preview.tone_value', {
+              tone: card.tone,
+            })
+          }}
+          <small>{{ card.hex }}</small>
+        </span>
+      </article>
+    </div>
+
+    <div
       ref="shellRef"
       class="preview-shell"
       :style="surfaceStyles"
       :data-theme="isDarkMode ? 'dark' : 'light'"
       data-cy="surface-preview-shell"
       @pointermove="handleSurfacePointerMove"
-      @pointerleave="hoveredSurface = ''"
+      @pointerleave="hoveredSurfaceRole = null"
     >
       <header
         class="preview-topbar"
@@ -436,19 +504,79 @@
       </div>
 
       <div
-        v-if="hoveredSurface"
-        class="preview-surface-tooltip"
+        v-if="hoveredSurfaceCard"
+        class="preview-surface-card preview-surface-tooltip"
+        :class="{ 'preview-surface-card-inverse': hoveredSurfaceCard.role === 'inverse_surface' }"
         role="tooltip"
-        :style="{ left: `${tooltipPosition.x}px`, top: `${tooltipPosition.y}px` }"
+        :style="{
+          left: `${tooltipPosition.x}px`,
+          top: `${tooltipPosition.y}px`,
+          backgroundColor: `var(${hoveredSurfaceCard.cssVariable})`,
+        }"
         data-cy="surface-tooltip"
       >
-        {{ hoveredSurface }}
+        <strong>{{ t(`tonal_builder.surface_preview.roles.${hoveredSurfaceCard.role}`) }}</strong>
+        <span>
+          {{
+            t('tonal_builder.surface_preview.tone_value', {
+              tone: hoveredSurfaceCard.tone,
+            })
+          }}
+          <small>{{ hoveredSurfaceCard.hex }}</small>
+        </span>
       </div>
     </div>
   </section>
 </template>
 
 <style scoped>
+  .preview-surface-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 6px;
+  }
+
+  .preview-surface-card {
+    display: grid;
+    min-height: 72px;
+    align-content: space-between;
+    gap: 10px;
+    border: 1px solid var(--preview-outline);
+    border-radius: 6px;
+    padding: 9px;
+    color: var(--preview-on-surface);
+    box-shadow: 0 2px 6px rgb(0 0 0 / 8%);
+  }
+
+  .preview-surface-card strong {
+    font-size: 10px;
+    line-height: 1.25;
+  }
+
+  .preview-surface-card > span {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px;
+    color: var(--preview-on-surface-variant);
+    font-size: 9px;
+    font-weight: 700;
+  }
+
+  .preview-surface-card small {
+    font-size: 8px;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+
+  .preview-surface-card-inverse {
+    color: var(--preview-on-inverse);
+  }
+
+  .preview-surface-card-inverse > span {
+    color: var(--preview-on-inverse);
+  }
+
   .preview-shell {
     position: relative;
     width: 100%;
@@ -469,16 +597,9 @@
   .preview-surface-tooltip {
     position: absolute;
     z-index: 20;
-    max-width: 160px;
-    border: 1px solid var(--preview-outline);
-    border-radius: 4px;
-    padding: 5px 7px;
-    background: var(--preview-inverse-surface);
-    color: var(--preview-on-inverse);
+    width: 168px;
+    min-height: 72px;
     box-shadow: 0 4px 12px rgb(0 0 0 / 24%);
-    font-size: 9px;
-    font-weight: 700;
-    line-height: 1.3;
     pointer-events: none;
   }
 

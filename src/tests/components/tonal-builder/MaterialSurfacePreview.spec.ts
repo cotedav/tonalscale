@@ -42,11 +42,19 @@ describe('MaterialSurfacePreview', () => {
     expect(wrapper.get('.preview-inspector').text()).toContain('Payment health');
     expect(wrapper.get('.preview-inspector').text()).toContain('Invoice created');
 
+    const surfaceCards = wrapper.findAll('[data-surface-card]');
+    expect(surfaceCards).toHaveLength(9);
+    expect(wrapper.get('[data-surface-card="surface"]').text()).toContain('Tone 98');
+    expect(wrapper.get('[data-surface-card="surface"]').text()).toContain(tones[98].hex);
+    expect(wrapper.get('[data-surface-card="container_highest"]').text()).toContain('Tone 90');
+    expect(wrapper.get('[data-surface-card="inverse_surface"]').text()).toContain('Tone 20');
+
     const updatedTones = buildTones('aa');
     await wrapper.setProps({ tones: updatedTones });
 
     expect(shell.attributes('style')).toContain(`--preview-surface: ${updatedTones[98].hex}`);
     expect(shell.attributes('style')).toContain(`--preview-primary: ${updatedTones[40].hex}`);
+    expect(wrapper.get('[data-surface-card="surface"]').text()).toContain(updatedTones[98].hex);
   });
 
   it('inverts Material surface roles when dark mode is enabled', async () => {
@@ -71,6 +79,9 @@ describe('MaterialSurfacePreview', () => {
     expect(shell.attributes('style')).toContain(`--preview-on-surface: ${tones[90].hex}`);
     expect(shell.attributes('style')).toContain(`--preview-primary: ${tones[80].hex}`);
     expect(shell.attributes('style')).toContain(`--preview-on-primary: ${tones[20].hex}`);
+    expect(wrapper.get('[data-surface-card="surface"]').text()).toContain('Tone 6');
+    expect(wrapper.get('[data-surface-card="container_highest"]').text()).toContain('Tone 22');
+    expect(wrapper.get('[data-surface-card="inverse_surface"]').text()).toContain('Tone 90');
     expect(wrapper.find('[data-cy="surface-role-inspector"]').exists()).toBe(false);
   });
 
@@ -84,12 +95,14 @@ describe('MaterialSurfacePreview', () => {
     await table.trigger('pointermove', { clientX: 120, clientY: 180 });
 
     expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Surface container lowest');
-    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('tone 100');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 100');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain(tones[100].hex);
 
     await wrapper.get('[data-cy="surface-preview-dark-mode"]').setValue(true);
     await table.trigger('pointermove', { clientX: 120, clientY: 180 });
 
-    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('tone 4');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 4');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain(tones[4].hex);
   });
 
   it('reports nested table surfaces for the header and selected row', async () => {
@@ -100,11 +113,11 @@ describe('MaterialSurfacePreview', () => {
     const header = wrapper.get('.preview-table-header');
     await header.trigger('pointermove', { clientX: 200, clientY: 210 });
     expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Surface container low');
-    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('tone 96');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 96');
 
     const selectedRow = wrapper.get('.preview-table-row-selected');
     await selectedRow.trigger('pointermove', { clientX: 200, clientY: 280 });
     expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Inverse surface');
-    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('tone 20');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 20');
   });
 });

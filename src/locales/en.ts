@@ -184,6 +184,8 @@ export default {
       helper: 'Generated tones applied to an operational workspace',
       dark_mode: 'Use dark surfaces in the app preview',
       surface_tooltip: '{role}, tone {tone}',
+      surface_cards: 'Surface role tone reference',
+      tone_value: 'Tone {tone}',
       roles: {
         surface: 'Surface',
         surface_bright: 'Surface bright',

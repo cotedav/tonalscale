@@ -183,6 +183,8 @@ export default {
       helper: 'Tons generes appliques a un espace operationnel',
       dark_mode: 'Utiliser les surfaces sombres dans l apercu',
       surface_tooltip: '{role}, ton {tone}',
+      surface_cards: 'Reference des tons par role de surface',
+      tone_value: 'Ton {tone}',
       roles: {
         surface: 'Surface',
         surface_bright: 'Surface claire',
