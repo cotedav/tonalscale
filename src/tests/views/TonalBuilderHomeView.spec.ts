@@ -32,6 +32,7 @@ describe('TonalBuilderHomeView', () => {
       '#color-scale-container-custom',
       '#color-scale-container-key',
       '#gradient-controls',
+      '[data-cy="accessibility-dock"]',
       '#colorcard-darker45',
       '#colorcard-darker3',
       '#colorcard-lighter3',
