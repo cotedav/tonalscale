@@ -11,6 +11,31 @@ vi.mock('plotly.js-dist-min', () => {
   return { default: { react, purge }, react, purge };
 });
 
+if (typeof globalThis.localStorage?.clear !== 'function') {
+  const storage = new Map<string, string>();
+  const localStorage = {
+    getItem: vi.fn((key: string) => storage.get(key) ?? null),
+    setItem: vi.fn((key: string, value: string) => {
+      storage.set(key, value);
+    }),
+    removeItem: vi.fn((key: string) => {
+      storage.delete(key);
+    }),
+    clear: vi.fn(() => {
+      storage.clear();
+    }),
+  };
+
+  Object.defineProperty(globalThis, 'localStorage', {
+    value: localStorage,
+    configurable: true,
+  });
+  Object.defineProperty(window, 'localStorage', {
+    value: localStorage,
+    configurable: true,
+  });
+}
+
 if (!globalThis.URL.createObjectURL) {
   Object.defineProperty(globalThis.URL, 'createObjectURL', {
     value: vi.fn(),

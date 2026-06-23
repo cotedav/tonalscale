@@ -23,7 +23,9 @@ export const resolveInitialLocale = ({
   storage?: Pick<Storage, 'getItem'>;
   navigatorLanguages?: readonly string[];
 } = {}): SupportedLocale => {
-  const storedLocale = normalizeLocale(storage?.getItem(LOCALE_STORAGE_KEY));
+  const storedLocale = normalizeLocale(
+    typeof storage?.getItem === 'function' ? storage.getItem(LOCALE_STORAGE_KEY) : null,
+  );
   if (storedLocale) return storedLocale;
 
   const navigatorLocale = normalizeLocale(
@@ -64,7 +66,9 @@ export const setLocale = async (
 
   const { global } = instance;
   global.locale.value = locale;
-  storage?.setItem(LOCALE_STORAGE_KEY, locale);
+  if (typeof storage?.setItem === 'function') {
+    storage.setItem(LOCALE_STORAGE_KEY, locale);
+  }
   return locale;
 };
 

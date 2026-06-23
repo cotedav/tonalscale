@@ -42,6 +42,9 @@ describe('TonalBuilderHomeView', () => {
 
     expect(wrapper.find('[data-cy="base-color-picker"]').exists()).toBe(true);
     expect(wrapper.find('[data-cy="blend-color-picker"]').exists()).toBe(true);
+    expect(wrapper.get('#gradient-controls').find('#blendColorPicker').exists()).toBe(true);
+    expect(wrapper.find('[data-cy="blend-mode-summary"]').exists()).toBe(false);
+    expect(wrapper.find('[data-cy="blend-enabled-toggle"]').exists()).toBe(true);
     expect(wrapper.find('#baseColorPickerInput').text()).toContain('#7c3aed');
 
     expect(wrapper.findAll('[type="range"]').length).toBe(5);

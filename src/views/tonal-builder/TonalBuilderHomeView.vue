@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { useEventListener, useTitle } from '@vueuse/core';
-  import { computed, ref, watchEffect } from 'vue';
+  import { computed, ref, watch, watchEffect } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { storeToRefs } from 'pinia';
 
@@ -13,7 +13,10 @@
     type ControlError,
     useTonalBuilderControls,
   } from '@/composables/useTonalBuilderControls';
-  import { useTonalBuilderEngine } from '@/composables/useTonalBuilderEngine';
+  import {
+    type TonalEnginePayload,
+    useTonalBuilderEngine,
+  } from '@/composables/useTonalBuilderEngine';
   import { useTonalBuilderColors } from '@/composables/useTonalBuilderColors';
   import { useTonalScaleStore } from '@/stores/tonalScale';
   import { hexToRgb } from '@/utils/color';
@@ -26,6 +29,7 @@
 
   const { t } = useI18n();
   const isImportModalOpen = ref(false);
+  const isBlendEnabled = ref(true);
 
   const pageTitle = computed(() => t('tonal_builder.meta.title'));
   const pageDescription = computed(() => t('tonal_builder.meta.description'));
@@ -68,8 +72,6 @@
     },
   });
 
-  const baseSwatchStyle = computed(() => ({ backgroundColor: baseHex.value }));
-  const blendSwatchStyle = computed(() => ({ backgroundColor: blendHex.value }));
   const baseLuminanceIndex = computed(() => scale.value.luminance);
 
   const blendModes = computed(() => [
@@ -154,30 +156,38 @@
 
   useEventListener(window, ['pointerup', 'pointercancel', 'touchend'], deactivateBlendOverlay);
 
-  useTonalBuilderEngine(
+  const applyTonalPayload = (payload: TonalEnginePayload) => {
+    const blendChannels = hexToRgb(payload.blendHex);
+
+    tonalScale.importState({
+      colorHex: payload.baseHex,
+      blendMode: payload.blendMode,
+      blendStrength: isBlendEnabled.value ? payload.strength : 0,
+      blendR: blendChannels.r,
+      blendG: blendChannels.g,
+      blendB: blendChannels.b,
+      middle: payload.middle,
+      spread: payload.spread,
+      satDarker: payload.satDarker,
+      satLighter: payload.satLighter,
+    });
+  };
+
+  const tonalEngine = useTonalBuilderEngine(
     {
       colors: { baseHex, blendHex },
       controls: { blendMode, controls, hasErrors },
     },
     {
-      onUpdate: (payload) => {
-        const blendChannels = hexToRgb(payload.blendHex);
-
-        tonalScale.importState({
-          colorHex: payload.baseHex,
-          blendMode: payload.blendMode,
-          blendStrength: payload.strength,
-          blendR: blendChannels.r,
-          blendG: blendChannels.g,
-          blendB: blendChannels.b,
-          middle: payload.middle,
-          spread: payload.spread,
-          satDarker: payload.satDarker,
-          satLighter: payload.satLighter,
-        });
-      },
+      onUpdate: applyTonalPayload,
     },
   );
+
+  watch(isBlendEnabled, () => {
+    if (tonalEngine.lastPayload.value) {
+      applyTonalPayload(tonalEngine.lastPayload.value);
+    }
+  });
 
   useTitle(pageTitle);
 
@@ -214,7 +224,7 @@
 
 <template>
   <main
-    class="mx-auto max-w-6xl space-y-8 px-4 py-8"
+    class="flex h-screen flex-col overflow-hidden bg-surface"
     aria-labelledby="tonal-builder-heading"
     data-cy="tonal-builder-home"
   >
@@ -230,361 +240,327 @@
       {{ pageTitle }}
     </h1>
 
-    <section
-      class="space-y-6"
+    <header
+      id="toolbar"
+      class="flex h-[72px] shrink-0 items-center justify-end border-b border-dim bg-surface-soft px-4 sm:px-8"
       :aria-label="t('tonal_builder.actions.toolbar_label')"
     >
       <div
-        id="toolbar"
-        class="flex flex-wrap items-center justify-between gap-4"
+        class="flex flex-wrap items-center justify-end gap-3"
+        :aria-label="t('tonal_builder.actions.actions_label')"
       >
-        <div class="flex flex-wrap items-center gap-3">
-          <div
-            id="baseColorPickerInput"
-            class="flex items-center gap-3 rounded-2xl border border-dashed border-dim/50 bg-surface-soft/80 px-4 py-3 shadow-card"
-          >
-            <div
-              class="h-10 w-10 rounded-full border border-dim"
-              :style="baseSwatchStyle"
-            />
-            <div class="space-y-1">
-              <p class="text-sm font-semibold text-primary">
-                {{ t('tonal_builder.pickers.base.title') }}
-              </p>
-              <p class="text-xs text-tertiary">
-                {{ baseHex }}
-              </p>
-            </div>
-          </div>
-
-          <div
-            id="blendColorPickerInput"
-            class="flex items-center gap-3 rounded-2xl border border-dashed border-dim/50 bg-surface-soft/80 px-4 py-3 shadow-card"
-          >
-            <div
-              class="h-10 w-10 rounded-full border border-dim"
-              :style="blendSwatchStyle"
-            />
-            <div class="space-y-1">
-              <p class="text-sm font-semibold text-primary">
-                {{ t('tonal_builder.pickers.blend.title') }}
-              </p>
-              <p class="text-xs text-tertiary">
-                {{ blendHex }}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div
-          class="flex items-center gap-3"
-          :aria-label="t('tonal_builder.actions.actions_label')"
+        <button
+          type="button"
+          class="inline-flex h-11 items-center justify-center rounded-none bg-accent-strong/15 px-5 text-sm font-semibold text-primary ring-1 ring-inset ring-accent-strong/20 transition hover:bg-accent-strong/25"
+          data-cy="tonal-builder-import"
+          @click="isImportModalOpen = true"
         >
-          <button
-            id="import-export-button"
-            type="button"
-            class="inline-flex items-center gap-2 rounded-xl bg-accent-strong/20 px-4 py-2 text-sm font-semibold text-accent-strong shadow-glow ring-1 ring-inset ring-accent-strong/30 backdrop-blur transition hover:bg-accent-strong/30"
-            data-cy="tonal-builder-import"
-            @click="isImportModalOpen = true"
-          >
-            {{ t('tonal_builder.actions.import_export') }}
-          </button>
-          <button
-            id="copy-button"
-            type="button"
-            class="inline-flex items-center gap-2 rounded-xl bg-surface-soft px-4 py-2 text-sm font-semibold text-primary ring-1 ring-inset ring-glass/10 transition hover:bg-surface-strong"
-            data-cy="tonal-builder-copy"
-            @click="handleCopySvg"
-          >
-            {{ t('tonal_builder.actions.copy_svg') }}
-          </button>
+          {{ t('tonal_builder.actions.import') }}
+        </button>
+        <button
+          id="copy-button"
+          type="button"
+          class="inline-flex h-11 items-center justify-center rounded-none bg-accent-strong/15 px-5 text-sm font-semibold text-primary ring-1 ring-inset ring-accent-strong/20 transition hover:bg-accent-strong/25"
+          data-cy="tonal-builder-copy"
+          @click="handleCopySvg"
+        >
+          {{ t('tonal_builder.actions.export') }}
+        </button>
 
-          <ThemeToggle
-            id="theme-toggle"
-            class="!h-12 !w-12 !rounded-full !bg-surface-soft !text-secondary ring-1 ring-inset ring-glass/10 hover:!bg-surface-strong"
-            data-cy="tonal-builder-theme-toggle"
-          />
-        </div>
-      </div>
-
-      <div class="grid gap-4 lg:grid-cols-2">
-        <ColorPickerCard
-          id="baseColorPicker"
-          v-model="baseHexModel"
-          v-model:slider-mode="sliderModeModel"
-          :label="t('tonal_builder.pickers.base.title')"
-          :description="t('tonal_builder.pickers.base.description')"
-          :swatch-label="t('tonal_builder.pickers.base.badge')"
-          data-cy="base-color-picker"
-        />
-        <ColorPickerCard
-          id="blendColorPicker"
-          v-model="blendHexModel"
-          v-model:slider-mode="sliderModeModel"
-          :label="t('tonal_builder.pickers.blend.title')"
-          :description="t('tonal_builder.pickers.blend.description')"
-          :swatch-label="t('tonal_builder.pickers.blend.badge')"
-          data-cy="blend-color-picker"
+        <ThemeToggle
+          id="theme-toggle"
+          class="!h-11 !w-auto !rounded-none !bg-accent-strong/15 !px-5 !text-primary ring-1 ring-inset ring-accent-strong/20 hover:!bg-accent-strong/25"
+          data-cy="tonal-builder-theme-toggle"
         />
       </div>
-    </section>
+    </header>
 
-    <section
-      class="space-y-4"
-      :aria-label="t('tonal_builder.scales.title')"
-    >
-      <div class="space-y-1">
-        <p class="text-sm uppercase tracking-wide text-accent-soft">
-          {{ t('tonal_builder.scales.badge') }}
-        </p>
-        <p class="text-lg font-semibold text-primary">
-          {{ t('tonal_builder.scales.title') }}
-        </p>
-        <p class="text-sm text-tertiary">{{ t('tonal_builder.scales.description') }}</p>
-        <p
-          class="sr-only"
-          role="status"
-          aria-live="polite"
+    <div class="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_minmax(560px,1fr)]">
+      <div
+        class="min-h-0 overflow-y-auto bg-surface-soft px-4 py-6 sm:px-8 lg:px-10"
+        :aria-label="t('tonal_builder.regions.accessibility_label')"
+      >
+        <section
+          class="space-y-4"
+          :aria-label="t('tonal_builder.scales.title')"
         >
-          {{ overlayAnnouncement }}
-        </p>
+          <p class="sr-only">{{ t('tonal_builder.scales.description') }}</p>
+          <p
+            class="sr-only"
+            role="status"
+            aria-live="polite"
+          >
+            {{ overlayAnnouncement }}
+          </p>
+
+          <div class="space-y-4">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between gap-4">
+                <span class="text-sm font-semibold text-primary">
+                  {{ t('tonal_builder.scales.full') }}
+                </span>
+                <span class="text-xs text-secondary">{{
+                  t('tonal_builder.scales.full_helper')
+                }}</span>
+              </div>
+              <TonalStrip
+                id="color-scale-container-full"
+                :tones="fullStrip"
+                :base-index="baseLuminanceIndex"
+                class="min-h-[96px]"
+                :blend-graph-active="blendOverlayActive"
+                :blend-graph-data="blendDistribution"
+                :show-blend-dist-graph="true"
+                data-cy="scale-strip-full"
+                @pairing-change="handlePairingChange"
+              />
+            </div>
+
+            <div class="space-y-2">
+              <div class="flex items-center justify-between gap-4">
+                <span class="text-sm font-semibold text-primary">
+                  {{ t('tonal_builder.scales.extended') }}
+                </span>
+                <span class="text-xs text-secondary">{{
+                  t('tonal_builder.scales.extended_helper')
+                }}</span>
+              </div>
+              <TonalStrip
+                id="color-scale-container-custom"
+                :tones="extendedStrip"
+                :base-index="baseLuminanceIndex"
+                class="min-h-[72px]"
+                data-cy="scale-strip-extended"
+                @pairing-change="handlePairingChange"
+              />
+            </div>
+
+            <div class="space-y-2">
+              <div class="flex items-center justify-between gap-4">
+                <span class="text-sm font-semibold text-primary">
+                  {{ t('tonal_builder.scales.key') }}
+                </span>
+                <span class="text-xs text-secondary">{{
+                  t('tonal_builder.scales.key_helper')
+                }}</span>
+              </div>
+              <TonalStrip
+                id="color-scale-container-key"
+                :tones="keyStrip"
+                :base-index="baseLuminanceIndex"
+                class="min-h-[72px]"
+                data-cy="scale-strip-key"
+                @pairing-change="handlePairingChange"
+              />
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="mt-10"
+          :aria-label="t('tonal_builder.accessibility.title')"
+        >
+          <div class="grid gap-5 sm:grid-cols-2">
+            <ContrastPreviewCard
+              id="colorcard-darker45"
+              :title-key="'tonal_builder.accessibility.cards.darker_45'"
+              ratio-label="4.5:1"
+              :background="previewCards.darker45.background"
+              :text="previewCards.darker45.text"
+            />
+
+            <ContrastPreviewCard
+              id="colorcard-darker3"
+              :title-key="'tonal_builder.accessibility.cards.darker_3'"
+              ratio-label="3:1"
+              :background="previewCards.darker3.background"
+              :text="previewCards.darker3.text"
+            />
+
+            <ContrastPreviewCard
+              id="colorcard-lighter3"
+              :title-key="'tonal_builder.accessibility.cards.lighter_3'"
+              ratio-label="3:1"
+              :background="previewCards.lighter3.background"
+              :text="previewCards.lighter3.text"
+            />
+
+            <ContrastPreviewCard
+              id="colorcard-lighter45"
+              :title-key="'tonal_builder.accessibility.cards.lighter_45'"
+              ratio-label="4.5:1"
+              :background="previewCards.lighter45.background"
+              :text="previewCards.lighter45.text"
+            />
+          </div>
+        </section>
       </div>
-
-      <div class="space-y-4">
-        <div class="space-y-2">
-          <div class="flex items-center justify-between">
-            <span class="text-sm font-semibold text-primary">
-              {{ t('tonal_builder.scales.full') }}
-            </span>
-            <span class="text-xs text-secondary">{{ t('tonal_builder.scales.full_helper') }}</span>
-          </div>
-          <TonalStrip
-            id="color-scale-container-full"
-            :tones="fullStrip"
-            :base-index="baseLuminanceIndex"
-            class="min-h-[96px]"
-            :blend-graph-active="blendOverlayActive"
-            :blend-graph-data="blendDistribution"
-            :show-blend-dist-graph="true"
-            data-cy="scale-strip-full"
-            @pairing-change="handlePairingChange"
-          />
-        </div>
-
-        <div class="space-y-2">
-          <div class="flex items-center justify-between">
-            <span class="text-sm font-semibold text-primary">
-              {{ t('tonal_builder.scales.extended') }}
-            </span>
-            <span class="text-xs text-secondary">{{
-              t('tonal_builder.scales.extended_helper')
-            }}</span>
-          </div>
-          <TonalStrip
-            id="color-scale-container-custom"
-            :tones="extendedStrip"
-            :base-index="baseLuminanceIndex"
-            class="min-h-[72px]"
-            data-cy="scale-strip-extended"
-            @pairing-change="handlePairingChange"
-          />
-        </div>
-
-        <div class="space-y-2">
-          <div class="flex items-center justify-between">
-            <span class="text-sm font-semibold text-primary">
-              {{ t('tonal_builder.scales.key') }}
-            </span>
-            <span class="text-xs text-secondary">{{ t('tonal_builder.scales.key_helper') }}</span>
-          </div>
-          <TonalStrip
-            id="color-scale-container-key"
-            :tones="keyStrip"
-            :base-index="baseLuminanceIndex"
-            class="min-h-[72px]"
-            data-cy="scale-strip-key"
-            @pairing-change="handlePairingChange"
-          />
-        </div>
-      </div>
-    </section>
-
-    <section
-      class="space-y-3"
-      :aria-label="t('tonal_builder.controls.title')"
-    >
-      <p class="text-lg font-semibold text-primary">{{ t('tonal_builder.controls.title') }}</p>
-      <p class="text-sm text-tertiary">{{ t('tonal_builder.controls.description') }}</p>
 
       <div
-        id="gradient-controls"
-        class="grid grid-cols-1 items-center gap-3 rounded-3xl border border-dashed border-dim/50 bg-surface-soft/80 p-4 sm:grid-cols-[auto_minmax(0,1fr)_88px]"
-        data-cy="gradient-controls"
+        class="min-h-0 overflow-y-auto bg-surface px-4 py-6 sm:px-8 lg:px-10"
+        :aria-label="t('tonal_builder.regions.pickers_label')"
       >
-        <label
-          class="text-sm font-semibold text-primary"
-          for="blendmode"
-        >
-          {{ t('tonal_builder.controls.labels.blend_mode') }}
-        </label>
-        <select
-          id="blendmode"
-          v-model="blendModeModel"
-          name="blendmode"
-          class="h-11 w-full rounded-xl border border-dim bg-surface px-3 text-sm text-primary shadow-inner"
-          data-cy="blendmode-select"
-        >
-          <option
-            v-for="mode in blendModes"
-            :key="mode.value"
-            :value="mode.value"
-          >
-            {{ mode.label }}
-          </option>
-        </select>
         <span
-          aria-hidden="true"
-          class="hidden sm:block"
-        />
-
-        <label
-          class="flex items-center gap-2 text-sm font-semibold text-primary"
-          for="blendColorPickerInput"
+          id="baseColorPickerInput"
+          class="sr-only"
         >
-          <span class="h-3 w-3 rounded-full bg-accent-soft" />
-          {{ t('tonal_builder.controls.labels.blend_color') }}
-        </label>
-        <div class="flex flex-1 flex-wrap items-center gap-2 sm:col-span-2">
+          {{ baseHex }}
+        </span>
+
+        <section
+          class="space-y-5"
+          :aria-label="t('tonal_builder.actions.toolbar_label')"
+        >
+          <ColorPickerCard
+            id="baseColorPicker"
+            v-model="baseHexModel"
+            v-model:slider-mode="sliderModeModel"
+            :label="t('tonal_builder.pickers.base.title')"
+            :description="t('tonal_builder.pickers.base.description')"
+            :swatch-label="t('tonal_builder.pickers.base.badge')"
+            data-cy="base-color-picker"
+          />
+        </section>
+
+        <section
+          class="mt-10 space-y-3"
+          :aria-label="t('tonal_builder.controls.title')"
+        >
           <div
-            id="blendColorPickerInput"
-            class="flex h-11 items-center gap-3 rounded-xl border border-dashed border-accent-soft/40 bg-surface/70 px-3"
-            data-cy="blend-color-input"
+            id="gradient-controls"
+            class="grid grid-cols-1 items-center gap-3 rounded-none border border-dim bg-surface-soft/80 p-4 sm:grid-cols-[auto_minmax(0,1fr)_88px]"
+            data-cy="gradient-controls"
           >
-            <span
-              class="h-8 w-8 rounded-xl border border-dim"
-              :style="blendSwatchStyle"
-              role="img"
-              :aria-label="t('tonal_builder.pickers.blend.title')"
+            <div class="flex flex-wrap items-center justify-between gap-3 sm:col-span-3">
+              <p class="text-sm font-semibold text-primary">
+                {{ t('tonal_builder.controls.title') }}
+              </p>
+              <label
+                class="inline-flex cursor-pointer items-center gap-3 text-sm font-semibold text-primary"
+                for="blend-enabled"
+              >
+                <span>{{ t('tonal_builder.controls.labels.blend_enabled') }}</span>
+                <input
+                  id="blend-enabled"
+                  v-model="isBlendEnabled"
+                  type="checkbox"
+                  class="peer sr-only"
+                  data-cy="blend-enabled-toggle"
+                />
+                <span
+                  class="relative h-6 w-11 rounded-full bg-surface ring-1 ring-inset ring-dim transition peer-focus-visible:ring-2 peer-focus-visible:ring-accent"
+                  :class="isBlendEnabled ? 'bg-accent-strong' : 'bg-surface'"
+                  aria-hidden="true"
+                >
+                  <span
+                    class="absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow-sm transition"
+                    :class="isBlendEnabled ? 'translate-x-5' : 'translate-x-0'"
+                  />
+                </span>
+              </label>
+            </div>
+
+            <ColorPickerCard
+              id="blendColorPicker"
+              v-model="blendHexModel"
+              v-model:slider-mode="sliderModeModel"
+              class="sm:col-span-3"
+              :label="t('tonal_builder.pickers.blend.title')"
+              :description="t('tonal_builder.pickers.blend.description')"
+              :swatch-label="t('tonal_builder.pickers.blend.badge')"
+              data-cy="blend-color-picker"
             />
-            <span class="text-xs font-semibold text-secondary">{{ blendHex }}</span>
-          </div>
-          <div
-            id="blendColorPicker"
-            class="flex h-11 flex-1 items-center justify-between rounded-xl border border-dashed border-accent-soft/40 bg-surface/70 px-3"
-            data-cy="blend-color-picker"
-          >
-            <span class="text-xs font-semibold uppercase tracking-wide text-tertiary">
+
+            <label
+              class="text-sm font-semibold text-primary"
+              for="blendmode"
+            >
               {{ t('tonal_builder.controls.labels.blend_mode') }}
+            </label>
+            <select
+              id="blendmode"
+              v-model="blendModeModel"
+              name="blendmode"
+              class="h-11 w-full rounded-xl border border-dim bg-surface px-3 text-sm text-primary shadow-inner"
+              data-cy="blendmode-select"
+            >
+              <option
+                v-for="mode in blendModes"
+                :key="mode.value"
+                :value="mode.value"
+              >
+                {{ mode.label }}
+              </option>
+            </select>
+            <span
+              aria-hidden="true"
+              class="hidden sm:block"
+            />
+
+            <span
+              id="blendColorPickerInput"
+              class="sr-only"
+            >
+              {{ blendHex }}
             </span>
-            <span class="text-xs font-semibold text-accent-soft">{{ blendModeModel }}</span>
+
+            <template
+              v-for="control in sliderControls"
+              :key="control.id"
+            >
+              <label
+                :for="control.range.id"
+                class="text-sm font-semibold text-primary"
+              >
+                {{ control.label }}
+              </label>
+              <input
+                :id="control.range.id"
+                :value="control.value"
+                type="range"
+                :min="control.range.min"
+                :max="control.range.max"
+                :step="control.range.step"
+                class="h-2 w-full cursor-pointer appearance-none rounded-full bg-slate-700 accent-accent"
+                :aria-label="control.label"
+                :data-cy="`${control.id}-slider`"
+                @pointerdown="onBlendControlPointerDown(control.id)"
+                @pointerup="deactivateBlendOverlay"
+                @pointercancel="deactivateBlendOverlay"
+                @blur="deactivateBlendOverlay"
+                @input="onControlInput(control.id, ($event.target as HTMLInputElement).value, true)"
+                @change="onControlInput(control.id, ($event.target as HTMLInputElement).value)"
+              />
+              <input
+                :id="control.number.id"
+                :value="control.value"
+                type="number"
+                :min="control.number.min"
+                :max="control.number.max"
+                :step="control.number.step"
+                class="h-11 w-full rounded-xl border border-dim bg-surface px-3 text-sm text-primary shadow-inner"
+                :aria-label="control.label"
+                :data-cy="`${control.id}-value`"
+                @input="onControlInput(control.id, ($event.target as HTMLInputElement).value)"
+                @change="onControlInput(control.id, ($event.target as HTMLInputElement).value)"
+                @blur="deactivateBlendOverlay"
+              />
+              <p
+                v-if="controlErrors[control.id]"
+                class="text-xs text-rose-300 sm:col-start-2 sm:col-span-2"
+                role="alert"
+              >
+                {{
+                  t(
+                    (controlErrors[control.id] as ControlError).key,
+                    (controlErrors[control.id] as ControlError).values ?? {},
+                  )
+                }}
+              </p>
+            </template>
           </div>
-        </div>
-
-        <template
-          v-for="control in sliderControls"
-          :key="control.id"
-        >
-          <label
-            :for="control.range.id"
-            class="text-sm font-semibold text-primary"
-          >
-            {{ control.label }}
-          </label>
-          <input
-            :id="control.range.id"
-            :value="control.value"
-            type="range"
-            :min="control.range.min"
-            :max="control.range.max"
-            :step="control.range.step"
-            class="h-2 w-full cursor-pointer appearance-none rounded-full bg-slate-700 accent-accent"
-            :aria-label="control.label"
-            :data-cy="`${control.id}-slider`"
-            @pointerdown="onBlendControlPointerDown(control.id)"
-            @pointerup="deactivateBlendOverlay"
-            @pointercancel="deactivateBlendOverlay"
-            @blur="deactivateBlendOverlay"
-            @input="onControlInput(control.id, ($event.target as HTMLInputElement).value, true)"
-            @change="onControlInput(control.id, ($event.target as HTMLInputElement).value)"
-          />
-          <input
-            :id="control.number.id"
-            :value="control.value"
-            type="number"
-            :min="control.number.min"
-            :max="control.number.max"
-            :step="control.number.step"
-            class="h-11 w-full rounded-xl border border-dim bg-surface px-3 text-sm text-primary shadow-inner"
-            :aria-label="control.label"
-            :data-cy="`${control.id}-value`"
-            @input="onControlInput(control.id, ($event.target as HTMLInputElement).value)"
-            @change="onControlInput(control.id, ($event.target as HTMLInputElement).value)"
-            @blur="deactivateBlendOverlay"
-          />
-          <p
-            v-if="controlErrors[control.id]"
-            class="text-xs text-rose-300 sm:col-start-2 sm:col-span-2"
-            role="alert"
-          >
-            {{
-              t(
-                (controlErrors[control.id] as ControlError).key,
-                (controlErrors[control.id] as ControlError).values ?? {},
-              )
-            }}
-          </p>
-        </template>
+        </section>
       </div>
-    </section>
-
-    <section
-      class="space-y-3"
-      :aria-label="t('tonal_builder.accessibility.title')"
-    >
-      <div class="flex flex-wrap items-baseline gap-2">
-        <p class="text-lg font-semibold text-primary">
-          {{ t('tonal_builder.accessibility.title') }}
-        </p>
-        <p class="text-sm text-tertiary">
-          {{ t('tonal_builder.accessibility.description') }}
-        </p>
-      </div>
-
-      <div class="grid gap-3 sm:grid-cols-2">
-        <ContrastPreviewCard
-          id="colorcard-darker45"
-          :title-key="'tonal_builder.accessibility.cards.darker_45'"
-          ratio-label="4.5:1"
-          :background="previewCards.darker45.background"
-          :text="previewCards.darker45.text"
-        />
-
-        <ContrastPreviewCard
-          id="colorcard-darker3"
-          :title-key="'tonal_builder.accessibility.cards.darker_3'"
-          ratio-label="3:1"
-          :background="previewCards.darker3.background"
-          :text="previewCards.darker3.text"
-        />
-
-        <ContrastPreviewCard
-          id="colorcard-lighter3"
-          :title-key="'tonal_builder.accessibility.cards.lighter_3'"
-          ratio-label="3:1"
-          :background="previewCards.lighter3.background"
-          :text="previewCards.lighter3.text"
-        />
-
-        <ContrastPreviewCard
-          id="colorcard-lighter45"
-          :title-key="'tonal_builder.accessibility.cards.lighter_45'"
-          ratio-label="4.5:1"
-          :background="previewCards.lighter45.background"
-          :text="previewCards.lighter45.text"
-        />
-      </div>
-    </section>
-
-    <!-- Scaffolding sections removed -->
+    </div>
   </main>
 </template>

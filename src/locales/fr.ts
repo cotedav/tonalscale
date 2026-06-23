@@ -81,6 +81,7 @@ export default {
       toolbar_label: 'Barre d’outils du générateur',
       actions_label: 'Actions du générateur',
       import_export: 'Importer/Exporter',
+      export: 'Exporter',
       copy_svg: 'Copier le SVG',
       theme_toggle: 'Basculer le thème',
       copied_message: 'Copié dans le presse-papiers',
@@ -122,6 +123,7 @@ export default {
       labels: {
         blend_mode: 'Mode de fusion',
         blend_color: 'Couleur de fusion',
+        blend_enabled: 'Fusion',
       },
       fields: {
         strength: 'Force du mélange',

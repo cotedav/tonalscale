@@ -77,6 +77,7 @@ export default {
       toolbar_label: 'Builder toolbar',
       actions_label: 'Builder actions',
       import_export: 'Import/Export',
+      export: 'Export',
       copy_svg: 'Copy SVG',
       theme_toggle: 'Toggle theme',
       copied_message: 'Copied to clipboard',
@@ -123,6 +124,7 @@ export default {
       labels: {
         blend_mode: 'Blend mode',
         blend_color: 'Blend Color',
+        blend_enabled: 'Blend',
       },
       fields: {
         strength: 'Blend Strength',

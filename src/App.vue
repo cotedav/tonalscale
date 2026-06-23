@@ -17,10 +17,6 @@
     />
     <ContextMenu />
 
-    <main class="mx-auto flex min-h-screen w-full max-w-screen-xl px-6 py-10">
-      <div class="w-full">
-        <router-view />
-      </div>
-    </main>
+    <router-view />
   </div>
 </template>
