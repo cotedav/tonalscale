@@ -244,6 +244,11 @@ export default {
         label: 'Solde impaye',
         helper: 'Pour 12 factures ouvertes',
       },
+      collection_health: {
+        title: 'Sante du recouvrement',
+        follow_up: 'Suivi requis',
+        at_risk: 'Solde a risque',
+      },
       table: {
         title: 'Factures recentes',
         invoice: 'Facture',
@@ -296,6 +301,21 @@ export default {
         sent: 'Rappel de paiement envoye',
         created: 'Facture creee depuis un forfait recurrent',
         viewed: 'Le client a consulte la facture',
+      },
+      reconciliation: {
+        title: 'File de rapprochement',
+        helper: 'Elements a verifier par les finances',
+        open: '2 ouverts',
+        gateway: 'Ecart de passerelle',
+        gateway_helper: 'Le reglement ne correspond pas au versement',
+        credit: 'Credit non applique',
+        credit_helper: 'Note de credit en attente d une facture',
+      },
+      settlement: {
+        title: 'Prevision des reglements',
+        helper: 'Flux de tresorerie prevu sur six jours',
+        next: 'Prochain reglement',
+        tomorrow: 'Demain',
       },
     },
     overlays: {

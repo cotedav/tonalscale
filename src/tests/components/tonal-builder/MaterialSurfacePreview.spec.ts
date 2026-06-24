@@ -59,6 +59,9 @@ describe('MaterialSurfacePreview', () => {
     expect(shell.attributes('style')).toContain(`--preview-surface: ${updatedTones[98].hex}`);
     expect(shell.attributes('style')).toContain(`--preview-primary: ${updatedTones[40].hex}`);
     expect(wrapper.get('[data-surface-card="surface"]').text()).toContain(updatedTones[98].hex);
+    expect(wrapper.text()).toContain('Reconciliation queue');
+    expect(wrapper.text()).toContain('Collection health');
+    expect(wrapper.text()).toContain('Settlement forecast');
   });
 
   it('inverts Material surface roles when dark mode is enabled', async () => {

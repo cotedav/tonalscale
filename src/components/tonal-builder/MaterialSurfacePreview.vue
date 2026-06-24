@@ -305,7 +305,7 @@
 
 <template>
   <section
-    class="space-y-3"
+    class="material-surface-preview space-y-3"
     :style="surfaceStyles"
     :data-theme="isDarkMode ? 'dark' : 'light'"
     :aria-label="t('tonal_builder.surface_preview.title')"
@@ -541,6 +541,36 @@
             <strong>$42,350</strong>
             <small>{{ t('tonal_builder.surface_preview.summary.helper') }}</small>
           </div>
+
+          <section
+            class="preview-collection-health"
+            data-surface-role="surface-container"
+            :data-surface-tooltip="surfaceTooltip('container')"
+          >
+            <div class="preview-panel-heading">
+              <span>{{ t('tonal_builder.surface_preview.collection_health.title') }}</span>
+              <strong>74%</strong>
+            </div>
+            <div class="preview-collection-track">
+              <span />
+            </div>
+            <div
+              class="preview-collection-stat preview-collection-stat-lowest"
+              data-surface-role="surface-container-lowest"
+              :data-surface-tooltip="surfaceTooltip('container_lowest')"
+            >
+              <span>{{ t('tonal_builder.surface_preview.collection_health.follow_up') }}</span>
+              <strong>8</strong>
+            </div>
+            <div
+              class="preview-collection-stat preview-collection-stat-highest"
+              data-surface-role="surface-container-highest"
+              :data-surface-tooltip="surfaceTooltip('container_highest')"
+            >
+              <span>{{ t('tonal_builder.surface_preview.collection_health.at_risk') }}</span>
+              <strong>$18,240</strong>
+            </div>
+          </section>
         </aside>
 
         <main
@@ -600,6 +630,92 @@
           >
             <span>{{ t('tonal_builder.surface_preview.table.showing') }}</span>
             <strong>{{ t('tonal_builder.surface_preview.table.page_total') }} $42,350</strong>
+          </div>
+
+          <div class="preview-table-dashboard">
+            <section
+              class="preview-reconciliation"
+              data-surface-role="surface-container"
+              :data-surface-tooltip="surfaceTooltip('container')"
+            >
+              <div class="preview-panel-heading">
+                <div class="preview-panel-title">
+                  <strong>{{ t('tonal_builder.surface_preview.reconciliation.title') }}</strong>
+                  <small>{{ t('tonal_builder.surface_preview.reconciliation.helper') }}</small>
+                </div>
+                <span class="preview-reconciliation-badge">{{
+                  t('tonal_builder.surface_preview.reconciliation.open')
+                }}</span>
+              </div>
+              <div
+                class="preview-reconciliation-item preview-reconciliation-item-lowest"
+                data-surface-role="surface-container-lowest"
+                :data-surface-tooltip="surfaceTooltip('container_lowest')"
+              >
+                <span class="preview-reconciliation-icon">
+                  <CreditCardIcon
+                    class="preview-reconciliation-icon-svg"
+                    aria-hidden="true"
+                  />
+                </span>
+                <div class="preview-reconciliation-copy">
+                  <strong>{{ t('tonal_builder.surface_preview.reconciliation.gateway') }}</strong>
+                  <small>{{
+                    t('tonal_builder.surface_preview.reconciliation.gateway_helper')
+                  }}</small>
+                </div>
+                <strong>$6,240</strong>
+              </div>
+              <div
+                class="preview-reconciliation-item preview-reconciliation-item-high"
+                data-surface-role="surface-container-high"
+                :data-surface-tooltip="surfaceTooltip('container_high')"
+              >
+                <span class="preview-reconciliation-icon">
+                  <DocumentTextIcon
+                    class="preview-reconciliation-icon-svg"
+                    aria-hidden="true"
+                  />
+                </span>
+                <div class="preview-reconciliation-copy">
+                  <strong>{{ t('tonal_builder.surface_preview.reconciliation.credit') }}</strong>
+                  <small>{{
+                    t('tonal_builder.surface_preview.reconciliation.credit_helper')
+                  }}</small>
+                </div>
+                <strong>$1,890</strong>
+              </div>
+            </section>
+
+            <section
+              class="preview-settlement"
+              data-surface-role="surface-bright"
+              :data-surface-tooltip="surfaceTooltip('surface_bright')"
+            >
+              <div class="preview-panel-heading">
+                <div class="preview-panel-title">
+                  <strong>{{ t('tonal_builder.surface_preview.settlement.title') }}</strong>
+                  <small>{{ t('tonal_builder.surface_preview.settlement.helper') }}</small>
+                </div>
+                <strong>$31,860</strong>
+              </div>
+              <div class="preview-settlement-chart">
+                <span class="preview-settlement-bar preview-settlement-bar-1" />
+                <span class="preview-settlement-bar preview-settlement-bar-2" />
+                <span class="preview-settlement-bar preview-settlement-bar-3" />
+                <span class="preview-settlement-bar preview-settlement-bar-4" />
+                <span class="preview-settlement-bar preview-settlement-bar-5" />
+                <span class="preview-settlement-bar preview-settlement-bar-6" />
+              </div>
+              <div
+                class="preview-settlement-total"
+                data-surface-role="surface-container-low"
+                :data-surface-tooltip="surfaceTooltip('container_low')"
+              >
+                <span>{{ t('tonal_builder.surface_preview.settlement.next') }}</span>
+                <strong>{{ t('tonal_builder.surface_preview.settlement.tomorrow') }}</strong>
+              </div>
+            </section>
           </div>
 
           <div
@@ -746,6 +862,10 @@
 </template>
 
 <style scoped>
+  .material-surface-preview {
+    container-type: inline-size;
+  }
+
   .preview-controls-toolbar {
     display: flex;
     align-items: center;
@@ -885,8 +1005,7 @@
   .preview-shell {
     position: relative;
     width: 100%;
-    min-height: 680px;
-    aspect-ratio: 16 / 9;
+    min-height: 0;
     overflow: hidden;
     border: 1px solid var(--preview-outline);
     border-radius: 6px;
@@ -1105,8 +1224,7 @@
 
   .preview-workspace {
     display: grid;
-    height: calc(100% - 212px);
-    min-height: 468px;
+    min-height: 760px;
     grid-template-columns: minmax(180px, 0.27fr) minmax(360px, 1fr) minmax(220px, 0.34fr);
     gap: 1px;
     background: var(--preview-outline);
@@ -1207,6 +1325,52 @@
     color: var(--preview-on-surface-variant);
   }
 
+  .preview-collection-health {
+    display: grid;
+    min-height: 220px;
+    align-content: start;
+    gap: 8px;
+    margin-top: 12px;
+    border-radius: 4px;
+    padding: 10px;
+    background: var(--preview-surface-container);
+  }
+
+  .preview-collection-health .preview-panel-heading {
+    margin-bottom: 0;
+  }
+
+  .preview-collection-track {
+    height: 5px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--preview-surface-container-lowest);
+  }
+
+  .preview-collection-track span {
+    display: block;
+    width: 74%;
+    height: 100%;
+    background: var(--preview-primary);
+  }
+
+  .preview-collection-stat {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    border-radius: 4px;
+    padding: 8px;
+  }
+
+  .preview-collection-stat-lowest {
+    background: var(--preview-surface-container-lowest);
+  }
+
+  .preview-collection-stat-highest {
+    background: var(--preview-surface-container-highest);
+  }
+
   .preview-table-panel {
     position: relative;
     min-width: 0;
@@ -1288,6 +1452,141 @@
 
   .preview-table-footer strong {
     color: var(--preview-on-surface);
+  }
+
+  .preview-table-dashboard {
+    display: grid;
+    min-height: 390px;
+    grid-template-columns: minmax(0, 1.25fr) minmax(180px, 0.75fr);
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .preview-reconciliation,
+  .preview-settlement {
+    border-radius: 4px;
+    padding: 12px;
+  }
+
+  .preview-reconciliation {
+    background: var(--preview-surface-container);
+  }
+
+  .preview-settlement {
+    background: var(--preview-surface-bright);
+  }
+
+  .preview-reconciliation .preview-panel-heading,
+  .preview-settlement .preview-panel-heading {
+    margin-bottom: 10px;
+  }
+
+  .preview-panel-title {
+    display: grid;
+    gap: 2px;
+  }
+
+  .preview-reconciliation small,
+  .preview-settlement small {
+    color: var(--preview-on-surface-variant);
+    font-size: 8px;
+    font-weight: 400;
+  }
+
+  .preview-reconciliation-badge {
+    border-radius: 999px;
+    padding: 4px 7px;
+    background: var(--preview-surface-container-highest);
+    font-size: 8px;
+  }
+
+  .preview-reconciliation-item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 9px;
+    margin-top: 7px;
+    border-radius: 4px;
+    padding: 10px;
+  }
+
+  .preview-reconciliation-item-lowest {
+    background: var(--preview-surface-container-lowest);
+  }
+
+  .preview-reconciliation-item-high {
+    background: var(--preview-surface-container-high);
+  }
+
+  .preview-reconciliation-copy {
+    display: grid;
+    min-width: 0;
+    gap: 2px;
+  }
+
+  .preview-reconciliation-icon {
+    display: grid;
+    width: 28px;
+    height: 28px;
+    place-items: center;
+    border-radius: 4px;
+    background: var(--preview-surface-container-highest);
+    color: var(--preview-primary);
+  }
+
+  .preview-reconciliation-icon-svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .preview-settlement-chart {
+    display: flex;
+    height: 180px;
+    align-items: flex-end;
+    gap: 6px;
+    border-bottom: 1px solid var(--preview-outline);
+    padding: 6px 4px 0;
+  }
+
+  .preview-settlement-bar {
+    flex: 1;
+    border-radius: 3px 3px 0 0;
+    background: var(--preview-primary);
+  }
+
+  .preview-settlement-bar-1 {
+    height: 42%;
+  }
+
+  .preview-settlement-bar-2 {
+    height: 66%;
+  }
+
+  .preview-settlement-bar-3 {
+    height: 54%;
+  }
+
+  .preview-settlement-bar-4 {
+    height: 82%;
+  }
+
+  .preview-settlement-bar-5 {
+    height: 70%;
+  }
+
+  .preview-settlement-bar-6 {
+    height: 94%;
+  }
+
+  .preview-settlement-total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 9px;
+    border-radius: 4px;
+    padding: 8px;
+    background: var(--preview-surface-container-low);
   }
 
   .preview-inspector {
@@ -1471,17 +1770,42 @@
     box-shadow: 0 6px 16px rgb(0 0 0 / 24%);
   }
 
-  @media (width <= 760px) {
+  @container (width <= 760px) {
     .preview-nav span:not(.preview-nav-active) {
       display: none;
     }
 
     .preview-workspace {
-      grid-template-columns: minmax(150px, 0.38fr) minmax(0, 1fr) minmax(170px, 0.38fr);
+      min-height: 0;
+      grid-template-columns: minmax(150px, 0.38fr) minmax(0, 1fr);
     }
 
     .preview-metrics {
-      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      height: auto;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .preview-metric {
+      min-height: 92px;
+    }
+
+    .preview-inspector {
+      display: grid;
+      grid-column: 1 / -1;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 9px;
+    }
+
+    .preview-inspector > .preview-panel-heading {
+      grid-column: 1 / -1;
+      margin-bottom: 0;
+    }
+
+    .preview-health-card,
+    .preview-payment-card,
+    .preview-note,
+    .preview-activity {
+      margin-top: 0;
     }
 
     .preview-table-row {
@@ -1490,6 +1814,48 @@
 
     .preview-table-row > :nth-child(3) {
       display: none;
+    }
+
+    .preview-table-dashboard {
+      min-height: 0;
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @container (width <= 520px) {
+    .preview-topbar {
+      gap: 8px;
+    }
+
+    .preview-nav {
+      display: none;
+    }
+
+    .preview-toolbar {
+      height: auto;
+      min-height: 66px;
+      gap: 12px;
+      padding-block: 10px;
+    }
+
+    .preview-workspace {
+      grid-template-columns: 1fr;
+    }
+
+    .preview-inspector {
+      grid-column: auto;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .preview-inspector > .preview-panel-heading {
+      grid-column: 1 / -1;
+    }
+
+    .preview-snackbar {
+      right: 8px;
+      bottom: 8px;
+      min-width: 0;
+      max-width: calc(100% - 16px);
     }
   }
 </style>

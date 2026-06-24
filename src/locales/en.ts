@@ -245,6 +245,11 @@ export default {
         label: 'Outstanding balance',
         helper: 'Across 12 open invoices',
       },
+      collection_health: {
+        title: 'Collection health',
+        follow_up: 'Needs follow-up',
+        at_risk: 'Balance at risk',
+      },
       table: {
         title: 'Recent invoices',
         invoice: 'Invoice',
@@ -297,6 +302,21 @@ export default {
         sent: 'Payment reminder sent',
         created: 'Invoice created from recurring plan',
         viewed: 'Customer viewed the invoice',
+      },
+      reconciliation: {
+        title: 'Reconciliation queue',
+        helper: 'Items that need a finance review',
+        open: '2 open',
+        gateway: 'Gateway variance',
+        gateway_helper: 'Card settlement does not match the payout',
+        credit: 'Unapplied credit',
+        credit_helper: 'Credit memo awaiting an invoice',
+      },
+      settlement: {
+        title: 'Settlement forecast',
+        helper: 'Expected cash flow over six days',
+        next: 'Next settlement',
+        tomorrow: 'Tomorrow',
       },
     },
 
