@@ -212,6 +212,16 @@ export default {
       actions: {
         add: 'New invoice',
       },
+      metrics: {
+        revenue: 'Monthly revenue',
+        revenue_helper: 'Up 8.2% from May',
+        outstanding: 'Outstanding',
+        outstanding_helper: '12 open invoices',
+        paid: 'Paid on time',
+        paid_helper: 'Across 46 payments',
+        growth: 'Quarterly growth',
+        growth_helper: 'Compared with Q1',
+      },
       filters: {
         title: 'Filters',
         search: 'Search',
@@ -220,6 +230,10 @@ export default {
         all: 'All statuses',
         period: 'Period',
         month: 'This month',
+        saved_view: 'Saved view',
+        collection: 'Collections workspace',
+        active: 'Active filters',
+        high_value: 'High value',
       },
       summary: {
         label: 'Outstanding balance',
@@ -231,19 +245,25 @@ export default {
         customer: 'Customer',
         status: 'Status',
         total: 'Total',
-        showing: 'Showing 4 of 38 invoices',
+        showing: 'Showing 6 of 38 invoices',
         page_total: 'Page total',
+        updated: 'Updated 4 minutes ago',
+        view: 'Table view',
       },
       status: {
         review: 'In review',
         approved: 'Approved',
         pending: 'Pending',
+        overdue: 'Overdue',
+        draft: 'Draft',
       },
       rows: {
         northwind: 'Northwind Supply',
         studio: 'Atlas Studio',
         market: 'Cedar Market',
         foundry: 'Union Foundry',
+        paper: 'Beacon Paper Co.',
+        harbor: 'Harbor Works',
       },
       details: {
         title: 'Invoice details',
@@ -256,11 +276,21 @@ export default {
         title: 'Payment health',
         helper: 'Paid on time across the last 12 invoices',
       },
+      payment: {
+        title: 'Payment summary',
+        method: 'Payment method',
+        terms: 'Terms',
+      },
+      note: {
+        title: 'Internal note',
+        body: 'Customer requested consolidated billing for the next renewal cycle.',
+      },
       activity: {
         title: 'Activity',
         approved: 'Invoice approved by Finance',
         sent: 'Payment reminder sent',
         created: 'Invoice created from recurring plan',
+        viewed: 'Customer viewed the invoice',
       },
     },
 

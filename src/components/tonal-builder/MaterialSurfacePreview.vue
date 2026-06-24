@@ -1,8 +1,12 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue';
   import {
+    ArrowTrendingUpIcon,
     BellIcon,
+    ChartBarIcon,
     ChevronDownIcon,
+    CreditCardIcon,
+    DocumentTextIcon,
     EllipsisVerticalIcon,
     MagnifyingGlassIcon,
     MoonIcon,
@@ -194,6 +198,49 @@
       status: t('tonal_builder.surface_preview.status.approved'),
       total: '$16,300',
     },
+    {
+      code: 'INV-2044',
+      customer: t('tonal_builder.surface_preview.rows.paper'),
+      status: t('tonal_builder.surface_preview.status.overdue'),
+      total: '$7,240',
+    },
+    {
+      code: 'INV-2043',
+      customer: t('tonal_builder.surface_preview.rows.harbor'),
+      status: t('tonal_builder.surface_preview.status.draft'),
+      total: '$3,880',
+    },
+  ]);
+
+  const metrics = computed(() => [
+    {
+      label: t('tonal_builder.surface_preview.metrics.revenue'),
+      value: '$184,320',
+      helper: t('tonal_builder.surface_preview.metrics.revenue_helper'),
+      icon: ChartBarIcon,
+      role: 'container_low' as SurfaceRole,
+    },
+    {
+      label: t('tonal_builder.surface_preview.metrics.outstanding'),
+      value: '$42,350',
+      helper: t('tonal_builder.surface_preview.metrics.outstanding_helper'),
+      icon: DocumentTextIcon,
+      role: 'container' as SurfaceRole,
+    },
+    {
+      label: t('tonal_builder.surface_preview.metrics.paid'),
+      value: '86%',
+      helper: t('tonal_builder.surface_preview.metrics.paid_helper'),
+      icon: CreditCardIcon,
+      role: 'container_high' as SurfaceRole,
+    },
+    {
+      label: t('tonal_builder.surface_preview.metrics.growth'),
+      value: '+12.4%',
+      helper: t('tonal_builder.surface_preview.metrics.growth_helper'),
+      icon: ArrowTrendingUpIcon,
+      role: 'container_highest' as SurfaceRole,
+    },
   ]);
 </script>
 
@@ -306,6 +353,27 @@
         </button>
       </div>
 
+      <section class="preview-metrics">
+        <article
+          v-for="metric in metrics"
+          :key="metric.label"
+          class="preview-metric"
+          :class="`preview-metric-${metric.role}`"
+          :data-surface-role="`surface-${metric.role.replaceAll('_', '-')}`"
+          :data-surface-tooltip="surfaceTooltip(metric.role)"
+        >
+          <div>
+            <span>{{ metric.label }}</span>
+            <strong>{{ metric.value }}</strong>
+            <small>{{ metric.helper }}</small>
+          </div>
+          <component
+            :is="metric.icon"
+            aria-hidden="true"
+          />
+        </article>
+      </section>
+
       <div class="preview-workspace">
         <aside
           class="preview-filters"
@@ -350,6 +418,22 @@
             </label>
           </div>
 
+          <div class="preview-filter-section">
+            <span>{{ t('tonal_builder.surface_preview.filters.saved_view') }}</span>
+            <button type="button">
+              {{ t('tonal_builder.surface_preview.filters.collection') }}
+              <ChevronDownIcon aria-hidden="true" />
+            </button>
+          </div>
+
+          <div class="preview-filter-section">
+            <span>{{ t('tonal_builder.surface_preview.filters.active') }}</span>
+            <div class="preview-filter-chips">
+              <span>{{ t('tonal_builder.surface_preview.status.review') }}</span>
+              <span>{{ t('tonal_builder.surface_preview.filters.high_value') }}</span>
+            </div>
+          </div>
+
           <div
             class="preview-summary"
             data-surface-role="surface-container-high"
@@ -371,8 +455,14 @@
             data-surface-role="surface-bright"
             :data-surface-tooltip="surfaceTooltip('surface_bright')"
           >
-            <strong>{{ t('tonal_builder.surface_preview.table.title') }}</strong>
-            <EllipsisVerticalIcon aria-hidden="true" />
+            <div>
+              <strong>{{ t('tonal_builder.surface_preview.table.title') }}</strong>
+              <span>{{ t('tonal_builder.surface_preview.table.updated') }}</span>
+            </div>
+            <div class="preview-table-actions">
+              <span>{{ t('tonal_builder.surface_preview.table.view') }}</span>
+              <EllipsisVerticalIcon aria-hidden="true" />
+            </div>
           </div>
 
           <div
@@ -474,6 +564,36 @@
           </section>
 
           <section
+            class="preview-payment-card"
+            data-surface-role="surface-container-lowest"
+            :data-surface-tooltip="surfaceTooltip('container_lowest')"
+          >
+            <div class="preview-panel-heading">
+              <span>{{ t('tonal_builder.surface_preview.payment.title') }}</span>
+              <strong>$8,920</strong>
+            </div>
+            <dl>
+              <div>
+                <dt>{{ t('tonal_builder.surface_preview.payment.method') }}</dt>
+                <dd>•••• 4832</dd>
+              </div>
+              <div>
+                <dt>{{ t('tonal_builder.surface_preview.payment.terms') }}</dt>
+                <dd>Net 30</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section
+            class="preview-note"
+            data-surface-role="surface-bright"
+            :data-surface-tooltip="surfaceTooltip('surface_bright')"
+          >
+            <strong>{{ t('tonal_builder.surface_preview.note.title') }}</strong>
+            <p>{{ t('tonal_builder.surface_preview.note.body') }}</p>
+          </section>
+
+          <section
             class="preview-activity"
             data-surface-role="surface-container"
             :data-surface-tooltip="surfaceTooltip('container')"
@@ -492,6 +612,10 @@
             <p>
               <span />
               {{ t('tonal_builder.surface_preview.activity.created') }}
+            </p>
+            <p>
+              <span />
+              {{ t('tonal_builder.surface_preview.activity.viewed') }}
             </p>
           </section>
         </aside>
@@ -574,7 +698,8 @@
   .preview-shell {
     position: relative;
     width: 100%;
-    height: 470px;
+    min-height: 680px;
+    aspect-ratio: 16 / 9;
     overflow: hidden;
     border: 1px solid var(--preview-outline);
     border-radius: 6px;
@@ -678,7 +803,7 @@
   }
 
   .preview-toolbar {
-    height: 62px;
+    height: 66px;
     justify-content: space-between;
     padding: 0 16px;
     background: var(--preview-surface-container);
@@ -711,6 +836,13 @@
     font-weight: 700;
   }
 
+  .preview-metric svg {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+    color: var(--preview-primary);
+  }
+
   .preview-health-heading svg,
   .preview-input svg,
   .preview-toolbar button svg {
@@ -718,10 +850,64 @@
     height: 14px;
   }
 
+  .preview-metrics {
+    display: grid;
+    height: 104px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1px;
+    background: var(--preview-outline);
+    border-bottom: 1px solid var(--preview-outline);
+  }
+
+  .preview-metric {
+    display: flex;
+    min-width: 0;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .preview-metric > div {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+  }
+
+  .preview-metric span,
+  .preview-metric small {
+    overflow: hidden;
+    color: var(--preview-on-surface-variant);
+    font-size: 9px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .preview-metric strong {
+    font-size: 18px;
+  }
+
+  .preview-metric-container_low {
+    background: var(--preview-surface-container-low);
+  }
+
+  .preview-metric-container {
+    background: var(--preview-surface-container);
+  }
+
+  .preview-metric-container_high {
+    background: var(--preview-surface-container-high);
+  }
+
+  .preview-metric-container_highest {
+    background: var(--preview-surface-container-highest);
+  }
+
   .preview-workspace {
     display: grid;
-    height: 366px;
-    grid-template-columns: minmax(170px, 0.3fr) minmax(280px, 1fr) minmax(190px, 0.34fr);
+    height: calc(100% - 212px);
+    min-height: 468px;
+    grid-template-columns: minmax(180px, 0.27fr) minmax(360px, 1fr) minmax(220px, 0.34fr);
     gap: 1px;
     background: var(--preview-outline);
   }
@@ -764,6 +950,46 @@
     margin-top: 10px;
   }
 
+  .preview-filter-section {
+    display: grid;
+    gap: 6px;
+    margin-top: 13px;
+    color: var(--preview-on-surface-variant);
+    font-weight: 600;
+  }
+
+  .preview-filter-section button {
+    display: flex;
+    height: 31px;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid var(--preview-outline);
+    border-radius: 4px;
+    padding: 0 9px;
+    background: var(--preview-surface-container-lowest);
+    color: var(--preview-on-surface);
+  }
+
+  .preview-filter-section button svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .preview-filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  .preview-filter-chips span {
+    border: 1px solid var(--preview-outline);
+    border-radius: 999px;
+    padding: 4px 7px;
+    background: var(--preview-surface-container-low);
+    color: var(--preview-on-surface);
+    font-size: 8px;
+  }
+
   .preview-summary {
     display: grid;
     gap: 2px;
@@ -788,11 +1014,28 @@
   }
 
   .preview-table-tools {
-    height: 40px;
+    height: 48px;
     justify-content: space-between;
     padding: 0 12px;
     background: var(--preview-surface-bright);
     border-bottom: 1px solid var(--preview-outline);
+  }
+
+  .preview-table-tools > div {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .preview-table-tools span {
+    color: var(--preview-on-surface-variant);
+    font-size: 8px;
+  }
+
+  .preview-table-actions {
+    border: 1px solid var(--preview-outline);
+    border-radius: 4px;
+    padding: 5px 7px;
   }
 
   .preview-table {
@@ -802,7 +1045,7 @@
 
   .preview-table-row {
     display: grid;
-    min-height: 36px;
+    min-height: 39px;
     grid-template-columns: 0.8fr 1.3fr 1fr 0.8fr;
     align-items: center;
     border-bottom: 1px solid var(--preview-outline);
@@ -833,7 +1076,7 @@
 
   .preview-table-footer {
     display: flex;
-    height: 39px;
+    height: 43px;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
@@ -855,6 +1098,8 @@
 
   .preview-inspector-card,
   .preview-health-card,
+  .preview-note,
+  .preview-payment-card,
   .preview-activity {
     border-radius: 4px;
     padding: 10px;
@@ -931,6 +1176,31 @@
     background: var(--preview-surface-container-high);
   }
 
+  .preview-payment-card {
+    margin-top: 9px;
+    background: var(--preview-surface-container-lowest);
+  }
+
+  .preview-payment-card .preview-panel-heading {
+    margin-bottom: 8px;
+  }
+
+  .preview-payment-card dl {
+    margin-top: 0;
+  }
+
+  .preview-note {
+    margin-top: 9px;
+    background: var(--preview-surface-bright);
+  }
+
+  .preview-note p {
+    margin: 5px 0 0;
+    color: var(--preview-on-surface-variant);
+    font-size: 9px;
+    line-height: 1.4;
+  }
+
   .preview-health-heading {
     display: grid;
     grid-template-columns: auto 1fr auto;
@@ -973,7 +1243,7 @@
     gap: 7px;
     margin: 0;
     border-top: 1px solid var(--preview-outline);
-    padding: 7px 0;
+    padding: 6px 0;
     color: var(--preview-on-surface-variant);
   }
 
@@ -1008,6 +1278,10 @@
 
     .preview-workspace {
       grid-template-columns: minmax(150px, 0.38fr) minmax(0, 1fr) minmax(170px, 0.38fr);
+    }
+
+    .preview-metrics {
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
     }
 
     .preview-table-row {

@@ -40,7 +40,11 @@ describe('MaterialSurfacePreview', () => {
       'surface-container-highest',
     );
     expect(wrapper.get('.preview-inspector').text()).toContain('Payment health');
+    expect(wrapper.get('.preview-inspector').text()).toContain('Payment summary');
+    expect(wrapper.get('.preview-inspector').text()).toContain('Internal note');
     expect(wrapper.get('.preview-inspector').text()).toContain('Invoice created');
+    expect(wrapper.findAll('.preview-metric')).toHaveLength(4);
+    expect(wrapper.findAll('.preview-table-row')).toHaveLength(7);
 
     const surfaceCards = wrapper.findAll('[data-surface-card]');
     expect(surfaceCards).toHaveLength(9);

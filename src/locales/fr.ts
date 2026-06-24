@@ -211,6 +211,16 @@ export default {
       actions: {
         add: 'Nouvelle facture',
       },
+      metrics: {
+        revenue: 'Revenu mensuel',
+        revenue_helper: 'Hausse de 8,2 % depuis mai',
+        outstanding: 'Solde impaye',
+        outstanding_helper: '12 factures ouvertes',
+        paid: 'Paye a temps',
+        paid_helper: 'Sur 46 paiements',
+        growth: 'Croissance trimestrielle',
+        growth_helper: 'Comparee au T1',
+      },
       filters: {
         title: 'Filtres',
         search: 'Recherche',
@@ -219,6 +229,10 @@ export default {
         all: 'Tous les statuts',
         period: 'Periode',
         month: 'Ce mois-ci',
+        saved_view: 'Vue enregistree',
+        collection: 'Espace de recouvrement',
+        active: 'Filtres actifs',
+        high_value: 'Valeur elevee',
       },
       summary: {
         label: 'Solde impaye',
@@ -230,19 +244,25 @@ export default {
         customer: 'Client',
         status: 'Statut',
         total: 'Total',
-        showing: 'Affichage de 4 factures sur 38',
+        showing: 'Affichage de 6 factures sur 38',
         page_total: 'Total de la page',
+        updated: 'Mis a jour il y a 4 minutes',
+        view: 'Vue tableau',
       },
       status: {
         review: 'En revision',
         approved: 'Approuvee',
         pending: 'En attente',
+        overdue: 'En retard',
+        draft: 'Brouillon',
       },
       rows: {
         northwind: 'Approvisionnement Northwind',
         studio: 'Studio Atlas',
         market: 'Marche Cedar',
         foundry: 'Fonderie Union',
+        paper: 'Papier Beacon',
+        harbor: 'Ateliers Harbor',
       },
       details: {
         title: 'Details de la facture',
@@ -255,11 +275,21 @@ export default {
         title: 'Sante des paiements',
         helper: 'Paiements a temps pour les 12 dernieres factures',
       },
+      payment: {
+        title: 'Sommaire du paiement',
+        method: 'Mode de paiement',
+        terms: 'Conditions',
+      },
+      note: {
+        title: 'Note interne',
+        body: 'Le client demande une facturation consolidee pour le prochain renouvellement.',
+      },
       activity: {
         title: 'Activite',
         approved: 'Facture approuvee par les finances',
         sent: 'Rappel de paiement envoye',
         created: 'Facture creee depuis un forfait recurrent',
+        viewed: 'Le client a consulte la facture',
       },
     },
     overlays: {
