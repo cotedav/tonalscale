@@ -32,7 +32,11 @@
     | 'container'
     | 'container_high'
     | 'container_highest'
-    | 'inverse_surface';
+    | 'inverse_surface'
+    | 'on_surface'
+    | 'on_surface_variant'
+    | 'outline'
+    | 'outline_variant';
 
   type SurfaceContrast = 'low' | 'medium' | 'high';
 
@@ -58,6 +62,10 @@
         container_high: 95,
         container_highest: 90,
         inverse_surface: 20,
+        on_surface: 10,
+        on_surface_variant: 35,
+        outline: 50,
+        outline_variant: 80,
       },
       medium: {
         surface: 98,
@@ -69,6 +77,10 @@
         container_high: 90,
         container_highest: 80,
         inverse_surface: 20,
+        on_surface: 10,
+        on_surface_variant: 35,
+        outline: 50,
+        outline_variant: 80,
       },
       high: {
         surface: 98,
@@ -80,6 +92,10 @@
         container_high: 80,
         container_highest: 70,
         inverse_surface: 20,
+        on_surface: 10,
+        on_surface_variant: 35,
+        outline: 50,
+        outline_variant: 80,
       },
     };
     const darkMappings: Record<SurfaceContrast, Record<SurfaceRole, number>> = {
@@ -93,6 +109,10 @@
         container_high: 20,
         container_highest: 25,
         inverse_surface: 90,
+        on_surface: 90,
+        on_surface_variant: 80,
+        outline: 60,
+        outline_variant: 30,
       },
       medium: {
         surface: 10,
@@ -104,6 +124,10 @@
         container_high: 25,
         container_highest: 30,
         inverse_surface: 90,
+        on_surface: 90,
+        on_surface_variant: 80,
+        outline: 60,
+        outline_variant: 30,
       },
       high: {
         surface: 10,
@@ -115,6 +139,10 @@
         container_high: 30,
         container_highest: 40,
         inverse_surface: 90,
+        on_surface: 90,
+        on_surface_variant: 80,
+        outline: 60,
+        outline_variant: 30,
       },
     };
 
@@ -142,10 +170,11 @@
           '--preview-surface-container-high': toneAt(tones.container_high, '#2b2b2b'),
           '--preview-surface-container-highest': toneAt(tones.container_highest, '#383838'),
           '--preview-inverse-surface': toneAt(tones.inverse_surface, '#e5e5e5'),
-          '--preview-on-surface': toneAt(90, '#e5e5e5'),
-          '--preview-on-surface-variant': toneAt(80, '#cccccc'),
+          '--preview-on-surface': toneAt(tones.on_surface, '#e5e5e5'),
+          '--preview-on-surface-variant': toneAt(tones.on_surface_variant, '#cccccc'),
           '--preview-on-inverse': toneAt(20, '#333333'),
-          '--preview-outline': toneAt(60, '#999999'),
+          '--preview-outline': toneAt(tones.outline, '#999999'),
+          '--preview-outline-variant': toneAt(tones.outline_variant, '#4d4d4d'),
           '--preview-primary': toneAt(80, '#cccccc'),
           '--preview-on-primary': toneAt(20, '#333333'),
         }
@@ -159,10 +188,11 @@
           '--preview-surface-container-high': toneAt(tones.container_high, '#ebebeb'),
           '--preview-surface-container-highest': toneAt(tones.container_highest, '#e5e5e5'),
           '--preview-inverse-surface': toneAt(tones.inverse_surface, '#333333'),
-          '--preview-on-surface': toneAt(10, '#1a1a1a'),
-          '--preview-on-surface-variant': toneAt(35, '#595959'),
+          '--preview-on-surface': toneAt(tones.on_surface, '#1a1a1a'),
+          '--preview-on-surface-variant': toneAt(tones.on_surface_variant, '#595959'),
           '--preview-on-inverse': toneAt(98, '#fafafa'),
-          '--preview-outline': toneAt(70, '#b3b3b3'),
+          '--preview-outline': toneAt(tones.outline, '#7f7f7f'),
+          '--preview-outline-variant': toneAt(tones.outline_variant, '#cccccc'),
           '--preview-primary': toneAt(40, '#666666'),
           '--preview-on-primary': toneAt(100, '#ffffff'),
         };
@@ -185,6 +215,10 @@
       { role: 'container_high', cssVariable: '--preview-surface-container-high' },
       { role: 'container_highest', cssVariable: '--preview-surface-container-highest' },
       { role: 'inverse_surface', cssVariable: '--preview-inverse-surface' },
+      { role: 'on_surface', cssVariable: '--preview-on-surface' },
+      { role: 'on_surface_variant', cssVariable: '--preview-on-surface-variant' },
+      { role: 'outline', cssVariable: '--preview-outline' },
+      { role: 'outline_variant', cssVariable: '--preview-outline-variant' },
     ];
 
     return roles.map(({ role, cssVariable }) => {
@@ -195,6 +229,7 @@
         cssVariable,
         tone,
         hex: toneAt(tone, '#000000'),
+        textHex: toneAt(tone >= 60 ? 10 : 90, tone >= 60 ? '#1a1a1a' : '#e5e5e5'),
       };
     });
   });
@@ -213,6 +248,10 @@
     'surface-container-high': 'container_high',
     'surface-container-highest': 'container_highest',
     'inverse-surface': 'inverse_surface',
+    'on-surface': 'on_surface',
+    'on-surface-variant': 'on_surface_variant',
+    outline: 'outline',
+    'outline-variant': 'outline_variant',
   };
 
   const handleSurfacePointerMove = (event: PointerEvent) => {
@@ -384,8 +423,10 @@
         v-for="card in surfaceCards"
         :key="card.role"
         class="preview-surface-card"
-        :class="{ 'preview-surface-card-inverse': card.role === 'inverse_surface' }"
-        :style="{ backgroundColor: `var(${card.cssVariable})` }"
+        :style="{
+          backgroundColor: `var(${card.cssVariable})`,
+          '--preview-card-text': card.textHex,
+        }"
         :data-surface-card="card.role"
       >
         <strong>{{ t(`tonal_builder.surface_preview.roles.${card.role}`) }}</strong>
@@ -416,7 +457,11 @@
       >
         <div class="preview-brand">
           <span class="preview-brand-mark">TS</span>
-          <span>{{ t('tonal_builder.surface_preview.app_name') }}</span>
+          <span
+            data-surface-role="on-surface"
+            :data-surface-tooltip="surfaceTooltip('on_surface')"
+            >{{ t('tonal_builder.surface_preview.app_name') }}</span
+          >
         </div>
 
         <nav
@@ -442,8 +487,19 @@
         :data-surface-tooltip="surfaceTooltip('container')"
       >
         <div>
-          <p class="preview-eyebrow">{{ t('tonal_builder.surface_preview.eyebrow') }}</p>
-          <h3>{{ t('tonal_builder.surface_preview.heading') }}</h3>
+          <p
+            class="preview-eyebrow"
+            data-surface-role="on-surface-variant"
+            :data-surface-tooltip="surfaceTooltip('on_surface_variant')"
+          >
+            {{ t('tonal_builder.surface_preview.eyebrow') }}
+          </p>
+          <h3
+            data-surface-role="on-surface"
+            :data-surface-tooltip="surfaceTooltip('on_surface')"
+          >
+            {{ t('tonal_builder.surface_preview.heading') }}
+          </h3>
         </div>
         <button type="button">
           <PlusIcon aria-hidden="true" />
@@ -461,9 +517,21 @@
           :data-surface-tooltip="surfaceTooltip(metric.role)"
         >
           <div>
-            <span>{{ metric.label }}</span>
-            <strong>{{ metric.value }}</strong>
-            <small>{{ metric.helper }}</small>
+            <span
+              data-surface-role="on-surface-variant"
+              :data-surface-tooltip="surfaceTooltip('on_surface_variant')"
+              >{{ metric.label }}</span
+            >
+            <strong
+              data-surface-role="on-surface"
+              :data-surface-tooltip="surfaceTooltip('on_surface')"
+              >{{ metric.value }}</strong
+            >
+            <small
+              data-surface-role="on-surface-variant"
+              :data-surface-tooltip="surfaceTooltip('on_surface_variant')"
+              >{{ metric.helper }}</small
+            >
           </div>
           <component
             :is="metric.icon"
@@ -487,8 +555,8 @@
             <span>{{ t('tonal_builder.surface_preview.filters.search') }}</span>
             <span
               class="preview-input"
-              data-surface-role="surface-container-lowest"
-              :data-surface-tooltip="surfaceTooltip('container_lowest')"
+              data-surface-role="outline"
+              :data-surface-tooltip="surfaceTooltip('outline')"
             >
               <MagnifyingGlassIcon aria-hidden="true" />
               {{ t('tonal_builder.surface_preview.filters.placeholder') }}
@@ -500,8 +568,8 @@
               <span>{{ t('tonal_builder.surface_preview.filters.status') }}</span>
               <span
                 class="preview-input"
-                data-surface-role="surface-container-lowest"
-                :data-surface-tooltip="surfaceTooltip('container_lowest')"
+                data-surface-role="outline"
+                :data-surface-tooltip="surfaceTooltip('outline')"
                 >{{ t('tonal_builder.surface_preview.filters.all') }}</span
               >
             </label>
@@ -509,8 +577,8 @@
               <span>{{ t('tonal_builder.surface_preview.filters.period') }}</span>
               <span
                 class="preview-input"
-                data-surface-role="surface-container-lowest"
-                :data-surface-tooltip="surfaceTooltip('container_lowest')"
+                data-surface-role="outline"
+                :data-surface-tooltip="surfaceTooltip('outline')"
                 >{{ t('tonal_builder.surface_preview.filters.month') }}</span
               >
             </label>
@@ -518,7 +586,11 @@
 
           <div class="preview-filter-section">
             <span>{{ t('tonal_builder.surface_preview.filters.saved_view') }}</span>
-            <button type="button">
+            <button
+              type="button"
+              data-surface-role="outline"
+              :data-surface-tooltip="surfaceTooltip('outline')"
+            >
               {{ t('tonal_builder.surface_preview.filters.collection') }}
               <ChevronDownIcon aria-hidden="true" />
             </button>
@@ -584,10 +656,22 @@
             :data-surface-tooltip="surfaceTooltip('surface_bright')"
           >
             <div>
-              <strong>{{ t('tonal_builder.surface_preview.table.title') }}</strong>
-              <span>{{ t('tonal_builder.surface_preview.table.updated') }}</span>
+              <strong
+                data-surface-role="on-surface"
+                :data-surface-tooltip="surfaceTooltip('on_surface')"
+                >{{ t('tonal_builder.surface_preview.table.title') }}</strong
+              >
+              <span
+                data-surface-role="on-surface-variant"
+                :data-surface-tooltip="surfaceTooltip('on_surface_variant')"
+                >{{ t('tonal_builder.surface_preview.table.updated') }}</span
+              >
             </div>
-            <div class="preview-table-actions">
+            <div
+              class="preview-table-actions"
+              data-surface-role="outline"
+              :data-surface-tooltip="surfaceTooltip('outline')"
+            >
               <span>{{ t('tonal_builder.surface_preview.table.view') }}</span>
               <EllipsisVerticalIcon aria-hidden="true" />
             </div>
@@ -603,10 +687,26 @@
               data-surface-role="surface-container-low"
               :data-surface-tooltip="surfaceTooltip('container_low')"
             >
-              <span>{{ t('tonal_builder.surface_preview.table.invoice') }}</span>
-              <span>{{ t('tonal_builder.surface_preview.table.customer') }}</span>
-              <span>{{ t('tonal_builder.surface_preview.table.status') }}</span>
-              <span>{{ t('tonal_builder.surface_preview.table.total') }}</span>
+              <span
+                data-surface-role="outline-variant"
+                :data-surface-tooltip="surfaceTooltip('outline_variant')"
+                >{{ t('tonal_builder.surface_preview.table.invoice') }}</span
+              >
+              <span
+                data-surface-role="outline-variant"
+                :data-surface-tooltip="surfaceTooltip('outline_variant')"
+                >{{ t('tonal_builder.surface_preview.table.customer') }}</span
+              >
+              <span
+                data-surface-role="outline-variant"
+                :data-surface-tooltip="surfaceTooltip('outline_variant')"
+                >{{ t('tonal_builder.surface_preview.table.status') }}</span
+              >
+              <span
+                data-surface-role="outline-variant"
+                :data-surface-tooltip="surfaceTooltip('outline_variant')"
+                >{{ t('tonal_builder.surface_preview.table.total') }}</span
+              >
             </div>
             <div
               v-for="(row, index) in rows"
@@ -616,10 +716,28 @@
               :data-surface-role="index === 1 ? 'inverse-surface' : undefined"
               :data-surface-tooltip="index === 1 ? surfaceTooltip('inverse_surface') : undefined"
             >
-              <strong>{{ row.code }}</strong>
-              <span>{{ row.customer }}</span>
-              <span>{{ row.status }}</span>
-              <span>{{ row.total }}</span>
+              <strong
+                :data-surface-role="index === 1 ? undefined : 'on-surface'"
+                :data-surface-tooltip="index === 1 ? undefined : surfaceTooltip('on_surface')"
+                >{{ row.code }}</strong
+              >
+              <span
+                :data-surface-role="index === 1 ? undefined : 'on-surface'"
+                :data-surface-tooltip="index === 1 ? undefined : surfaceTooltip('on_surface')"
+                >{{ row.customer }}</span
+              >
+              <span
+                :data-surface-role="index === 1 ? undefined : 'on-surface-variant'"
+                :data-surface-tooltip="
+                  index === 1 ? undefined : surfaceTooltip('on_surface_variant')
+                "
+                >{{ row.status }}</span
+              >
+              <span
+                :data-surface-role="index === 1 ? undefined : 'on-surface'"
+                :data-surface-tooltip="index === 1 ? undefined : surfaceTooltip('on_surface')"
+                >{{ row.total }}</span
+              >
             </div>
           </div>
 
@@ -838,12 +956,12 @@
       <div
         v-if="hoveredSurfaceCard"
         class="preview-surface-card preview-surface-tooltip"
-        :class="{ 'preview-surface-card-inverse': hoveredSurfaceCard.role === 'inverse_surface' }"
         role="tooltip"
         :style="{
           left: `${tooltipPosition.x}px`,
           top: `${tooltipPosition.y}px`,
           backgroundColor: `var(${hoveredSurfaceCard.cssVariable})`,
+          '--preview-card-text': hoveredSurfaceCard.textHex,
         }"
         data-cy="surface-tooltip"
       >
@@ -969,7 +1087,7 @@
     border: 1px solid var(--preview-outline);
     border-radius: 6px;
     padding: 9px;
-    color: var(--preview-on-surface);
+    color: var(--preview-card-text);
     box-shadow: 0 2px 6px rgb(0 0 0 / 8%);
   }
 
@@ -983,7 +1101,7 @@
     align-items: baseline;
     justify-content: space-between;
     gap: 6px;
-    color: var(--preview-on-surface-variant);
+    color: var(--preview-card-text);
     font-size: 9px;
     font-weight: 700;
   }
@@ -992,14 +1110,6 @@
     font-size: 8px;
     font-weight: 500;
     text-transform: uppercase;
-  }
-
-  .preview-surface-card-inverse {
-    color: var(--preview-on-inverse);
-  }
-
-  .preview-surface-card-inverse > span {
-    color: var(--preview-on-inverse);
   }
 
   .preview-shell {
@@ -1071,7 +1181,7 @@
     gap: 18px;
     padding: 0 14px;
     background: var(--preview-surface-container-low);
-    border-bottom: 1px solid var(--preview-outline);
+    border-bottom: 1px solid var(--preview-outline-variant);
   }
 
   .preview-brand {
@@ -1126,7 +1236,7 @@
     justify-content: space-between;
     padding: 0 16px;
     background: var(--preview-surface-container);
-    border-bottom: 1px solid var(--preview-outline);
+    border-bottom: 1px solid var(--preview-outline-variant);
   }
 
   .preview-eyebrow {
@@ -1174,8 +1284,8 @@
     height: 104px;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 1px;
-    background: var(--preview-outline);
-    border-bottom: 1px solid var(--preview-outline);
+    background: var(--preview-outline-variant);
+    border-bottom: 1px solid var(--preview-outline-variant);
   }
 
   .preview-metric {
@@ -1227,7 +1337,7 @@
     min-height: 760px;
     grid-template-columns: minmax(180px, 0.27fr) minmax(360px, 1fr) minmax(220px, 0.34fr);
     gap: 1px;
-    background: var(--preview-outline);
+    background: var(--preview-outline-variant);
   }
 
   .preview-filters {
@@ -1382,7 +1492,7 @@
     justify-content: space-between;
     padding: 0 12px;
     background: var(--preview-surface-bright);
-    border-bottom: 1px solid var(--preview-outline);
+    border-bottom: 1px solid var(--preview-outline-variant);
   }
 
   .preview-table-tools > div {
@@ -1412,7 +1522,7 @@
     min-height: 39px;
     grid-template-columns: 0.8fr 1.3fr 1fr 0.8fr;
     align-items: center;
-    border-bottom: 1px solid var(--preview-outline);
+    border-bottom: 1px solid var(--preview-outline-variant);
   }
 
   .preview-table-row > span,
@@ -1544,7 +1654,7 @@
     height: 180px;
     align-items: flex-end;
     gap: 6px;
-    border-bottom: 1px solid var(--preview-outline);
+    border-bottom: 1px solid var(--preview-outline-variant);
     padding: 6px 4px 0;
   }
 
@@ -1741,7 +1851,7 @@
     align-items: center;
     gap: 7px;
     margin: 0;
-    border-top: 1px solid var(--preview-outline);
+    border-top: 1px solid var(--preview-outline-variant);
     padding: 6px 0;
     color: var(--preview-on-surface-variant);
   }

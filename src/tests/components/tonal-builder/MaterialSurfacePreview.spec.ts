@@ -52,11 +52,14 @@ describe('MaterialSurfacePreview', () => {
     expect(wrapper.findAll('.preview-table-row')).toHaveLength(7);
 
     const surfaceCards = wrapper.findAll('[data-surface-card]');
-    expect(surfaceCards).toHaveLength(9);
+    expect(surfaceCards).toHaveLength(13);
     expect(wrapper.get('[data-surface-card="surface"]').text()).toContain('Tone 98');
     expect(wrapper.get('[data-surface-card="surface"]').text()).toContain(toneHex(tones, 98));
     expect(wrapper.get('[data-surface-card="container_highest"]').text()).toContain('Tone 90');
     expect(wrapper.get('[data-surface-card="inverse_surface"]').text()).toContain('Tone 20');
+    expect(wrapper.get('[data-surface-card="on_surface"]').text()).toContain('Tone 10');
+    expect(wrapper.get('[data-surface-card="outline"]').text()).toContain('Tone 50');
+    expect(wrapper.get('[data-surface-card="outline_variant"]').text()).toContain('Tone 80');
 
     const updatedTones = buildTones('aa');
     await wrapper.setProps({ tones: updatedTones });
@@ -91,6 +94,8 @@ describe('MaterialSurfacePreview', () => {
       `--preview-surface-container-highest: ${toneHex(tones, 25)}`,
     );
     expect(shell.attributes('style')).toContain(`--preview-on-surface: ${toneHex(tones, 90)}`);
+    expect(shell.attributes('style')).toContain(`--preview-outline: ${toneHex(tones, 60)}`);
+    expect(shell.attributes('style')).toContain(`--preview-outline-variant: ${toneHex(tones, 30)}`);
     expect(shell.attributes('style')).toContain(`--preview-primary: ${toneHex(tones, 80)}`);
     expect(shell.attributes('style')).toContain(`--preview-on-primary: ${toneHex(tones, 20)}`);
     expect(wrapper.get('[data-surface-card="surface"]').text()).toContain('Tone 10');
@@ -172,5 +177,32 @@ describe('MaterialSurfacePreview', () => {
     await selectedRow.trigger('pointermove', { clientX: 200, clientY: 280 });
     expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Inverse surface');
     expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 20');
+  });
+
+  it('reports foreground and boundary roles used by the app preview', async () => {
+    const wrapper = mount(MaterialSurfacePreview, {
+      props: { tones: buildTones('77') },
+    });
+
+    await wrapper.get('[data-surface-role="on-surface"]').trigger('pointermove', {
+      clientX: 220,
+      clientY: 120,
+    });
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('On surface');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 10');
+
+    await wrapper.get('[data-surface-role="outline"]').trigger('pointermove', {
+      clientX: 180,
+      clientY: 360,
+    });
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Outline');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 50');
+
+    await wrapper.get('[data-surface-role="outline-variant"]').trigger('pointermove', {
+      clientX: 320,
+      clientY: 420,
+    });
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Outline variant');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 80');
   });
 });
