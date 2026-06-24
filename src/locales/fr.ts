@@ -334,6 +334,8 @@ export default {
     accessibility: {
       title: 'Aides accessibilité',
       description: 'Cartes de contraste, WCAG et aperçus arrimés au rail droit.',
+      collapse: 'Réduire les aides à l’accessibilité',
+      expand: 'Développer les aides à l’accessibilité',
       large_heading: 'Texte large',
       regular_heading: 'Texte régulier',
       sample_large: 'Texte exemple 20pt. Un renard magicien bondit vers la TV et trouble la reine.',

@@ -327,6 +327,8 @@ export default {
     accessibility: {
       title: 'Accessibility helpers',
       description: 'Contrast, WCAG, and card previews anchored in the right rail.',
+      collapse: 'Collapse accessibility helpers',
+      expand: 'Expand accessibility helpers',
       large_heading: 'Large text',
       regular_heading: 'Regular text',
       sample_large: '20pt example text. Jumpy wizard fox grabs TV, vexing bland queen.',

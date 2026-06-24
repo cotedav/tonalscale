@@ -9,6 +9,7 @@
   import ContrastPreviewCard from '@/components/tonal-builder/ContrastPreviewCard.vue';
   import MaterialSurfacePreview from '@/components/tonal-builder/MaterialSurfacePreview.vue';
   import TonalStrip from '@/components/tonal-builder/TonalStrip.vue';
+  import { ChevronDownIcon } from '@heroicons/vue/24/outline';
   import ThemeToggle from '@/components/common/ThemeToggle.vue';
   import {
     type BlendControlId,
@@ -32,6 +33,7 @@
   const { t } = useI18n();
   const isImportModalOpen = ref(false);
   const isBlendEnabled = ref(true);
+  const isAccessibilityDockCollapsed = ref(false);
   const workspaceRef = ref<HTMLElement | null>(null);
   const controlsPanelWidth = ref(500);
   const isResizingControls = ref(false);
@@ -656,42 +658,79 @@
       </div>
 
       <section
-        class="shrink-0 border-t border-dim bg-surface-soft px-4 py-4 sm:px-8 lg:px-10"
+        class="shrink-0 border-t border-dim bg-surface-soft transition-all duration-300"
         :aria-label="t('tonal_builder.accessibility.title')"
         data-cy="accessibility-dock"
       >
-        <div class="grid grid-cols-4 gap-4 overflow-hidden">
-          <ContrastPreviewCard
-            id="colorcard-darker45"
-            :title-key="'tonal_builder.accessibility.cards.darker_45'"
-            ratio-label="4.5:1"
-            :background="previewCards.darker45.background"
-            :text="previewCards.darker45.text"
-          />
+        <div
+          class="flex items-center justify-between px-4 py-3 sm:px-8 lg:px-10"
+          :class="{ 'border-b border-dim': !isAccessibilityDockCollapsed }"
+        >
+          <div class="flex items-center gap-2">
+            <h2 class="text-sm font-semibold text-primary">
+              {{ t('tonal_builder.accessibility.title') }}
+            </h2>
+            <span class="hidden text-xs text-secondary sm:inline">
+              {{ t('tonal_builder.accessibility.description') }}
+            </span>
+          </div>
+          <button
+            type="button"
+            class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-secondary hover:bg-surface-strong hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            :aria-label="
+              isAccessibilityDockCollapsed
+                ? t('tonal_builder.accessibility.expand')
+                : t('tonal_builder.accessibility.collapse')
+            "
+            :aria-expanded="!isAccessibilityDockCollapsed"
+            data-cy="accessibility-dock-toggle"
+            @click="isAccessibilityDockCollapsed = !isAccessibilityDockCollapsed"
+          >
+            <ChevronDownIcon
+              class="h-5 w-5 transition-transform duration-200"
+              :class="{ 'rotate-180': isAccessibilityDockCollapsed }"
+            />
+          </button>
+        </div>
 
-          <ContrastPreviewCard
-            id="colorcard-darker3"
-            :title-key="'tonal_builder.accessibility.cards.darker_3'"
-            ratio-label="3:1"
-            :background="previewCards.darker3.background"
-            :text="previewCards.darker3.text"
-          />
+        <div
+          v-show="!isAccessibilityDockCollapsed"
+          class="px-4 py-4 sm:px-8 lg:px-10"
+          data-cy="accessibility-dock-content"
+        >
+          <div class="grid grid-cols-4 gap-4 overflow-hidden">
+            <ContrastPreviewCard
+              id="colorcard-darker45"
+              :title-key="'tonal_builder.accessibility.cards.darker_45'"
+              ratio-label="4.5:1"
+              :background="previewCards.darker45.background"
+              :text="previewCards.darker45.text"
+            />
 
-          <ContrastPreviewCard
-            id="colorcard-lighter3"
-            :title-key="'tonal_builder.accessibility.cards.lighter_3'"
-            ratio-label="3:1"
-            :background="previewCards.lighter3.background"
-            :text="previewCards.lighter3.text"
-          />
+            <ContrastPreviewCard
+              id="colorcard-darker3"
+              :title-key="'tonal_builder.accessibility.cards.darker_3'"
+              ratio-label="3:1"
+              :background="previewCards.darker3.background"
+              :text="previewCards.darker3.text"
+            />
 
-          <ContrastPreviewCard
-            id="colorcard-lighter45"
-            :title-key="'tonal_builder.accessibility.cards.lighter_45'"
-            ratio-label="4.5:1"
-            :background="previewCards.lighter45.background"
-            :text="previewCards.lighter45.text"
-          />
+            <ContrastPreviewCard
+              id="colorcard-lighter3"
+              :title-key="'tonal_builder.accessibility.cards.lighter_3'"
+              ratio-label="3:1"
+              :background="previewCards.lighter3.background"
+              :text="previewCards.lighter3.text"
+            />
+
+            <ContrastPreviewCard
+              id="colorcard-lighter45"
+              :title-key="'tonal_builder.accessibility.cards.lighter_45'"
+              ratio-label="4.5:1"
+              :background="previewCards.lighter45.background"
+              :text="previewCards.lighter45.text"
+            />
+          </div>
         </div>
       </section>
     </div>

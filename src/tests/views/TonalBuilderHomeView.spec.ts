@@ -201,4 +201,36 @@ describe('TonalBuilderHomeView', () => {
       (wrapper.get('[data-cy="blend-enabled-toggle"]').element as HTMLInputElement).checked,
     ).toBe(true);
   });
+
+  it('collapses and expands the accessibility dock when clicking the toggle button', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+
+    const wrapper = mount(TonalBuilderHomeView, {
+      global: {
+        plugins: [pinia],
+      },
+    });
+
+    const toggleBtn = wrapper.get('[data-cy="accessibility-dock-toggle"]');
+    const content = wrapper.get('[data-cy="accessibility-dock-content"]');
+
+    // Initially expanded (visible)
+    expect(toggleBtn.attributes('aria-expanded')).toBe('true');
+    expect(content.isVisible()).toBe(true);
+
+    // Click toggle to collapse
+    await toggleBtn.trigger('click');
+    await nextTick();
+
+    expect(toggleBtn.attributes('aria-expanded')).toBe('false');
+    expect(content.isVisible()).toBe(false);
+
+    // Click toggle to expand again
+    await toggleBtn.trigger('click');
+    await nextTick();
+
+    expect(toggleBtn.attributes('aria-expanded')).toBe('true');
+    expect(content.isVisible()).toBe(true);
+  });
 });

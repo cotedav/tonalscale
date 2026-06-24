@@ -302,8 +302,8 @@
 
     <Teleport to="body">
       <div
-        :id="`${id}-controls`"
         v-show="isControlsOpen"
+        :id="`${id}-controls`"
         ref="floatingRef"
         class="color-picker-popover"
         :style="floatingStyles"
