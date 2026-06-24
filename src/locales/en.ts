@@ -100,6 +100,7 @@ export default {
     regions: {
       pickers_label: 'Color pickers and control rail',
       accessibility_label: 'Accessibility helpers and overlays',
+      resize_controls: 'Resize color controls panel',
     },
     pickers: {
       base: {
@@ -117,6 +118,8 @@ export default {
       },
       slider_modes: 'Slider modes',
       invalid_hex: 'Enter a valid 6-digit hex value',
+      open_controls: 'Open {label} controls',
+      close_controls: 'Close {label} controls',
     },
     controls: {
       title: 'Blend + saturation controls',

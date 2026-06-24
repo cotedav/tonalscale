@@ -1,10 +1,11 @@
 <script setup lang="ts">
   import { useEventListener, useTitle } from '@vueuse/core';
-  import { computed, ref, watch, watchEffect } from 'vue';
+  import { computed, onBeforeUnmount, ref, watch, watchEffect } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { storeToRefs } from 'pinia';
 
   import ColorPickerCard from '@/components/tonal-builder/ColorPickerCard.vue';
+  import BaseSwitch from '@/components/common/BaseSwitch.vue';
   import ContrastPreviewCard from '@/components/tonal-builder/ContrastPreviewCard.vue';
   import MaterialSurfacePreview from '@/components/tonal-builder/MaterialSurfacePreview.vue';
   import TonalStrip from '@/components/tonal-builder/TonalStrip.vue';
@@ -31,6 +32,58 @@
   const { t } = useI18n();
   const isImportModalOpen = ref(false);
   const isBlendEnabled = ref(true);
+  const workspaceRef = ref<HTMLElement | null>(null);
+  const controlsPanelWidth = ref(500);
+  const isResizingControls = ref(false);
+
+  const controlsPanelStyle = computed(() => ({
+    '--controls-panel-width': `${controlsPanelWidth.value}px`,
+  }));
+
+  const stopControlsResize = () => {
+    isResizingControls.value = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  };
+
+  const resizeControlsPanel = (event: PointerEvent) => {
+    if (!isResizingControls.value || !workspaceRef.value) return;
+
+    const bounds = workspaceRef.value.getBoundingClientRect();
+    const minimumPreviewWidth = 420;
+    const minimumControlsWidth = 360;
+    const maximumControlsWidth = Math.max(minimumControlsWidth, bounds.width - minimumPreviewWidth);
+    controlsPanelWidth.value = Math.min(
+      maximumControlsWidth,
+      Math.max(minimumControlsWidth, bounds.right - event.clientX),
+    );
+  };
+
+  const startControlsResize = (event: PointerEvent) => {
+    if (window.matchMedia?.('(max-width: 1023px)').matches) return;
+
+    event.preventDefault();
+    isResizingControls.value = true;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  };
+
+  const handleControlsResizeKeydown = (event: KeyboardEvent) => {
+    const step = event.shiftKey ? 50 : 20;
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      controlsPanelWidth.value = Math.min(900, controlsPanelWidth.value + step);
+    }
+    if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      controlsPanelWidth.value = Math.max(360, controlsPanelWidth.value - step);
+    }
+  };
+
+  useEventListener(window, 'pointermove', resizeControlsPanel);
+  useEventListener(window, 'pointerup', stopControlsResize);
+  useEventListener(window, 'pointercancel', stopControlsResize);
+  onBeforeUnmount(stopControlsResize);
 
   const pageTitle = computed(() => t('tonal_builder.meta.title'));
   const pageDescription = computed(() => t('tonal_builder.meta.description'));
@@ -331,7 +384,12 @@
     </header>
 
     <div class="flex min-h-0 flex-1 flex-col">
-      <div class="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_minmax(560px,1fr)]">
+      <div
+        ref="workspaceRef"
+        class="builder-workspace grid min-h-0 flex-1"
+        :style="controlsPanelStyle"
+        data-cy="builder-workspace"
+      >
         <div
           class="min-h-0 overflow-y-auto bg-surface-soft px-4 py-6 sm:px-8 lg:px-10"
           :aria-label="t('tonal_builder.scales.title')"
@@ -427,8 +485,25 @@
         </div>
 
         <div
+          class="builder-resize-handle"
+          :class="{ 'builder-resize-handle-active': isResizingControls }"
+          role="separator"
+          tabindex="0"
+          aria-orientation="vertical"
+          :aria-label="t('tonal_builder.regions.resize_controls')"
+          :aria-valuenow="controlsPanelWidth"
+          aria-valuemin="360"
+          data-cy="controls-resize-handle"
+          @pointerdown="startControlsResize"
+          @keydown="handleControlsResizeKeydown"
+        >
+          <span aria-hidden="true" />
+        </div>
+
+        <div
           class="min-h-0 overflow-y-auto bg-surface px-4 py-6 sm:px-8 lg:px-10"
           :aria-label="t('tonal_builder.regions.pickers_label')"
+          data-cy="color-controls-panel"
         >
           <span
             id="baseColorPickerInput"
@@ -465,29 +540,14 @@
                 <p class="text-sm font-semibold text-primary">
                   {{ t('tonal_builder.controls.title') }}
                 </p>
-                <label
-                  class="inline-flex cursor-pointer items-center gap-3 text-sm font-semibold text-primary"
-                  for="blend-enabled"
+                <BaseSwitch
+                  id="blend-enabled"
+                  v-model="isBlendEnabled"
+                  :label="t('tonal_builder.controls.labels.blend_enabled')"
+                  data-cy="blend-enabled-toggle"
                 >
-                  <span>{{ t('tonal_builder.controls.labels.blend_enabled') }}</span>
-                  <input
-                    id="blend-enabled"
-                    v-model="isBlendEnabled"
-                    type="checkbox"
-                    class="peer sr-only"
-                    data-cy="blend-enabled-toggle"
-                  />
-                  <span
-                    class="relative h-6 w-11 rounded-full bg-surface ring-1 ring-inset ring-dim transition peer-focus-visible:ring-2 peer-focus-visible:ring-accent"
-                    :class="isBlendEnabled ? 'bg-accent-strong' : 'bg-surface'"
-                    aria-hidden="true"
-                  >
-                    <span
-                      class="absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow-sm transition"
-                      :class="isBlendEnabled ? 'translate-x-5' : 'translate-x-0'"
-                    />
-                  </span>
-                </label>
+                  {{ t('tonal_builder.controls.labels.blend_enabled') }}
+                </BaseSwitch>
               </div>
 
               <ColorPickerCard
@@ -637,3 +697,60 @@
     </div>
   </main>
 </template>
+
+<style scoped>
+  .builder-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .builder-resize-handle {
+    display: none;
+  }
+
+  @media (width >= 1024px) {
+    .builder-workspace {
+      grid-template-columns: minmax(0, 1fr) 9px var(--controls-panel-width);
+    }
+
+    .builder-resize-handle {
+      position: relative;
+      z-index: 10;
+      display: grid;
+      cursor: col-resize;
+      place-items: center;
+      background: rgb(var(--color-border-dim));
+      touch-action: none;
+    }
+
+    .builder-resize-handle::before {
+      position: absolute;
+      inset: 0 -4px;
+      content: '';
+    }
+
+    .builder-resize-handle > span {
+      width: 2px;
+      height: 42px;
+      border-radius: 999px;
+      background: rgb(var(--color-text-tertiary));
+      opacity: 0.65;
+      transition:
+        height 140ms ease,
+        background-color 140ms ease,
+        opacity 140ms ease;
+    }
+
+    .builder-resize-handle-active > span,
+    .builder-resize-handle:hover > span,
+    .builder-resize-handle:focus-visible > span {
+      height: 64px;
+      background: rgb(var(--color-accent));
+      opacity: 1;
+    }
+
+    .builder-resize-handle:focus-visible {
+      outline: 2px solid rgb(var(--color-accent));
+      outline-offset: -2px;
+    }
+  }
+</style>

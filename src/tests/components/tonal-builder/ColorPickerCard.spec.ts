@@ -136,12 +136,31 @@ describe('ColorPickerCard', () => {
     const wrapper = await mountPicker();
     const iro = await getIroModule();
 
+    expect(wrapper.get('[data-cy="color-swatch"]').attributes('aria-expanded')).toBe('false');
     await wrapper.get('[data-cy="hex-input"]').setValue('#abcdef');
     await nextTick();
 
     expect(iro.instances.every((picker) => picker.color.hexString === '#abcdef')).toBe(true);
     expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['#abcdef']);
     expect(wrapper.emitted('color-change')?.[0]?.[0]).toMatchObject({ hex: '#abcdef' });
+  });
+
+  it('opens the picker controls only when the color chip is clicked', async () => {
+    const wrapper = await mountPicker();
+    const controls = Array.from(
+      document.querySelectorAll<HTMLElement>('[data-cy="color-picker-controls"]'),
+    ).at(-1);
+
+    expect(controls).not.toBeNull();
+    expect(controls?.style.display).toBe('none');
+
+    await wrapper.get('[data-cy="color-swatch"]').trigger('click');
+    await nextTick();
+
+    expect(wrapper.get('[data-cy="color-swatch"]').attributes('aria-expanded')).toBe('true');
+    expect(controls?.style.display).not.toBe('none');
+
+    wrapper.unmount();
   });
 
   it('guards against invalid hex input', async () => {

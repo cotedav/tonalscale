@@ -99,6 +99,7 @@ export default {
     regions: {
       pickers_label: 'Sélecteurs de couleur et rail de contrôle',
       accessibility_label: 'Aides accessibilité et superpositions',
+      resize_controls: 'Redimensionner le panneau des contrôles de couleur',
     },
     pickers: {
       base: {
@@ -116,6 +117,8 @@ export default {
       },
       slider_modes: 'Modes de curseur',
       invalid_hex: 'Saisissez une valeur hexadécimale à 6 chiffres',
+      open_controls: 'Ouvrir les contrôles de {label}',
+      close_controls: 'Fermer les contrôles de {label}',
     },
     controls: {
       title: 'Contrôles de mélange et saturation',

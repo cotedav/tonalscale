@@ -12,6 +12,7 @@
   } from '@heroicons/vue/24/outline';
   import { useI18n } from 'vue-i18n';
 
+  import BaseSwitch from '@/components/common/BaseSwitch.vue';
   import type { TonalStep } from '@/utils/tonal/scale';
 
   const props = defineProps<{
@@ -212,27 +213,20 @@
         <span class="hidden text-xs text-secondary sm:inline">
           {{ t('tonal_builder.surface_preview.helper') }}
         </span>
-        <label
+        <BaseSwitch
+          id="surface-preview-dark-mode"
+          v-model="isDarkMode"
           class="preview-theme-toggle"
-          for="surface-preview-dark-mode"
+          :label="t('tonal_builder.surface_preview.dark_mode')"
+          data-cy="surface-preview-dark-mode"
         >
-          <SunIcon aria-hidden="true" />
-          <input
-            id="surface-preview-dark-mode"
-            v-model="isDarkMode"
-            type="checkbox"
-            class="peer sr-only"
-            data-cy="surface-preview-dark-mode"
-          />
-          <span
-            class="preview-theme-track"
-            aria-hidden="true"
-          >
-            <span class="preview-theme-thumb" />
-          </span>
-          <MoonIcon aria-hidden="true" />
-          <span class="sr-only">{{ t('tonal_builder.surface_preview.dark_mode') }}</span>
-        </label>
+          <template #before>
+            <SunIcon aria-hidden="true" />
+          </template>
+          <template #after>
+            <MoonIcon aria-hidden="true" />
+          </template>
+        </BaseSwitch>
       </div>
     </div>
 
@@ -614,43 +608,6 @@
   .preview-theme-toggle > svg {
     width: 15px;
     height: 15px;
-  }
-
-  .preview-theme-track {
-    position: relative;
-    width: 38px;
-    height: 21px;
-    border: 1px solid rgb(var(--color-border-dim));
-    border-radius: 999px;
-    background: rgb(var(--color-surface-strong));
-    transition: background-color 160ms ease;
-  }
-
-  .preview-theme-thumb {
-    position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 13px;
-    height: 13px;
-    border-radius: 50%;
-    background: rgb(var(--color-text-secondary));
-    transition:
-      transform 160ms ease,
-      background-color 160ms ease;
-  }
-
-  .peer:checked + .preview-theme-track {
-    background: rgb(var(--color-accent-strong));
-  }
-
-  .peer:checked + .preview-theme-track .preview-theme-thumb {
-    background: white;
-    transform: translateX(17px);
-  }
-
-  .peer:focus-visible + .preview-theme-track {
-    outline: 2px solid rgb(var(--color-accent));
-    outline-offset: 2px;
   }
 
   .preview-topbar,

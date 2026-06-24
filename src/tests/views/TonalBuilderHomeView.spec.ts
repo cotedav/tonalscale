@@ -50,12 +50,51 @@ describe('TonalBuilderHomeView', () => {
     expect(wrapper.find('[data-cy="blend-mode-summary"]').exists()).toBe(false);
     expect(wrapper.find('[data-cy="blend-enabled-toggle"]').exists()).toBe(true);
     expect(wrapper.find('#baseColorPickerInput').text()).toContain('#8000ff');
+    expect(wrapper.get('[data-cy="builder-workspace"]').attributes('style')).toContain(
+      '--controls-panel-width: 500px',
+    );
+    expect(wrapper.find('[data-cy="controls-resize-handle"]').exists()).toBe(true);
 
     expect(wrapper.findAll('[type="range"]').length).toBe(5);
     expect(wrapper.findAll('[data-cy$="-value"]').length).toBe(5);
 
     const fullStrip = wrapper.get('[data-cy="scale-strip-full"]');
     expect(fullStrip.findAll('[data-cy="tonal-swatch"]').length).toBeGreaterThan(0);
+  });
+
+  it('resizes the color controls panel with the split-pane handle', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+
+    const wrapper = mount(TonalBuilderHomeView, {
+      global: {
+        plugins: [pinia],
+      },
+    });
+    const workspace = wrapper.get('[data-cy="builder-workspace"]');
+    vi.spyOn(workspace.element, 'getBoundingClientRect').mockReturnValue({
+      bottom: 800,
+      height: 700,
+      left: 0,
+      right: 1200,
+      top: 100,
+      width: 1200,
+      x: 0,
+      y: 100,
+      toJSON: () => ({}),
+    });
+
+    await wrapper.get('[data-cy="controls-resize-handle"]').trigger('pointerdown');
+    window.dispatchEvent(new MouseEvent('pointermove', { clientX: 620 }));
+    window.dispatchEvent(new MouseEvent('pointerup'));
+    await nextTick();
+
+    expect(workspace.attributes('style')).toContain('--controls-panel-width: 580px');
+
+    await wrapper.get('[data-cy="controls-resize-handle"]').trigger('keydown', {
+      key: 'ArrowRight',
+    });
+    expect(workspace.attributes('style')).toContain('--controls-panel-width: 560px');
   });
 
   it('initializes blend controls to the expected defaults', () => {
