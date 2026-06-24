@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { nextTick } from 'vue';
 
+import MaterialSurfacePreview from '@/components/tonal-builder/MaterialSurfacePreview.vue';
 import { useTonalScaleStore } from '@/stores/tonalScale';
 import TonalBuilderHomeView from '@/views/tonal-builder/TonalBuilderHomeView.vue';
 
@@ -60,6 +61,9 @@ describe('TonalBuilderHomeView', () => {
 
     const fullStrip = wrapper.get('[data-cy="scale-strip-full"]');
     expect(fullStrip.findAll('[data-cy="tonal-swatch"]').length).toBeGreaterThan(0);
+    expect(wrapper.getComponent(MaterialSurfacePreview).props('tones')).toEqual(
+      useTonalScaleStore().keyStrip,
+    );
   });
 
   it('resizes the color controls panel with the split-pane handle', async () => {

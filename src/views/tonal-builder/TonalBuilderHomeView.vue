@@ -479,7 +479,7 @@
 
             <MaterialSurfacePreview
               class="pt-4"
-              :tones="fullStrip"
+              :tones="keyStrip"
             />
           </section>
         </div>
