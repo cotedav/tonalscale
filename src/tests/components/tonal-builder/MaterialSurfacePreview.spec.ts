@@ -89,6 +89,45 @@ describe('MaterialSurfacePreview', () => {
     expect(wrapper.find('[data-cy="surface-role-inspector"]').exists()).toBe(false);
   });
 
+  it('increases separation between surface tones at medium and high contrast', async () => {
+    const tones = buildTones('44');
+    const wrapper = mount(MaterialSurfacePreview, {
+      props: { tones },
+    });
+    const shell = wrapper.get('[data-cy="surface-preview-shell"]');
+
+    const contrastSlider = wrapper.get('[data-cy="surface-contrast-slider"]');
+    expect((contrastSlider.element as HTMLInputElement).value).toBe('0');
+    expect(wrapper.get('[data-cy="surface-contrast-value"]').text()).toBe('Low');
+    expect(shell.attributes('style')).toContain(
+      `--preview-surface-container-highest: ${tones[90].hex}`,
+    );
+
+    await contrastSlider.setValue('1');
+    expect(wrapper.get('[data-cy="surface-contrast-value"]').text()).toBe('Medium');
+    expect(shell.attributes('style')).toContain(`--preview-surface-dim: ${tones[83].hex}`);
+    expect(shell.attributes('style')).toContain(
+      `--preview-surface-container-highest: ${tones[86].hex}`,
+    );
+    expect(wrapper.get('[data-surface-card="container_highest"]').text()).toContain('Tone 86');
+
+    await contrastSlider.setValue('2');
+    expect(wrapper.get('[data-cy="surface-contrast-value"]').text()).toBe('High');
+    expect(shell.attributes('style')).toContain(`--preview-surface-dim: ${tones[79].hex}`);
+    expect(shell.attributes('style')).toContain(
+      `--preview-surface-container-highest: ${tones[82].hex}`,
+    );
+
+    await wrapper.get('[data-cy="surface-preview-dark-mode"]').setValue(true);
+    expect(shell.attributes('style')).toContain(`--preview-surface-bright: ${tones[32].hex}`);
+    expect(shell.attributes('style')).toContain(
+      `--preview-surface-container-lowest: ${tones[0].hex}`,
+    );
+    expect(shell.attributes('style')).toContain(
+      `--preview-surface-container-highest: ${tones[30].hex}`,
+    );
+  });
+
   it('shows the hovered surface role and active tone', async () => {
     const tones = buildTones('55');
     const wrapper = mount(MaterialSurfacePreview, {

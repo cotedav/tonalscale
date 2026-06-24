@@ -55,8 +55,8 @@ describe('TonalBuilderHomeView', () => {
     );
     expect(wrapper.find('[data-cy="controls-resize-handle"]').exists()).toBe(true);
 
-    expect(wrapper.findAll('[type="range"]').length).toBe(5);
-    expect(wrapper.findAll('[data-cy$="-value"]').length).toBe(5);
+    expect(wrapper.findAll('#gradient-controls [type="range"]').length).toBe(5);
+    expect(wrapper.findAll('#gradient-controls [data-cy$="-value"]').length).toBe(5);
 
     const fullStrip = wrapper.get('[data-cy="scale-strip-full"]');
     expect(fullStrip.findAll('[data-cy="tonal-swatch"]').length).toBeGreaterThan(0);

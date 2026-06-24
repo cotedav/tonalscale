@@ -34,8 +34,11 @@
     | 'container_highest'
     | 'inverse_surface';
 
+  type SurfaceContrast = 'low' | 'medium' | 'high';
+
   const { t } = useI18n();
   const isDarkMode = ref(false);
+  const surfaceContrast = ref<SurfaceContrast>('low');
   const shellRef = ref<HTMLElement | null>(null);
   const hoveredSurfaceRole = ref<SurfaceRole | null>(null);
   const tooltipPosition = ref({ x: 0, y: 0 });
@@ -43,31 +46,87 @@
   const toneAt = (index: number, fallback: string) =>
     props.tones.find((tone) => tone.index === index)?.hex ?? fallback;
 
-  const surfaceTones = computed<Record<SurfaceRole, number>>(() =>
-    isDarkMode.value
-      ? {
-          surface: 6,
-          surface_bright: 24,
-          surface_dim: 6,
-          container_lowest: 4,
-          container_low: 10,
-          container: 12,
-          container_high: 17,
-          container_highest: 22,
-          inverse_surface: 90,
-        }
-      : {
-          surface: 98,
-          surface_bright: 98,
-          surface_dim: 87,
-          container_lowest: 100,
-          container_low: 96,
-          container: 94,
-          container_high: 92,
-          container_highest: 90,
-          inverse_surface: 20,
-        },
-  );
+  const surfaceTones = computed<Record<SurfaceRole, number>>(() => {
+    const lightMappings: Record<SurfaceContrast, Record<SurfaceRole, number>> = {
+      low: {
+        surface: 98,
+        surface_bright: 98,
+        surface_dim: 87,
+        container_lowest: 100,
+        container_low: 96,
+        container: 94,
+        container_high: 92,
+        container_highest: 90,
+        inverse_surface: 20,
+      },
+      medium: {
+        surface: 98,
+        surface_bright: 100,
+        surface_dim: 83,
+        container_lowest: 100,
+        container_low: 97,
+        container: 94,
+        container_high: 90,
+        container_highest: 86,
+        inverse_surface: 20,
+      },
+      high: {
+        surface: 98,
+        surface_bright: 100,
+        surface_dim: 79,
+        container_lowest: 100,
+        container_low: 98,
+        container: 94,
+        container_high: 88,
+        container_highest: 82,
+        inverse_surface: 20,
+      },
+    };
+    const darkMappings: Record<SurfaceContrast, Record<SurfaceRole, number>> = {
+      low: {
+        surface: 6,
+        surface_bright: 24,
+        surface_dim: 6,
+        container_lowest: 4,
+        container_low: 10,
+        container: 12,
+        container_high: 17,
+        container_highest: 22,
+        inverse_surface: 90,
+      },
+      medium: {
+        surface: 6,
+        surface_bright: 28,
+        surface_dim: 4,
+        container_lowest: 2,
+        container_low: 9,
+        container: 12,
+        container_high: 19,
+        container_highest: 26,
+        inverse_surface: 90,
+      },
+      high: {
+        surface: 6,
+        surface_bright: 32,
+        surface_dim: 2,
+        container_lowest: 0,
+        container_low: 8,
+        container: 12,
+        container_high: 21,
+        container_highest: 30,
+        inverse_surface: 90,
+      },
+    };
+
+    return (isDarkMode.value ? darkMappings : lightMappings)[surfaceContrast.value];
+  });
+
+  const contrastLevels: SurfaceContrast[] = ['low', 'medium', 'high'];
+  const surfaceContrastIndex = computed(() => contrastLevels.indexOf(surfaceContrast.value));
+  const setSurfaceContrast = (event: Event) => {
+    const index = Number((event.target as HTMLInputElement).value);
+    surfaceContrast.value = contrastLevels[index] ?? 'low';
+  };
 
   const surfaceStyles = computed(() => {
     const tones = surfaceTones.value;
@@ -256,25 +315,64 @@
       <h2 class="text-sm font-semibold text-primary">
         {{ t('tonal_builder.surface_preview.title') }}
       </h2>
-      <div class="flex items-center gap-4">
-        <span class="hidden text-xs text-secondary sm:inline">
-          {{ t('tonal_builder.surface_preview.helper') }}
-        </span>
-        <BaseSwitch
-          id="surface-preview-dark-mode"
-          v-model="isDarkMode"
-          class="preview-theme-toggle"
-          :label="t('tonal_builder.surface_preview.dark_mode')"
-          data-cy="surface-preview-dark-mode"
-        >
-          <template #before>
-            <SunIcon aria-hidden="true" />
-          </template>
-          <template #after>
-            <MoonIcon aria-hidden="true" />
-          </template>
-        </BaseSwitch>
+      <span class="hidden text-xs text-secondary sm:inline">
+        {{ t('tonal_builder.surface_preview.helper') }}
+      </span>
+    </div>
+
+    <div class="preview-controls-toolbar">
+      <div
+        class="preview-contrast-control"
+        data-cy="surface-contrast-control"
+      >
+        <div class="preview-contrast-heading">
+          <label for="surface-contrast-slider">
+            {{ t('tonal_builder.surface_preview.contrast.label') }}
+          </label>
+          <strong data-cy="surface-contrast-value">
+            {{ t(`tonal_builder.surface_preview.contrast.${surfaceContrast}`) }}
+          </strong>
+        </div>
+        <input
+          id="surface-contrast-slider"
+          type="range"
+          min="0"
+          max="2"
+          step="1"
+          :value="surfaceContrastIndex"
+          :aria-valuetext="t(`tonal_builder.surface_preview.contrast.${surfaceContrast}`)"
+          data-cy="surface-contrast-slider"
+          @input="setSurfaceContrast"
+        />
+        <div class="preview-contrast-levels">
+          <span
+            v-for="(level, index) in contrastLevels"
+            :key="level"
+            :class="{
+              'preview-contrast-active': surfaceContrast === level,
+              'preview-contrast-level-center': index === 1,
+              'preview-contrast-level-end': index === 2,
+            }"
+          >
+            {{ t(`tonal_builder.surface_preview.contrast.${level}`) }}
+          </span>
+        </div>
       </div>
+
+      <BaseSwitch
+        id="surface-preview-dark-mode"
+        v-model="isDarkMode"
+        class="preview-theme-toggle"
+        :label="t('tonal_builder.surface_preview.dark_mode')"
+        data-cy="surface-preview-dark-mode"
+      >
+        <template #before>
+          <SunIcon aria-hidden="true" />
+        </template>
+        <template #after>
+          <MoonIcon aria-hidden="true" />
+        </template>
+      </BaseSwitch>
     </div>
 
     <div
@@ -648,6 +746,95 @@
 </template>
 
 <style scoped>
+  .preview-controls-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 20px;
+    width: 100%;
+  }
+
+  .preview-contrast-control {
+    display: grid;
+    flex: 0 1 320px;
+    gap: 8px;
+    width: min(320px, 100%);
+    color: rgb(var(--color-text-secondary));
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .preview-contrast-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .preview-contrast-heading label {
+    color: rgb(var(--color-text-primary));
+  }
+
+  .preview-contrast-heading strong {
+    color: rgb(var(--color-accent));
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .preview-contrast-control input {
+    width: 100%;
+    height: 6px;
+    margin: 5px 0 0;
+    cursor: pointer;
+    appearance: none;
+    border-radius: 999px;
+    background: rgb(var(--color-border-highlight));
+    accent-color: rgb(var(--color-accent-strong));
+  }
+
+  .preview-contrast-control input::-webkit-slider-thumb {
+    width: 18px;
+    height: 18px;
+    appearance: none;
+    border: 3px solid rgb(var(--color-surface));
+    border-radius: 50%;
+    background: rgb(var(--color-accent-strong));
+    box-shadow: 0 1px 4px rgb(0 0 0 / 30%);
+  }
+
+  .preview-contrast-control input::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border: 3px solid rgb(var(--color-surface));
+    border-radius: 50%;
+    background: rgb(var(--color-accent-strong));
+    box-shadow: 0 1px 4px rgb(0 0 0 / 30%);
+  }
+
+  .preview-contrast-control input:focus-visible {
+    outline: 2px solid rgb(var(--color-accent));
+    outline-offset: 5px;
+  }
+
+  .preview-contrast-levels {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    font-size: 10px;
+  }
+
+  .preview-contrast-level-center {
+    text-align: center;
+  }
+
+  .preview-contrast-level-end {
+    text-align: right;
+  }
+
+  .preview-contrast-levels .preview-contrast-active {
+    color: rgb(var(--color-accent));
+    font-weight: 700;
+  }
+
   .preview-surface-cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
@@ -724,6 +911,7 @@
 
   .preview-theme-toggle {
     display: inline-flex;
+    flex: none;
     align-items: center;
     gap: 7px;
     color: rgb(var(--color-text-secondary));
@@ -733,6 +921,18 @@
   .preview-theme-toggle > svg {
     width: 15px;
     height: 15px;
+  }
+
+  @media (width <= 520px) {
+    .preview-controls-toolbar {
+      align-items: flex-end;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .preview-contrast-control {
+      min-width: 0;
+    }
   }
 
   .preview-topbar,

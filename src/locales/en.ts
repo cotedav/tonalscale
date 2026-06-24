@@ -189,6 +189,12 @@ export default {
       surface_tooltip: '{role}, tone {tone}',
       surface_cards: 'Surface role tone reference',
       tone_value: 'Tone {tone}',
+      contrast: {
+        label: 'Surface contrast',
+        low: 'Low',
+        medium: 'Medium',
+        high: 'High',
+      },
       roles: {
         surface: 'Surface',
         surface_bright: 'Surface bright',
