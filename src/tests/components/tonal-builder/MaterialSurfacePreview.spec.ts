@@ -3,7 +3,7 @@ import { mount } from '@vue/test-utils';
 import MaterialSurfacePreview from '@/components/tonal-builder/MaterialSurfacePreview.vue';
 import type { TonalStep } from '@/utils/tonal/scale';
 
-const keyIndices = [0, 10, 20, 25, 30, 35, 40, 50, 60, 70, 80, 90, 95, 98, 99, 100];
+const keyIndices = [0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 90, 95, 98, 99, 100];
 
 const buildTones = (prefix: string): TonalStep[] =>
   keyIndices.map((index) => ({
@@ -24,6 +24,7 @@ describe('MaterialSurfacePreview', () => {
     const shell = wrapper.get('[data-cy="surface-preview-shell"]');
     expect(shell.attributes('style')).toContain(`--preview-surface: ${toneHex(tones, 100)}`);
     expect(shell.attributes('style')).toContain(`--preview-surface-bright: ${toneHex(tones, 100)}`);
+    expect(shell.attributes('style')).toContain(`--preview-surface-dim: ${toneHex(tones, 80)}`);
     expect(shell.attributes('style')).toContain(
       `--preview-surface-container-lowest: ${toneHex(tones, 100)}`,
     );
@@ -87,7 +88,7 @@ describe('MaterialSurfacePreview', () => {
 
     expect(shell.attributes('data-theme')).toBe('dark');
     expect(shell.attributes('style')).toContain(`--preview-surface: ${toneHex(tones, 0)}`);
-    expect(shell.attributes('style')).toContain(`--preview-surface-bright: ${toneHex(tones, 100)}`);
+    expect(shell.attributes('style')).toContain(`--preview-surface-bright: ${toneHex(tones, 30)}`);
     expect(shell.attributes('style')).toContain(`--preview-surface-dim: ${toneHex(tones, 0)}`);
     expect(shell.attributes('style')).toContain(
       `--preview-surface-container-lowest: ${toneHex(tones, 0)}`,
@@ -123,7 +124,7 @@ describe('MaterialSurfacePreview', () => {
 
     await contrastSlider.setValue('1');
     expect(wrapper.get('[data-cy="surface-contrast-value"]').text()).toBe('Medium');
-    expect(shell.attributes('style')).toContain(`--preview-surface-dim: ${toneHex(tones, 0)}`);
+    expect(shell.attributes('style')).toContain(`--preview-surface-dim: ${toneHex(tones, 70)}`);
     expect(shell.attributes('style')).toContain(
       `--preview-surface-container: ${toneHex(tones, 90)}`,
     );
@@ -134,7 +135,7 @@ describe('MaterialSurfacePreview', () => {
 
     await contrastSlider.setValue('2');
     expect(wrapper.get('[data-cy="surface-contrast-value"]').text()).toBe('High');
-    expect(shell.attributes('style')).toContain(`--preview-surface-dim: ${toneHex(tones, 0)}`);
+    expect(shell.attributes('style')).toContain(`--preview-surface-dim: ${toneHex(tones, 40)}`);
     expect(shell.attributes('style')).toContain(
       `--preview-surface-container: ${toneHex(tones, 80)}`,
     );
@@ -143,7 +144,7 @@ describe('MaterialSurfacePreview', () => {
     );
 
     await wrapper.get('[data-cy="surface-preview-dark-mode"]').setValue(true);
-    expect(shell.attributes('style')).toContain(`--preview-surface-bright: ${toneHex(tones, 100)}`);
+    expect(shell.attributes('style')).toContain(`--preview-surface-bright: ${toneHex(tones, 60)}`);
     expect(shell.attributes('style')).toContain(
       `--preview-surface-container: ${toneHex(tones, 25)}`,
     );
@@ -153,6 +154,67 @@ describe('MaterialSurfacePreview', () => {
     expect(shell.attributes('style')).toContain(
       `--preview-surface-container-highest: ${toneHex(tones, 60)}`,
     );
+  });
+
+  it('shifts surface roles through each extended key tone', async () => {
+    const tones = buildTones('45');
+    const wrapper = mount(MaterialSurfacePreview, {
+      props: { tones },
+    });
+    const shell = wrapper.get('[data-cy="surface-preview-shell"]');
+    const toneSlider = wrapper.get('[data-cy="surface-tone-slider"]');
+
+    expect((toneSlider.element as HTMLInputElement).min).toBe('0');
+    expect((toneSlider.element as HTMLInputElement).max).toBe('5');
+    expect((toneSlider.element as HTMLInputElement).value).toBe('5');
+    expect(wrapper.get('[data-cy="surface-tone-value"]').text()).toBe('Tone 100');
+    expect(wrapper.get('[data-cy="surface-tone-labels"]').text()).toContain('80');
+    expect(wrapper.get('[data-cy="surface-tone-labels"]').text()).toContain('100');
+    expect(wrapper.get('[data-cy="surface-tone-labels"] .preview-tone-active').text()).toBe('100');
+
+    await toneSlider.setValue('4');
+    expect(wrapper.get('[data-cy="surface-tone-value"]').text()).toBe('Tone 99');
+    expect(wrapper.get('[data-cy="surface-tone-labels"] .preview-tone-active').text()).toBe('99');
+    expect(shell.attributes('style')).toContain(`--preview-surface: ${toneHex(tones, 99)}`);
+    expect(shell.attributes('style')).toContain(
+      `--preview-surface-container-low: ${toneHex(tones, 95)}`,
+    );
+    expect(shell.attributes('style')).toContain(
+      `--preview-surface-container: ${toneHex(tones, 90)}`,
+    );
+    expect(shell.attributes('style')).toContain(`--preview-on-surface: ${toneHex(tones, 5)}`);
+    expect(shell.attributes('style')).toContain(
+      `--preview-on-surface-variant: ${toneHex(tones, 30)}`,
+    );
+    expect(shell.attributes('style')).toContain(`--preview-outline: ${toneHex(tones, 40)}`);
+    expect(shell.attributes('style')).toContain(`--preview-outline-variant: ${toneHex(tones, 70)}`);
+    expect(shell.attributes('style')).toContain(`--preview-surface-bright: ${toneHex(tones, 99)}`);
+    expect(shell.attributes('style')).toContain(`--preview-surface-dim: ${toneHex(tones, 70)}`);
+
+    await wrapper.get('[data-cy="surface-preview-dark-mode"]').setValue(true);
+    expect((toneSlider.element as HTMLInputElement).max).toBe('5');
+    expect((toneSlider.element as HTMLInputElement).value).toBe('0');
+    expect(wrapper.get('[data-cy="surface-tone-value"]').text()).toBe('Tone 0');
+    expect(wrapper.get('[data-cy="surface-tone-labels"]').text()).toContain('25');
+    expect(wrapper.get('[data-cy="surface-tone-labels"] .preview-tone-active').text()).toBe('0');
+
+    await toneSlider.setValue('1');
+    expect(wrapper.get('[data-cy="surface-tone-value"]').text()).toBe('Tone 5');
+    expect(shell.attributes('style')).toContain(`--preview-surface: ${toneHex(tones, 5)}`);
+    expect(shell.attributes('style')).toContain(
+      `--preview-surface-container-low: ${toneHex(tones, 15)}`,
+    );
+    expect(shell.attributes('style')).toContain(
+      `--preview-surface-container: ${toneHex(tones, 25)}`,
+    );
+    expect(shell.attributes('style')).toContain(`--preview-on-surface: ${toneHex(tones, 95)}`);
+    expect(shell.attributes('style')).toContain(
+      `--preview-on-surface-variant: ${toneHex(tones, 90)}`,
+    );
+    expect(shell.attributes('style')).toContain(`--preview-outline: ${toneHex(tones, 70)}`);
+    expect(shell.attributes('style')).toContain(`--preview-outline-variant: ${toneHex(tones, 35)}`);
+    expect(shell.attributes('style')).toContain(`--preview-surface-bright: ${toneHex(tones, 35)}`);
+    expect(shell.attributes('style')).toContain(`--preview-surface-dim: ${toneHex(tones, 5)}`);
   });
 
   it('shows the hovered surface role and active tone', async () => {

@@ -188,6 +188,9 @@ export default {
       surface_tooltip: '{role}, ton {tone}',
       surface_cards: 'Reference des tons par role de surface',
       tone_value: 'Ton {tone}',
+      surface_tone: {
+        label: 'Ton de surface',
+      },
       contrast: {
         label: 'Contraste des surfaces',
         low: 'Faible',

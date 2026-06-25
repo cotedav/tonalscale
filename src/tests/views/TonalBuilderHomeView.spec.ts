@@ -62,7 +62,7 @@ describe('TonalBuilderHomeView', () => {
     const fullStrip = wrapper.get('[data-cy="scale-strip-full"]');
     expect(fullStrip.findAll('[data-cy="tonal-swatch"]').length).toBeGreaterThan(0);
     expect(wrapper.getComponent(MaterialSurfacePreview).props('tones')).toEqual(
-      useTonalScaleStore().keyStrip,
+      useTonalScaleStore().extendedStrip,
     );
   });
 

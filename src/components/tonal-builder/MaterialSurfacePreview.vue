@@ -43,14 +43,25 @@
   const { t } = useI18n();
   const isDarkMode = ref(false);
   const surfaceContrast = ref<SurfaceContrast>('low');
+  const lightSurfaceTone = ref(100);
+  const darkSurfaceTone = ref(0);
   const shellRef = ref<HTMLElement | null>(null);
   const hoveredSurfaceRole = ref<SurfaceRole | null>(null);
   const tooltipPosition = ref({ x: 0, y: 0 });
 
+  const availableToneIndices = computed(() =>
+    [...new Set(props.tones.map((tone) => tone.index))].sort((left, right) => left - right),
+  );
+  const selectableSurfaceToneIndices = computed(() =>
+    availableToneIndices.value.filter((tone) =>
+      isDarkMode.value ? tone >= 0 && tone <= 25 : tone >= 80 && tone <= 100,
+    ),
+  );
+
   const toneAt = (index: number, fallback: string) =>
     props.tones.find((tone) => tone.index === index)?.hex ?? fallback;
 
-  const surfaceTones = computed<Record<SurfaceRole, number>>(() => {
+  const baseSurfaceTones = computed<Record<SurfaceRole, number>>(() => {
     const lightMappings: Record<SurfaceContrast, Record<SurfaceRole, number>> = {
       low: {
         surface: 100,
@@ -147,6 +158,71 @@
     };
 
     return (isDarkMode.value ? darkMappings : lightMappings)[surfaceContrast.value];
+  });
+
+  const activeSurfaceTone = computed(() =>
+    isDarkMode.value ? darkSurfaceTone.value : lightSurfaceTone.value,
+  );
+  const activeSurfaceToneIndex = computed(() =>
+    Math.max(0, selectableSurfaceToneIndices.value.indexOf(activeSurfaceTone.value)),
+  );
+  const setSurfaceTone = (event: Event) => {
+    const index = Number((event.target as HTMLInputElement).value);
+    const tone = selectableSurfaceToneIndices.value[index];
+
+    if (tone === undefined) return;
+
+    if (isDarkMode.value) {
+      darkSurfaceTone.value = tone;
+    } else {
+      lightSurfaceTone.value = tone;
+    }
+  };
+
+  const surfaceTones = computed<Record<SurfaceRole, number>>(() => {
+    const baseTones = baseSurfaceTones.value;
+    const indices = availableToneIndices.value;
+    const defaultSurfaceTone = isDarkMode.value ? 0 : 100;
+    const defaultIndex = indices.indexOf(defaultSurfaceTone);
+    const selectedIndex = indices.indexOf(activeSurfaceTone.value);
+    const shift = selectedIndex - defaultIndex;
+    const shiftedRoles: SurfaceRole[] = [
+      'surface',
+      'container_lowest',
+      'container_low',
+      'container',
+      'container_high',
+      'container_highest',
+      'on_surface',
+      'on_surface_variant',
+      'outline',
+      'outline_variant',
+    ];
+
+    const shiftedTones = Object.fromEntries(
+      Object.entries(baseTones).map(([role, tone]) => {
+        if (!shiftedRoles.includes(role as SurfaceRole)) return [role, tone];
+
+        const toneIndex = indices.indexOf(tone);
+        const shiftedIndex = Math.min(Math.max(toneIndex + shift, 0), indices.length - 1);
+
+        return [role, indices[shiftedIndex] ?? tone];
+      }),
+    ) as Record<SurfaceRole, number>;
+
+    const surfaceFamilyTones = [
+      shiftedTones.surface,
+      shiftedTones.container_lowest,
+      shiftedTones.container_low,
+      shiftedTones.container,
+      shiftedTones.container_high,
+      shiftedTones.container_highest,
+    ];
+
+    shiftedTones.surface_bright = Math.max(...surfaceFamilyTones);
+    shiftedTones.surface_dim = Math.min(...surfaceFamilyTones);
+
+    return shiftedTones;
   });
 
   const contrastLevels: SurfaceContrast[] = ['low', 'medium', 'high'];
@@ -361,10 +437,60 @@
 
     <div class="preview-controls-toolbar">
       <div
+        class="preview-tone-control"
+        data-cy="surface-tone-control"
+      >
+        <div class="preview-control-heading">
+          <label for="surface-tone-slider">
+            {{ t('tonal_builder.surface_preview.surface_tone.label') }}
+          </label>
+          <strong data-cy="surface-tone-value">
+            {{
+              t('tonal_builder.surface_preview.tone_value', {
+                tone: activeSurfaceTone,
+              })
+            }}
+          </strong>
+        </div>
+        <input
+          id="surface-tone-slider"
+          type="range"
+          min="0"
+          :max="Math.max(selectableSurfaceToneIndices.length - 1, 0)"
+          step="1"
+          :value="activeSurfaceToneIndex"
+          :aria-valuetext="
+            t('tonal_builder.surface_preview.tone_value', {
+              tone: activeSurfaceTone,
+            })
+          "
+          data-cy="surface-tone-slider"
+          @input="setSurfaceTone"
+        />
+        <div
+          class="preview-tone-levels"
+          :style="{ gridTemplateColumns: `repeat(${selectableSurfaceToneIndices.length}, 1fr)` }"
+          data-cy="surface-tone-labels"
+        >
+          <span
+            v-for="(tone, index) in selectableSurfaceToneIndices"
+            :key="tone"
+            :class="{
+              'preview-tone-active': activeSurfaceTone === tone,
+              'preview-tone-label-start': index === 0,
+              'preview-tone-label-end': index === selectableSurfaceToneIndices.length - 1,
+            }"
+          >
+            {{ tone }}
+          </span>
+        </div>
+      </div>
+
+      <div
         class="preview-contrast-control"
         data-cy="surface-contrast-control"
       >
-        <div class="preview-contrast-heading">
+        <div class="preview-control-heading">
           <label for="surface-contrast-slider">
             {{ t('tonal_builder.surface_preview.contrast.label') }}
           </label>
@@ -992,33 +1118,43 @@
     width: 100%;
   }
 
+  .preview-tone-control,
   .preview-contrast-control {
     display: grid;
-    flex: 0 1 320px;
     gap: 8px;
-    width: min(320px, 100%);
     color: rgb(var(--color-text-secondary));
     font-size: 12px;
     font-weight: 600;
   }
 
-  .preview-contrast-heading {
+  .preview-tone-control {
+    flex: 0 1 220px;
+    width: min(220px, 100%);
+  }
+
+  .preview-contrast-control {
+    flex: 0 1 320px;
+    width: min(320px, 100%);
+  }
+
+  .preview-control-heading {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
   }
 
-  .preview-contrast-heading label {
+  .preview-control-heading label {
     color: rgb(var(--color-text-primary));
   }
 
-  .preview-contrast-heading strong {
+  .preview-control-heading strong {
     color: rgb(var(--color-accent));
     font-size: 12px;
     font-weight: 700;
   }
 
+  .preview-tone-control input,
   .preview-contrast-control input {
     width: 100%;
     height: 6px;
@@ -1030,6 +1166,7 @@
     accent-color: rgb(var(--color-accent-strong));
   }
 
+  .preview-tone-control input::-webkit-slider-thumb,
   .preview-contrast-control input::-webkit-slider-thumb {
     width: 18px;
     height: 18px;
@@ -1040,6 +1177,7 @@
     box-shadow: 0 1px 4px rgb(0 0 0 / 30%);
   }
 
+  .preview-tone-control input::-moz-range-thumb,
   .preview-contrast-control input::-moz-range-thumb {
     width: 12px;
     height: 12px;
@@ -1049,6 +1187,7 @@
     box-shadow: 0 1px 4px rgb(0 0 0 / 30%);
   }
 
+  .preview-tone-control input:focus-visible,
   .preview-contrast-control input:focus-visible {
     outline: 2px solid rgb(var(--color-accent));
     outline-offset: 5px;
@@ -1060,6 +1199,23 @@
     font-size: 10px;
   }
 
+  .preview-tone-levels {
+    display: grid;
+    font-size: 10px;
+  }
+
+  .preview-tone-levels span {
+    text-align: center;
+  }
+
+  .preview-tone-label-start {
+    text-align: left;
+  }
+
+  .preview-tone-label-end {
+    text-align: right;
+  }
+
   .preview-contrast-level-center {
     text-align: center;
   }
@@ -1068,6 +1224,7 @@
     text-align: right;
   }
 
+  .preview-tone-levels .preview-tone-active,
   .preview-contrast-levels .preview-contrast-active {
     color: rgb(var(--color-accent));
     font-weight: 700;
@@ -1160,6 +1317,10 @@
     }
 
     .preview-contrast-control {
+      min-width: 0;
+    }
+
+    .preview-tone-control {
       min-width: 0;
     }
   }

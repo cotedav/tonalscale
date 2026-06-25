@@ -481,7 +481,7 @@
 
             <MaterialSurfacePreview
               class="pt-4"
-              :tones="keyStrip"
+              :tones="extendedStrip"
             />
           </section>
         </div>
