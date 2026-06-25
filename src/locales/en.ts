@@ -187,6 +187,7 @@ export default {
       helper: 'Generated tones applied to an operational workspace',
       dark_mode: 'Use dark surfaces in the app preview',
       surface_tooltip: '{role}, tone {tone}',
+      primary_role: 'Primary {role}',
       surface_cards: 'Surface role tone reference',
       tone_value: 'Tone {tone}',
       surface_tone: {
@@ -328,6 +329,15 @@ export default {
         helper: 'Expected cash flow over six days',
         next: 'Next settlement',
         tomorrow: 'Tomorrow',
+      },
+      primary_examples: {
+        light_eyebrow: 'Priority account',
+        light_title: 'Accelerated settlement',
+        light_helper: 'Available for same-day transfer',
+        ready: 'Ready',
+        inverse_eyebrow: 'Risk protection',
+        inverse_title: 'Payment guarantee',
+        inverse_helper: 'Coverage confidence',
       },
     },
     roles: {

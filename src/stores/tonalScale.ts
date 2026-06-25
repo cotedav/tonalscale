@@ -63,6 +63,9 @@ export type TonalPersistenceState = {
     surfaceContrast: SurfaceContrast;
     lightSurfaceTone: number;
     darkSurfaceTone: number;
+    primarySurfaceContrast: SurfaceContrast;
+    primaryLightSurfaceTone: number;
+    primaryDarkSurfaceTone: number;
   };
 };
 
@@ -118,6 +121,9 @@ const DEFAULT_PREVIEW_STATE: TonalPersistenceState['preview'] = {
   surfaceContrast: 'low',
   lightSurfaceTone: 100,
   darkSurfaceTone: 0,
+  primarySurfaceContrast: 'low',
+  primaryLightSurfaceTone: 100,
+  primaryDarkSurfaceTone: 0,
 };
 
 const cloneRoleState = (state: RoleTonalState): RoleTonalState => ({
@@ -358,6 +364,25 @@ const parsePersistenceState = (payload: unknown): TonalPersistenceState | null =
         ),
         darkSurfaceTone: clamp(
           Number(previewInput.darkSurfaceTone ?? DEFAULT_PREVIEW_STATE.darkSurfaceTone),
+          0,
+          25,
+        ),
+        primarySurfaceContrast: ['low', 'medium', 'high'].includes(
+          String(previewInput.primarySurfaceContrast),
+        )
+          ? (previewInput.primarySurfaceContrast as SurfaceContrast)
+          : DEFAULT_PREVIEW_STATE.primarySurfaceContrast,
+        primaryLightSurfaceTone: clamp(
+          Number(
+            previewInput.primaryLightSurfaceTone ?? DEFAULT_PREVIEW_STATE.primaryLightSurfaceTone,
+          ),
+          80,
+          100,
+        ),
+        primaryDarkSurfaceTone: clamp(
+          Number(
+            previewInput.primaryDarkSurfaceTone ?? DEFAULT_PREVIEW_STATE.primaryDarkSurfaceTone,
+          ),
           0,
           25,
         ),

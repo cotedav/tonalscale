@@ -53,7 +53,7 @@ describe('MaterialSurfacePreview', () => {
     expect(wrapper.findAll('.preview-table-row')).toHaveLength(7);
 
     const surfaceCards = wrapper.findAll('[data-surface-card]');
-    expect(surfaceCards).toHaveLength(17);
+    expect(surfaceCards).toHaveLength(13);
     expect(wrapper.get('[data-surface-card="surface"]').text()).toContain('Tone 100');
     expect(wrapper.get('[data-surface-card="surface"]').text()).toContain(toneHex(tones, 100));
     expect(wrapper.get('[data-surface-card="container"]').text()).toContain('Tone 95');
@@ -280,30 +280,73 @@ describe('MaterialSurfacePreview', () => {
     expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 80');
   });
 
-  it('maps an independent primary scale into primary preview roles', async () => {
+  it('keeps the app shell surface-based while showcasing an independent primary surface family', async () => {
     const surfaceTones = buildTones('11');
     const primaryTones = buildTones('aa');
     const wrapper = mount(MaterialSurfacePreview, {
-      props: { tones: surfaceTones, primaryTones },
+      props: {
+        tones: surfaceTones,
+        primaryTones,
+        activeRole: 'primary',
+        surfaceContrast: 'high',
+        lightSurfaceTone: 98,
+        darkSurfaceTone: 10,
+        surfaceContrastSettings: { surface: 'low', primary: 'high' },
+        lightSurfaceToneSettings: { surface: 100, primary: 98 },
+        darkSurfaceToneSettings: { surface: 0, primary: 10 },
+      },
     });
     const shell = wrapper.get('[data-cy="surface-preview-shell"]');
 
+    expect(shell.attributes('style')).toContain(`--preview-surface: ${toneHex(surfaceTones, 100)}`);
+    expect(shell.attributes('style')).toContain(
+      `--preview-primary-surface-bright: ${toneHex(primaryTones, 98)}`,
+    );
+    expect(wrapper.get('[data-surface-card="surface"]').text()).toContain('Primary Surface');
+    expect(wrapper.get('[data-surface-card="surface"]').text()).toContain(
+      toneHex(primaryTones, 98),
+    );
+    expect(wrapper.findAll('[data-surface-card]')).toHaveLength(13);
+    expect(wrapper.find('[data-surface-card="primary"]').exists()).toBe(false);
     expect(shell.attributes('style')).toContain(`--preview-primary: ${toneHex(primaryTones, 40)}`);
     expect(shell.attributes('style')).toContain(
       `--preview-primary-container: ${toneHex(primaryTones, 90)}`,
     );
-    expect(wrapper.get('[data-surface-card="primary"]').text()).toContain(
-      toneHex(primaryTones, 40),
-    );
 
-    await wrapper.get('[data-surface-role="primary-container"]').trigger('pointermove', {
+    const primaryLightExample = wrapper.get(
+      '[data-surface-palette="primary"][data-surface-role="surface-bright"]',
+    );
+    const primaryInverseExample = wrapper.get(
+      '[data-surface-palette="primary"][data-surface-role="inverse-surface"]',
+    );
+    await primaryLightExample.trigger('pointermove', {
       clientX: 200,
       clientY: 300,
     });
-    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Primary container');
-    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 90');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Primary Surface bright');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 98');
+
+    await primaryInverseExample.trigger('pointermove', {
+      clientX: 220,
+      clientY: 320,
+    });
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Primary Inverse surface');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 20');
+
+    await wrapper
+      .get('[data-surface-palette="primary"][data-surface-role="outline"]')
+      .trigger('pointermove', {
+        clientX: 240,
+        clientY: 340,
+      });
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Primary Outline');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 35');
 
     await wrapper.get('[data-cy="surface-preview-dark-mode"]').setValue(true);
+    expect(shell.attributes('style')).toContain(`--preview-surface: ${toneHex(surfaceTones, 0)}`);
+    expect(shell.attributes('style')).toContain(
+      `--preview-primary-surface-bright: ${toneHex(primaryTones, 80)}`,
+    );
     expect(shell.attributes('style')).toContain(`--preview-primary: ${toneHex(primaryTones, 80)}`);
     expect(shell.attributes('style')).toContain(
       `--preview-primary-container: ${toneHex(primaryTones, 30)}`,

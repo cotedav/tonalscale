@@ -186,6 +186,7 @@ export default {
       helper: 'Tons generes appliques a un espace operationnel',
       dark_mode: 'Utiliser les surfaces sombres dans l apercu',
       surface_tooltip: '{role}, ton {tone}',
+      primary_role: '{role} primaire',
       surface_cards: 'Reference des tons par role de surface',
       tone_value: 'Ton {tone}',
       surface_tone: {
@@ -327,6 +328,15 @@ export default {
         helper: 'Flux de tresorerie prevu sur six jours',
         next: 'Prochain reglement',
         tomorrow: 'Demain',
+      },
+      primary_examples: {
+        light_eyebrow: 'Compte prioritaire',
+        light_title: 'Reglement accelere',
+        light_helper: 'Disponible pour un transfert le jour meme',
+        ready: 'Pret',
+        inverse_eyebrow: 'Protection du risque',
+        inverse_title: 'Garantie de paiement',
+        inverse_helper: 'Confiance de la couverture',
       },
     },
     roles: {

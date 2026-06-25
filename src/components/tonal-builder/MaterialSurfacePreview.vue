@@ -17,13 +17,26 @@
   import { useI18n } from 'vue-i18n';
 
   import BaseSwitch from '@/components/common/BaseSwitch.vue';
-  import type { SurfaceContrast } from '@/stores/tonalScale';
+  import type { SurfaceContrast, TonalColorRole } from '@/stores/tonalScale';
   import type { TonalStep } from '@/utils/tonal/scale';
 
-  const props = defineProps<{
-    tones: TonalStep[];
-    primaryTones?: TonalStep[];
-  }>();
+  const props = withDefaults(
+    defineProps<{
+      tones: TonalStep[];
+      primaryTones?: TonalStep[];
+      activeRole?: TonalColorRole;
+      surfaceContrastSettings?: Record<TonalColorRole, SurfaceContrast>;
+      lightSurfaceToneSettings?: Record<TonalColorRole, number>;
+      darkSurfaceToneSettings?: Record<TonalColorRole, number>;
+    }>(),
+    {
+      primaryTones: undefined,
+      activeRole: 'surface',
+      surfaceContrastSettings: () => ({ surface: 'low', primary: 'low' }),
+      lightSurfaceToneSettings: () => ({ surface: 100, primary: 100 }),
+      darkSurfaceToneSettings: () => ({ surface: 0, primary: 0 }),
+    },
+  );
 
   type SurfaceRole =
     | 'surface'
@@ -55,10 +68,14 @@
   const darkSurfaceTone = defineModel<number>('darkSurfaceTone', { default: 0 });
   const shellRef = ref<HTMLElement | null>(null);
   const hoveredSurfaceRole = ref<SurfaceRole | null>(null);
+  const hoveredPalette = ref<TonalColorRole>('surface');
   const tooltipPosition = ref({ x: 0, y: 0 });
 
+  const activeTones = computed(() =>
+    props.activeRole === 'primary' ? (props.primaryTones ?? props.tones) : props.tones,
+  );
   const availableToneIndices = computed(() =>
-    [...new Set(props.tones.map((tone) => tone.index))].sort((left, right) => left - right),
+    [...new Set(activeTones.value.map((tone) => tone.index))].sort((left, right) => left - right),
   );
   const selectableSurfaceToneIndices = computed(() =>
     availableToneIndices.value.filter((tone) =>
@@ -87,7 +104,7 @@
         },
   );
 
-  const baseSurfaceTones = computed<Record<SurfaceToneRole, number>>(() => {
+  const getBaseSurfaceTones = (contrast: SurfaceContrast): Record<SurfaceToneRole, number> => {
     const lightMappings: Record<SurfaceContrast, Record<SurfaceToneRole, number>> = {
       low: {
         surface: 100,
@@ -183,8 +200,8 @@
       },
     };
 
-    return (isDarkMode.value ? darkMappings : lightMappings)[surfaceContrast.value];
-  });
+    return (isDarkMode.value ? darkMappings : lightMappings)[contrast];
+  };
 
   const activeSurfaceTone = computed(() =>
     isDarkMode.value ? darkSurfaceTone.value : lightSurfaceTone.value,
@@ -205,12 +222,19 @@
     }
   };
 
-  const surfaceTones = computed<Record<SurfaceToneRole, number>>(() => {
-    const baseTones = baseSurfaceTones.value;
-    const indices = availableToneIndices.value;
+  const buildSurfaceTones = (
+    tones: TonalStep[],
+    contrast: SurfaceContrast,
+    lightTone: number,
+    darkTone: number,
+  ): Record<SurfaceToneRole, number> => {
+    const baseTones = getBaseSurfaceTones(contrast);
+    const indices = [...new Set(tones.map((tone) => tone.index))].sort(
+      (left, right) => left - right,
+    );
     const defaultSurfaceTone = isDarkMode.value ? 0 : 100;
     const defaultIndex = indices.indexOf(defaultSurfaceTone);
-    const selectedIndex = indices.indexOf(activeSurfaceTone.value);
+    const selectedIndex = indices.indexOf(isDarkMode.value ? darkTone : lightTone);
     const shift = selectedIndex - defaultIndex;
     const shiftedRoles: SurfaceToneRole[] = [
       'surface',
@@ -249,7 +273,39 @@
     shiftedTones.surface_dim = Math.min(...surfaceFamilyTones);
 
     return shiftedTones;
-  });
+  };
+
+  const surfaceTones = computed(() =>
+    buildSurfaceTones(
+      props.tones,
+      props.activeRole === 'surface'
+        ? surfaceContrast.value
+        : props.surfaceContrastSettings.surface,
+      props.activeRole === 'surface'
+        ? lightSurfaceTone.value
+        : props.lightSurfaceToneSettings.surface,
+      props.activeRole === 'surface'
+        ? darkSurfaceTone.value
+        : props.darkSurfaceToneSettings.surface,
+    ),
+  );
+  const primarySurfaceTones = computed(() =>
+    buildSurfaceTones(
+      props.primaryTones ?? props.tones,
+      props.activeRole === 'primary'
+        ? surfaceContrast.value
+        : props.surfaceContrastSettings.primary,
+      props.activeRole === 'primary'
+        ? lightSurfaceTone.value
+        : props.lightSurfaceToneSettings.primary,
+      props.activeRole === 'primary'
+        ? darkSurfaceTone.value
+        : props.darkSurfaceToneSettings.primary,
+    ),
+  );
+  const activeRoleTones = computed(() =>
+    props.activeRole === 'primary' ? primarySurfaceTones.value : surfaceTones.value,
+  );
 
   const contrastLevels: SurfaceContrast[] = ['low', 'medium', 'high'];
   const surfaceContrastIndex = computed(() => contrastLevels.indexOf(surfaceContrast.value));
@@ -260,6 +316,7 @@
 
   const surfaceStyles = computed(() => {
     const tones = surfaceTones.value;
+    const primaryTones = primarySurfaceTones.value;
 
     return isDarkMode.value
       ? {
@@ -277,6 +334,22 @@
           '--preview-on-inverse': toneAt(20, '#333333'),
           '--preview-outline': toneAt(tones.outline, '#999999'),
           '--preview-outline-variant': toneAt(tones.outline_variant, '#4d4d4d'),
+          '--preview-primary-surface-bright': primaryToneAt(primaryTones.surface_bright, '#3d3d3d'),
+          '--preview-primary-inverse-surface': primaryToneAt(
+            primaryTones.inverse_surface,
+            '#e5e5e5',
+          ),
+          '--preview-primary-on-surface': primaryToneAt(primaryTones.on_surface, '#e5e5e5'),
+          '--preview-primary-on-surface-variant': primaryToneAt(
+            primaryTones.on_surface_variant,
+            '#cccccc',
+          ),
+          '--preview-primary-on-inverse': primaryToneAt(20, '#333333'),
+          '--preview-primary-outline': primaryToneAt(primaryTones.outline, '#999999'),
+          '--preview-primary-outline-variant': primaryToneAt(
+            primaryTones.outline_variant,
+            '#4d4d4d',
+          ),
           '--preview-primary': primaryToneAt(primaryRoleTones.value.primary, '#cccccc'),
           '--preview-on-primary': primaryToneAt(primaryRoleTones.value.on_primary, '#333333'),
           '--preview-primary-container': primaryToneAt(
@@ -303,6 +376,22 @@
           '--preview-on-inverse': toneAt(98, '#fafafa'),
           '--preview-outline': toneAt(tones.outline, '#7f7f7f'),
           '--preview-outline-variant': toneAt(tones.outline_variant, '#cccccc'),
+          '--preview-primary-surface-bright': primaryToneAt(primaryTones.surface_bright, '#fafafa'),
+          '--preview-primary-inverse-surface': primaryToneAt(
+            primaryTones.inverse_surface,
+            '#333333',
+          ),
+          '--preview-primary-on-surface': primaryToneAt(primaryTones.on_surface, '#1a1a1a'),
+          '--preview-primary-on-surface-variant': primaryToneAt(
+            primaryTones.on_surface_variant,
+            '#595959',
+          ),
+          '--preview-primary-on-inverse': primaryToneAt(98, '#fafafa'),
+          '--preview-primary-outline': primaryToneAt(primaryTones.outline, '#7f7f7f'),
+          '--preview-primary-outline-variant': primaryToneAt(
+            primaryTones.outline_variant,
+            '#cccccc',
+          ),
           '--preview-primary': primaryToneAt(primaryRoleTones.value.primary, '#6750a4'),
           '--preview-on-primary': primaryToneAt(primaryRoleTones.value.on_primary, '#ffffff'),
           '--preview-primary-container': primaryToneAt(
@@ -316,13 +405,26 @@
         };
   });
 
-  const surfaceTooltip = (role: SurfaceRole) =>
+  const roleLabel = (role: SurfaceRole, palette: TonalColorRole) => {
+    const label = t(`tonal_builder.surface_preview.roles.${role}`);
+    return palette === 'primary'
+      ? t('tonal_builder.surface_preview.primary_role', { role: label })
+      : label;
+  };
+
+  const roleTone = (role: SurfaceRole, palette: TonalColorRole) => {
+    if (role in primaryRoleTones.value) {
+      return primaryRoleTones.value[role as keyof typeof primaryRoleTones.value];
+    }
+    return (palette === 'primary' ? primarySurfaceTones.value : surfaceTones.value)[
+      role as SurfaceToneRole
+    ];
+  };
+
+  const surfaceTooltip = (role: SurfaceRole, palette: TonalColorRole = 'surface') =>
     t('tonal_builder.surface_preview.surface_tooltip', {
-      role: t(`tonal_builder.surface_preview.roles.${role}`),
-      tone:
-        role in primaryRoleTones.value
-          ? primaryRoleTones.value[role as keyof typeof primaryRoleTones.value]
-          : surfaceTones.value[role as SurfaceToneRole],
+      role: roleLabel(role, palette),
+      tone: roleTone(role, palette),
     });
 
   const surfaceCards = computed(() => {
@@ -340,31 +442,36 @@
       { role: 'on_surface_variant', cssVariable: '--preview-on-surface-variant' },
       { role: 'outline', cssVariable: '--preview-outline' },
       { role: 'outline_variant', cssVariable: '--preview-outline-variant' },
-      { role: 'primary', cssVariable: '--preview-primary' },
-      { role: 'on_primary', cssVariable: '--preview-on-primary' },
-      { role: 'primary_container', cssVariable: '--preview-primary-container' },
-      { role: 'on_primary_container', cssVariable: '--preview-on-primary-container' },
     ];
 
     return roles.map(({ role, cssVariable }) => {
-      const isPrimaryRole = role in primaryRoleTones.value;
-      const tone = isPrimaryRole
-        ? primaryRoleTones.value[role as keyof typeof primaryRoleTones.value]
-        : surfaceTones.value[role as SurfaceToneRole];
+      const tone = activeRoleTones.value[role as SurfaceToneRole];
+      const roleToneAt = props.activeRole === 'primary' ? primaryToneAt : toneAt;
 
       return {
         role,
         cssVariable,
         tone,
-        hex: isPrimaryRole ? primaryToneAt(tone, '#000000') : toneAt(tone, '#000000'),
-        textHex: toneAt(tone >= 60 ? 10 : 90, tone >= 60 ? '#1a1a1a' : '#e5e5e5'),
+        hex: roleToneAt(tone, '#000000'),
+        textHex: roleToneAt(tone >= 60 ? 10 : 90, tone >= 60 ? '#1a1a1a' : '#e5e5e5'),
       };
     });
   });
 
-  const hoveredSurfaceCard = computed(
-    () => surfaceCards.value.find((card) => card.role === hoveredSurfaceRole.value) ?? null,
-  );
+  const hoveredSurfaceCard = computed(() => {
+    if (!hoveredSurfaceRole.value) return null;
+    const role = hoveredSurfaceRole.value;
+    const tone = roleTone(role, hoveredPalette.value);
+    const paletteToneAt = hoveredPalette.value === 'primary' ? primaryToneAt : toneAt;
+
+    return {
+      role,
+      tone,
+      hex: paletteToneAt(tone, '#000000'),
+      textHex: paletteToneAt(tone >= 60 ? 10 : 90, tone >= 60 ? '#1a1a1a' : '#e5e5e5'),
+      palette: hoveredPalette.value,
+    };
+  });
 
   const surfaceRoleNames: Record<string, SurfaceRole> = {
     surface: 'surface',
@@ -397,6 +504,7 @@
 
     const shellRect = shell.getBoundingClientRect();
     hoveredSurfaceRole.value = surfaceRoleNames[surface.dataset.surfaceRole ?? ''] ?? null;
+    hoveredPalette.value = surface.dataset.surfacePalette === 'primary' ? 'primary' : 'surface';
     tooltipPosition.value = {
       x: Math.min(event.clientX - shellRect.left + 12, shellRect.width - 180),
       y: Math.max(8, event.clientY - shellRect.top - 82),
@@ -606,12 +714,12 @@
         :key="card.role"
         class="preview-surface-card"
         :style="{
-          backgroundColor: `var(${card.cssVariable})`,
+          backgroundColor: card.hex,
           '--preview-card-text': card.textHex,
         }"
         :data-surface-card="card.role"
       >
-        <strong>{{ t(`tonal_builder.surface_preview.roles.${card.role}`) }}</strong>
+        <strong>{{ roleLabel(card.role, activeRole) }}</strong>
         <span>
           {{
             t('tonal_builder.surface_preview.tone_value', {
@@ -1032,6 +1140,110 @@
                 <strong>{{ t('tonal_builder.surface_preview.settlement.tomorrow') }}</strong>
               </div>
             </section>
+
+            <section
+              class="preview-primary-example"
+              data-surface-role="surface-bright"
+              data-surface-palette="primary"
+              :data-surface-tooltip="surfaceTooltip('surface_bright', 'primary')"
+            >
+              <div class="preview-primary-example-heading">
+                <div>
+                  <small
+                    class="preview-primary-example-eyebrow"
+                    data-surface-role="on-surface-variant"
+                    data-surface-palette="primary"
+                    :data-surface-tooltip="surfaceTooltip('on_surface_variant', 'primary')"
+                  >
+                    {{ t('tonal_builder.surface_preview.primary_examples.light_eyebrow') }}
+                  </small>
+                  <strong
+                    data-surface-role="on-surface"
+                    data-surface-palette="primary"
+                    :data-surface-tooltip="surfaceTooltip('on_surface', 'primary')"
+                  >
+                    {{ t('tonal_builder.surface_preview.primary_examples.light_title') }}
+                  </strong>
+                </div>
+                <span
+                  class="preview-primary-example-status"
+                  data-surface-role="outline"
+                  data-surface-palette="primary"
+                  :data-surface-tooltip="surfaceTooltip('outline', 'primary')"
+                >
+                  {{ t('tonal_builder.surface_preview.primary_examples.ready') }}
+                </span>
+              </div>
+              <div
+                class="preview-primary-example-body"
+                data-surface-role="outline-variant"
+                data-surface-palette="primary"
+                :data-surface-tooltip="surfaceTooltip('outline_variant', 'primary')"
+              >
+                <CreditCardIcon
+                  class="preview-primary-example-icon"
+                  aria-hidden="true"
+                />
+                <div>
+                  <strong
+                    data-surface-role="on-surface"
+                    data-surface-palette="primary"
+                    :data-surface-tooltip="surfaceTooltip('on_surface', 'primary')"
+                  >
+                    $18,920
+                  </strong>
+                  <span
+                    class="preview-primary-example-helper"
+                    data-surface-role="on-surface-variant"
+                    data-surface-palette="primary"
+                    :data-surface-tooltip="surfaceTooltip('on_surface_variant', 'primary')"
+                  >
+                    {{ t('tonal_builder.surface_preview.primary_examples.light_helper') }}
+                  </span>
+                </div>
+              </div>
+            </section>
+
+            <section
+              class="preview-primary-example preview-primary-example-inverse"
+              data-surface-role="inverse-surface"
+              data-surface-palette="primary"
+              :data-surface-tooltip="surfaceTooltip('inverse_surface', 'primary')"
+            >
+              <div class="preview-primary-example-heading">
+                <div>
+                  <small class="preview-primary-example-eyebrow">{{
+                    t('tonal_builder.surface_preview.primary_examples.inverse_eyebrow')
+                  }}</small>
+                  <strong>{{
+                    t('tonal_builder.surface_preview.primary_examples.inverse_title')
+                  }}</strong>
+                </div>
+                <ShieldCheckIcon
+                  class="preview-primary-example-icon"
+                  aria-hidden="true"
+                />
+              </div>
+              <div
+                class="preview-primary-example-body"
+                data-surface-role="outline"
+                data-surface-palette="primary"
+                :data-surface-tooltip="surfaceTooltip('outline', 'primary')"
+              >
+                <div>
+                  <strong>96%</strong>
+                  <span class="preview-primary-example-helper">{{
+                    t('tonal_builder.surface_preview.primary_examples.inverse_helper')
+                  }}</span>
+                </div>
+                <span
+                  class="preview-primary-example-rule"
+                  data-surface-role="outline-variant"
+                  data-surface-palette="primary"
+                  :data-surface-tooltip="surfaceTooltip('outline_variant', 'primary')"
+                />
+              </div>
+            </section>
           </div>
 
           <div
@@ -1158,12 +1370,12 @@
         :style="{
           left: `${tooltipPosition.x}px`,
           top: `${tooltipPosition.y}px`,
-          backgroundColor: `var(${hoveredSurfaceCard.cssVariable})`,
+          backgroundColor: hoveredSurfaceCard.hex,
           '--preview-card-text': hoveredSurfaceCard.textHex,
         }"
         data-cy="surface-tooltip"
       >
-        <strong>{{ t(`tonal_builder.surface_preview.roles.${hoveredSurfaceCard.role}`) }}</strong>
+        <strong>{{ roleLabel(hoveredSurfaceCard.role, hoveredSurfaceCard.palette) }}</strong>
         <span>
           {{
             t('tonal_builder.surface_preview.tone_value', {
@@ -1806,7 +2018,8 @@
   }
 
   .preview-reconciliation,
-  .preview-settlement {
+  .preview-settlement,
+  .preview-primary-example {
     border-radius: 4px;
     padding: 12px;
   }
@@ -1817,6 +2030,95 @@
 
   .preview-settlement {
     background: var(--preview-surface-bright);
+  }
+
+  .preview-primary-example {
+    border: 1px solid var(--preview-primary-outline);
+    background: var(--preview-primary-surface-bright);
+    color: var(--preview-primary-on-surface);
+  }
+
+  .preview-primary-example-inverse {
+    border-color: var(--preview-primary-outline);
+    background: var(--preview-primary-inverse-surface);
+    color: var(--preview-primary-on-inverse);
+  }
+
+  .preview-primary-example-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .preview-primary-example-heading > div {
+    display: grid;
+    gap: 3px;
+  }
+
+  .preview-primary-example-eyebrow {
+    color: var(--preview-primary-on-surface-variant);
+    font-size: 8px;
+  }
+
+  .preview-primary-example-inverse .preview-primary-example-eyebrow {
+    color: inherit;
+    opacity: 0.76;
+  }
+
+  .preview-primary-example-heading .preview-primary-example-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .preview-primary-example-status {
+    border: 1px solid var(--preview-primary-outline);
+    border-radius: 999px;
+    padding: 4px 7px;
+    font-size: 8px;
+    font-weight: 700;
+  }
+
+  .preview-primary-example-body {
+    display: flex;
+    min-height: 76px;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    border: 1px solid var(--preview-primary-outline-variant);
+    border-radius: 4px;
+    padding: 12px;
+  }
+
+  .preview-primary-example-inverse .preview-primary-example-body {
+    border-color: var(--preview-primary-outline);
+  }
+
+  .preview-primary-example-body > .preview-primary-example-icon {
+    width: 26px;
+    height: 26px;
+  }
+
+  .preview-primary-example-body > div {
+    display: grid;
+    flex: 1;
+    gap: 3px;
+  }
+
+  .preview-primary-example-helper {
+    color: var(--preview-primary-on-surface-variant);
+    font-size: 8px;
+  }
+
+  .preview-primary-example-inverse .preview-primary-example-helper {
+    color: inherit;
+    opacity: 0.76;
+  }
+
+  .preview-primary-example-rule {
+    width: 42px;
+    height: 1px;
+    background: var(--preview-primary-outline-variant);
   }
 
   .preview-reconciliation .preview-panel-heading,

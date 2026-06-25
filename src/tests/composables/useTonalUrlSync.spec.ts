@@ -151,6 +151,9 @@ describe('useTonalUrlSync', () => {
           surfaceContrast: 'medium',
           lightSurfaceTone: 95,
           darkSurfaceTone: 10,
+          primarySurfaceContrast: 'high',
+          primaryLightSurfaceTone: 98,
+          primaryDarkSurfaceTone: 15,
         },
       }),
     );
@@ -188,6 +191,9 @@ describe('useTonalUrlSync', () => {
           surfaceContrast: 'low',
           lightSurfaceTone: 100,
           darkSurfaceTone: 0,
+          primarySurfaceContrast: 'low',
+          primaryLightSurfaceTone: 100,
+          primaryDarkSurfaceTone: 0,
         },
       }),
     };

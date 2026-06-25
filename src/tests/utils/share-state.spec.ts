@@ -24,6 +24,9 @@ describe('share state codec', () => {
         surfaceContrast: 'low',
         lightSurfaceTone: 100,
         darkSurfaceTone: 0,
+        primarySurfaceContrast: 'low',
+        primaryLightSurfaceTone: 100,
+        primaryDarkSurfaceTone: 0,
       },
     });
 

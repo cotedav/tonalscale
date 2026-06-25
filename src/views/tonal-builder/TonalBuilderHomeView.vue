@@ -243,6 +243,48 @@
     document.querySelector<HTMLButtonElement>(`[data-role-tab="${nextRole}"]`)?.focus();
   };
 
+  const activePreviewContrast = computed({
+    get: () =>
+      activeRole.value === 'primary'
+        ? tonalScale.preview.primarySurfaceContrast
+        : tonalScale.preview.surfaceContrast,
+    set: (value) => {
+      if (activeRole.value === 'primary') {
+        tonalScale.preview.primarySurfaceContrast = value;
+      } else {
+        tonalScale.preview.surfaceContrast = value;
+      }
+    },
+  });
+
+  const activeLightSurfaceTone = computed({
+    get: () =>
+      activeRole.value === 'primary'
+        ? tonalScale.preview.primaryLightSurfaceTone
+        : tonalScale.preview.lightSurfaceTone,
+    set: (value) => {
+      if (activeRole.value === 'primary') {
+        tonalScale.preview.primaryLightSurfaceTone = value;
+      } else {
+        tonalScale.preview.lightSurfaceTone = value;
+      }
+    },
+  });
+
+  const activeDarkSurfaceTone = computed({
+    get: () =>
+      activeRole.value === 'primary'
+        ? tonalScale.preview.primaryDarkSurfaceTone
+        : tonalScale.preview.darkSurfaceTone,
+    set: (value) => {
+      if (activeRole.value === 'primary') {
+        tonalScale.preview.primaryDarkSurfaceTone = value;
+      } else {
+        tonalScale.preview.darkSurfaceTone = value;
+      }
+    },
+  });
+
   watch(activeRole, () => {
     fullStripRef.value?.clearSelection();
     extendedStripRef.value?.clearSelection();
@@ -553,12 +595,25 @@
 
             <MaterialSurfacePreview
               v-model:dark-mode="tonalScale.preview.darkMode"
-              v-model:surface-contrast="tonalScale.preview.surfaceContrast"
-              v-model:light-surface-tone="tonalScale.preview.lightSurfaceTone"
-              v-model:dark-surface-tone="tonalScale.preview.darkSurfaceTone"
+              v-model:surface-contrast="activePreviewContrast"
+              v-model:light-surface-tone="activeLightSurfaceTone"
+              v-model:dark-surface-tone="activeDarkSurfaceTone"
               class="pt-4"
               :tones="surfaceExtendedStrip"
               :primary-tones="primaryExtendedStrip"
+              :active-role="activeRole"
+              :surface-contrast-settings="{
+                surface: tonalScale.preview.surfaceContrast,
+                primary: tonalScale.preview.primarySurfaceContrast,
+              }"
+              :light-surface-tone-settings="{
+                surface: tonalScale.preview.lightSurfaceTone,
+                primary: tonalScale.preview.primaryLightSurfaceTone,
+              }"
+              :dark-surface-tone-settings="{
+                surface: tonalScale.preview.darkSurfaceTone,
+                primary: tonalScale.preview.primaryDarkSurfaceTone,
+              }"
             />
           </section>
         </div>

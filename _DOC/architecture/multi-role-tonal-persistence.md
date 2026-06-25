@@ -17,11 +17,16 @@ type TonalPersistenceState = {
     surfaceContrast: 'low' | 'medium' | 'high';
     lightSurfaceTone: number;
     darkSurfaceTone: number;
+    primarySurfaceContrast: 'low' | 'medium' | 'high';
+    primaryLightSurfaceTone: number;
+    primaryDarkSurfaceTone: number;
   };
 };
 ```
 
-Each role stores its base color, blend color, blend mode, and generation controls. Generated strips and transient UI state are derived and are not serialized.
+Each role stores its base color, blend color, blend mode, generation controls, and independent
+surface-preview mapping settings. Generated strips and transient UI state are derived and are not
+serialized.
 
 URLs compress the JSON document with LZ-string, encode it for URI safety, and store it in a versioned fragment such as `#v2=N4Ig...`. Fragment data is not sent to the server. JSON import/export uses the uncompressed document and the same validation path.
 
