@@ -211,6 +211,10 @@ export default {
         on_surface_variant: 'Variante sur surface',
         outline: 'Contour',
         outline_variant: 'Variante de contour',
+        primary: 'Primaire',
+        on_primary: 'Sur primaire',
+        primary_container: 'Conteneur primaire',
+        on_primary_container: 'Sur conteneur primaire',
       },
       app_name: 'Grand livre',
       navigation: 'Navigation de l apercu',
@@ -324,6 +328,12 @@ export default {
         next: 'Prochain reglement',
         tomorrow: 'Demain',
       },
+    },
+    roles: {
+      tabs_label: 'Editeur de roles de couleur',
+      surface: 'Surface',
+      primary: 'Primaire',
+      base_color_badge: 'Couleur de base {role} : {color}',
     },
     overlays: {
       title: 'Superpositions interactives',

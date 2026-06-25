@@ -9,6 +9,7 @@ This backlog tracks foundational user stories for the new SaaS platform scaffold
 | In Progress | [E1](./E1.md) | SaaS platform foundation epic establishing the PWA scaffold, tooling, and core integrations. |
 | Pending     | [E2](./E2.md) | Observability, analytics, and resilience epic for production-ready instrumentation.          |
 | Pending     | [E3](./E3.md) | Tonal scale builder migration to Vue 3 with Tailwind CSS and Headless UI.                    |
+| Completed   | [E4](./E4.md) | Multi-role tonal system for independent surface and primary gradients.                       |
 
 ## Features
 
@@ -31,6 +32,10 @@ This backlog tracks foundational user stories for the new SaaS platform scaffold
 | Pending     | [E3-F4](./E3-F4.md) | [E3](./E3.md) | Scale visualization and interaction patterns.               |
 | In Progress | [E3-F5](./E3-F5.md) | [E3](./E3.md) | Accessibility helpers, clipboard, and sharing utilities.    |
 | Pending     | [E3-F6](./E3-F6.md) | [E3](./E3.md) | Theming, responsiveness, and UX polish.                     |
+| Completed   | [E4-F1](./E4-F1.md) | [E4](./E4.md) | Role-aware tonal configuration and generation.             |
+| Completed   | [E4-F2](./E4-F2.md) | [E4](./E4.md) | Surface and primary editing tabs.                           |
+| Completed   | [E4-F3](./E4-F3.md) | [E4](./E4.md) | Combined Material role preview.                             |
+| Completed   | [E4-F4](./E4-F4.md) | [E4](./E4.md) | Multi-role URL and import/export persistence.               |
 
 ## Stories
 
@@ -72,3 +77,12 @@ This backlog tracks foundational user stories for the new SaaS platform scaffold
 | Completed | [E3-F5-S2](./E3-F5-S2.md) | [E3-F5](./E3-F5.md) | [E3](./E3.md) | Context menu shortcuts and clipboard exports for colors and SVG.                          |
 | Completed | [E3-F5-S3](./E3-F5-S3.md) | [E3-F5](./E3-F5.md) | [E3](./E3.md) | Import/Export modal and URL synchronization for sharable configurations.                  |
 | Completed | [E3-F6-S1](./E3-F6-S1.md) | [E3-F6](./E3-F6.md) | [E3](./E3.md) | Light/dark theme toggle with persisted preference and animated iconography.               |
+| Completed | [E4-F1-S1](./E4-F1-S1.md) | [E4-F1](./E4-F1.md) | [E4](./E4.md) | Model independent surface and primary tonal configurations.                               |
+| Completed | [E4-F1-S2](./E4-F1-S2.md) | [E4-F1](./E4-F1.md) | [E4](./E4.md) | Generate and retain independent tonal scales for each role.                               |
+| Completed | [E4-F2-S1](./E4-F2-S1.md) | [E4-F2](./E4-F2.md) | [E4](./E4.md) | Add accessible surface and primary toolbar tabs.                                          |
+| Completed | [E4-F2-S2](./E4-F2-S2.md) | [E4-F2](./E4-F2.md) | [E4](./E4.md) | Bind the tonal workspace to the active color role.                                        |
+| Completed | [E4-F3-S1](./E4-F3-S1.md) | [E4-F3](./E4-F3.md) | [E4](./E4.md) | Map the primary gradient to Material primary roles.                                       |
+| Completed | [E4-F3-S2](./E4-F3-S2.md) | [E4-F3](./E4-F3.md) | [E4](./E4.md) | Apply surface and primary roles together in the app preview.                              |
+| Completed | [E4-F4-S1](./E4-F4-S1.md) | [E4-F4](./E4-F4.md) | [E4](./E4.md) | Define a versioned multi-role persistence schema.                                         |
+| Completed | [E4-F4-S2](./E4-F4-S2.md) | [E4-F4](./E4-F4.md) | [E4](./E4.md) | Synchronize both color roles with shareable URLs.                                         |
+| Completed | [E4-F4-S3](./E4-F4-S3.md) | [E4-F4](./E4-F4.md) | [E4](./E4.md) | Import and export complete multi-role configurations.                                     |

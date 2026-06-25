@@ -212,6 +212,10 @@ export default {
         on_surface_variant: 'On surface variant',
         outline: 'Outline',
         outline_variant: 'Outline variant',
+        primary: 'Primary',
+        on_primary: 'On primary',
+        primary_container: 'Primary container',
+        on_primary_container: 'On primary container',
       },
       app_name: 'Ledger',
       navigation: 'Preview navigation',
@@ -325,6 +329,12 @@ export default {
         next: 'Next settlement',
         tomorrow: 'Tomorrow',
       },
+    },
+    roles: {
+      tabs_label: 'Color role editor',
+      surface: 'Surface',
+      primary: 'Primary',
+      base_color_badge: '{role} base color: {color}',
     },
 
     accessibility: {

@@ -21,7 +21,7 @@
     useTonalBuilderEngine,
   } from '@/composables/useTonalBuilderEngine';
   import { useTonalBuilderColors } from '@/composables/useTonalBuilderColors';
-  import { useTonalScaleStore } from '@/stores/tonalScale';
+  import { type TonalColorRole, useTonalScaleStore } from '@/stores/tonalScale';
   import { hexToRgb } from '@/utils/color';
   import type { TonalStep } from '@/utils/tonal/scale';
   import { useClipboard } from '@/composables/useClipboard';
@@ -92,7 +92,16 @@
 
   const tonalScale = useTonalScaleStore();
   useTonalUrlSync(tonalScale);
-  const { blendDistribution, extendedStrip, fullStrip, keyStrip, scale } = storeToRefs(tonalScale);
+  const {
+    activeRole,
+    blendDistribution,
+    extendedStrip,
+    fullStrip,
+    keyStrip,
+    primaryExtendedStrip,
+    scale,
+    surfaceExtendedStrip,
+  } = storeToRefs(tonalScale);
 
   const { baseHex, blendHex, sliderMode, updateBase, updateBlend, setSliderMode } =
     useTonalBuilderColors();
@@ -220,6 +229,28 @@
     previewSelection.value = null;
   };
 
+  const selectColorRole = (role: TonalColorRole) => {
+    tonalScale.setActiveRole(role);
+  };
+
+  const handleRoleTabKeydown = (event: KeyboardEvent, role: TonalColorRole) => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    let nextRole = role;
+    if (event.key === 'ArrowLeft' || event.key === 'Home') nextRole = 'surface';
+    if (event.key === 'ArrowRight' || event.key === 'End') nextRole = 'primary';
+    selectColorRole(nextRole);
+    document.querySelector<HTMLButtonElement>(`[data-role-tab="${nextRole}"]`)?.focus();
+  };
+
+  watch(activeRole, () => {
+    fullStripRef.value?.clearSelection();
+    extendedStripRef.value?.clearSelection();
+    keyStripRef.value?.clearSelection();
+    selectedPreview.value = null;
+    previewSelection.value = null;
+  });
+
   const previewCards = computed(() => {
     const base = previewSelection.value?.base ?? null;
 
@@ -266,7 +297,7 @@
 
     isApplyingLocalState = true;
     try {
-      tonalScale.importState({
+      tonalScale.importRoleState(activeRole.value, {
         colorHex: payload.baseHex,
         blendMode: payload.blendMode,
         blendStrength: isBlendEnabled.value ? payload.strength : 0,
@@ -323,6 +354,7 @@
     // Generate SVG from all 3 strips
     const svg = generateScaleSvg({
       params: tonalScale.scaleParams,
+      metadata: tonalScale.serializedState,
       fullStrip: fullStrip.value,
       extendedStrip: extendedStrip.value,
       keyStrip: keyStrip.value,
@@ -352,9 +384,49 @@
 
     <header
       id="toolbar"
-      class="flex h-[72px] shrink-0 items-center justify-end border-b border-dim bg-surface-soft px-4 sm:px-8"
+      class="flex h-[72px] shrink-0 items-center justify-between gap-4 border-b border-dim bg-surface-soft px-4 sm:px-8"
       :aria-label="t('tonal_builder.actions.toolbar_label')"
     >
+      <div
+        class="flex h-full items-end gap-1"
+        role="tablist"
+        :aria-label="t('tonal_builder.roles.tabs_label')"
+        data-cy="color-role-tabs"
+      >
+        <button
+          v-for="role in ['surface', 'primary'] as TonalColorRole[]"
+          :key="role"
+          type="button"
+          role="tab"
+          class="relative h-12 px-5 text-sm font-semibold text-secondary transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          :class="{ 'text-primary': activeRole === role }"
+          :aria-selected="activeRole === role"
+          :tabindex="activeRole === role ? 0 : -1"
+          :data-role-tab="role"
+          :data-cy="`${role}-role-tab`"
+          @click="selectColorRole(role)"
+          @keydown="handleRoleTabKeydown($event, role)"
+        >
+          <span
+            class="mr-2 inline-block h-3.5 w-3.5 rounded-full border border-dim align-[-2px] shadow-sm"
+            :style="{ backgroundColor: tonalScale.roles[role].state.baseHex }"
+            :aria-label="
+              t('tonal_builder.roles.base_color_badge', {
+                role: t(`tonal_builder.roles.${role}`),
+                color: tonalScale.roles[role].state.baseHex,
+              })
+            "
+            :data-cy="`${role}-role-color-badge`"
+          />
+          {{ t(`tonal_builder.roles.${role}`) }}
+          <span
+            v-if="activeRole === role"
+            class="absolute inset-x-2 bottom-0 h-0.5 bg-accent"
+            aria-hidden="true"
+          />
+        </button>
+      </div>
+
       <div
         class="flex flex-wrap items-center justify-end gap-3"
         :aria-label="t('tonal_builder.actions.actions_label')"
@@ -480,8 +552,13 @@
             </div>
 
             <MaterialSurfacePreview
+              v-model:dark-mode="tonalScale.preview.darkMode"
+              v-model:surface-contrast="tonalScale.preview.surfaceContrast"
+              v-model:light-surface-tone="tonalScale.preview.lightSurfaceTone"
+              v-model:dark-surface-tone="tonalScale.preview.darkSurfaceTone"
               class="pt-4"
-              :tones="extendedStrip"
+              :tones="surfaceExtendedStrip"
+              :primary-tones="primaryExtendedStrip"
             />
           </section>
         </div>

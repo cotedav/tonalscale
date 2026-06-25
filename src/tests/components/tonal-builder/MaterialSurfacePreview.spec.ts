@@ -53,7 +53,7 @@ describe('MaterialSurfacePreview', () => {
     expect(wrapper.findAll('.preview-table-row')).toHaveLength(7);
 
     const surfaceCards = wrapper.findAll('[data-surface-card]');
-    expect(surfaceCards).toHaveLength(13);
+    expect(surfaceCards).toHaveLength(17);
     expect(wrapper.get('[data-surface-card="surface"]').text()).toContain('Tone 100');
     expect(wrapper.get('[data-surface-card="surface"]').text()).toContain(toneHex(tones, 100));
     expect(wrapper.get('[data-surface-card="container"]').text()).toContain('Tone 95');
@@ -278,5 +278,35 @@ describe('MaterialSurfacePreview', () => {
     });
     expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Outline variant');
     expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 80');
+  });
+
+  it('maps an independent primary scale into primary preview roles', async () => {
+    const surfaceTones = buildTones('11');
+    const primaryTones = buildTones('aa');
+    const wrapper = mount(MaterialSurfacePreview, {
+      props: { tones: surfaceTones, primaryTones },
+    });
+    const shell = wrapper.get('[data-cy="surface-preview-shell"]');
+
+    expect(shell.attributes('style')).toContain(`--preview-primary: ${toneHex(primaryTones, 40)}`);
+    expect(shell.attributes('style')).toContain(
+      `--preview-primary-container: ${toneHex(primaryTones, 90)}`,
+    );
+    expect(wrapper.get('[data-surface-card="primary"]').text()).toContain(
+      toneHex(primaryTones, 40),
+    );
+
+    await wrapper.get('[data-surface-role="primary-container"]').trigger('pointermove', {
+      clientX: 200,
+      clientY: 300,
+    });
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Primary container');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 90');
+
+    await wrapper.get('[data-cy="surface-preview-dark-mode"]').setValue(true);
+    expect(shell.attributes('style')).toContain(`--preview-primary: ${toneHex(primaryTones, 80)}`);
+    expect(shell.attributes('style')).toContain(
+      `--preview-primary-container: ${toneHex(primaryTones, 30)}`,
+    );
   });
 });

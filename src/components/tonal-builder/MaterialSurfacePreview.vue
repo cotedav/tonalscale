@@ -17,10 +17,12 @@
   import { useI18n } from 'vue-i18n';
 
   import BaseSwitch from '@/components/common/BaseSwitch.vue';
+  import type { SurfaceContrast } from '@/stores/tonalScale';
   import type { TonalStep } from '@/utils/tonal/scale';
 
   const props = defineProps<{
     tones: TonalStep[];
+    primaryTones?: TonalStep[];
   }>();
 
   type SurfaceRole =
@@ -36,15 +38,21 @@
     | 'on_surface'
     | 'on_surface_variant'
     | 'outline'
-    | 'outline_variant';
-
-  type SurfaceContrast = 'low' | 'medium' | 'high';
+    | 'outline_variant'
+    | 'primary'
+    | 'on_primary'
+    | 'primary_container'
+    | 'on_primary_container';
+  type SurfaceToneRole = Exclude<
+    SurfaceRole,
+    'primary' | 'on_primary' | 'primary_container' | 'on_primary_container'
+  >;
 
   const { t } = useI18n();
-  const isDarkMode = ref(false);
-  const surfaceContrast = ref<SurfaceContrast>('low');
-  const lightSurfaceTone = ref(100);
-  const darkSurfaceTone = ref(0);
+  const isDarkMode = defineModel<boolean>('darkMode', { default: false });
+  const surfaceContrast = defineModel<SurfaceContrast>('surfaceContrast', { default: 'low' });
+  const lightSurfaceTone = defineModel<number>('lightSurfaceTone', { default: 100 });
+  const darkSurfaceTone = defineModel<number>('darkSurfaceTone', { default: 0 });
   const shellRef = ref<HTMLElement | null>(null);
   const hoveredSurfaceRole = ref<SurfaceRole | null>(null);
   const tooltipPosition = ref({ x: 0, y: 0 });
@@ -60,9 +68,27 @@
 
   const toneAt = (index: number, fallback: string) =>
     props.tones.find((tone) => tone.index === index)?.hex ?? fallback;
+  const primaryToneAt = (index: number, fallback: string) =>
+    (props.primaryTones ?? props.tones).find((tone) => tone.index === index)?.hex ?? fallback;
 
-  const baseSurfaceTones = computed<Record<SurfaceRole, number>>(() => {
-    const lightMappings: Record<SurfaceContrast, Record<SurfaceRole, number>> = {
+  const primaryRoleTones = computed(() =>
+    isDarkMode.value
+      ? {
+          primary: 80,
+          on_primary: 20,
+          primary_container: 30,
+          on_primary_container: 90,
+        }
+      : {
+          primary: 40,
+          on_primary: 100,
+          primary_container: 90,
+          on_primary_container: 10,
+        },
+  );
+
+  const baseSurfaceTones = computed<Record<SurfaceToneRole, number>>(() => {
+    const lightMappings: Record<SurfaceContrast, Record<SurfaceToneRole, number>> = {
       low: {
         surface: 100,
         surface_bright: 100,
@@ -109,7 +135,7 @@
         outline_variant: 80,
       },
     };
-    const darkMappings: Record<SurfaceContrast, Record<SurfaceRole, number>> = {
+    const darkMappings: Record<SurfaceContrast, Record<SurfaceToneRole, number>> = {
       low: {
         surface: 0,
         surface_bright: 100,
@@ -179,14 +205,14 @@
     }
   };
 
-  const surfaceTones = computed<Record<SurfaceRole, number>>(() => {
+  const surfaceTones = computed<Record<SurfaceToneRole, number>>(() => {
     const baseTones = baseSurfaceTones.value;
     const indices = availableToneIndices.value;
     const defaultSurfaceTone = isDarkMode.value ? 0 : 100;
     const defaultIndex = indices.indexOf(defaultSurfaceTone);
     const selectedIndex = indices.indexOf(activeSurfaceTone.value);
     const shift = selectedIndex - defaultIndex;
-    const shiftedRoles: SurfaceRole[] = [
+    const shiftedRoles: SurfaceToneRole[] = [
       'surface',
       'container_lowest',
       'container_low',
@@ -201,14 +227,14 @@
 
     const shiftedTones = Object.fromEntries(
       Object.entries(baseTones).map(([role, tone]) => {
-        if (!shiftedRoles.includes(role as SurfaceRole)) return [role, tone];
+        if (!shiftedRoles.includes(role as SurfaceToneRole)) return [role, tone];
 
         const toneIndex = indices.indexOf(tone);
         const shiftedIndex = Math.min(Math.max(toneIndex + shift, 0), indices.length - 1);
 
         return [role, indices[shiftedIndex] ?? tone];
       }),
-    ) as Record<SurfaceRole, number>;
+    ) as Record<SurfaceToneRole, number>;
 
     const surfaceFamilyTones = [
       shiftedTones.surface,
@@ -251,8 +277,16 @@
           '--preview-on-inverse': toneAt(20, '#333333'),
           '--preview-outline': toneAt(tones.outline, '#999999'),
           '--preview-outline-variant': toneAt(tones.outline_variant, '#4d4d4d'),
-          '--preview-primary': toneAt(80, '#cccccc'),
-          '--preview-on-primary': toneAt(20, '#333333'),
+          '--preview-primary': primaryToneAt(primaryRoleTones.value.primary, '#cccccc'),
+          '--preview-on-primary': primaryToneAt(primaryRoleTones.value.on_primary, '#333333'),
+          '--preview-primary-container': primaryToneAt(
+            primaryRoleTones.value.primary_container,
+            '#4f378b',
+          ),
+          '--preview-on-primary-container': primaryToneAt(
+            primaryRoleTones.value.on_primary_container,
+            '#eaddff',
+          ),
         }
       : {
           '--preview-surface': toneAt(tones.surface, '#fafafa'),
@@ -269,15 +303,26 @@
           '--preview-on-inverse': toneAt(98, '#fafafa'),
           '--preview-outline': toneAt(tones.outline, '#7f7f7f'),
           '--preview-outline-variant': toneAt(tones.outline_variant, '#cccccc'),
-          '--preview-primary': toneAt(40, '#666666'),
-          '--preview-on-primary': toneAt(100, '#ffffff'),
+          '--preview-primary': primaryToneAt(primaryRoleTones.value.primary, '#6750a4'),
+          '--preview-on-primary': primaryToneAt(primaryRoleTones.value.on_primary, '#ffffff'),
+          '--preview-primary-container': primaryToneAt(
+            primaryRoleTones.value.primary_container,
+            '#eaddff',
+          ),
+          '--preview-on-primary-container': primaryToneAt(
+            primaryRoleTones.value.on_primary_container,
+            '#21005d',
+          ),
         };
   });
 
   const surfaceTooltip = (role: SurfaceRole) =>
     t('tonal_builder.surface_preview.surface_tooltip', {
       role: t(`tonal_builder.surface_preview.roles.${role}`),
-      tone: surfaceTones.value[role],
+      tone:
+        role in primaryRoleTones.value
+          ? primaryRoleTones.value[role as keyof typeof primaryRoleTones.value]
+          : surfaceTones.value[role as SurfaceToneRole],
     });
 
   const surfaceCards = computed(() => {
@@ -295,16 +340,23 @@
       { role: 'on_surface_variant', cssVariable: '--preview-on-surface-variant' },
       { role: 'outline', cssVariable: '--preview-outline' },
       { role: 'outline_variant', cssVariable: '--preview-outline-variant' },
+      { role: 'primary', cssVariable: '--preview-primary' },
+      { role: 'on_primary', cssVariable: '--preview-on-primary' },
+      { role: 'primary_container', cssVariable: '--preview-primary-container' },
+      { role: 'on_primary_container', cssVariable: '--preview-on-primary-container' },
     ];
 
     return roles.map(({ role, cssVariable }) => {
-      const tone = surfaceTones.value[role];
+      const isPrimaryRole = role in primaryRoleTones.value;
+      const tone = isPrimaryRole
+        ? primaryRoleTones.value[role as keyof typeof primaryRoleTones.value]
+        : surfaceTones.value[role as SurfaceToneRole];
 
       return {
         role,
         cssVariable,
         tone,
-        hex: toneAt(tone, '#000000'),
+        hex: isPrimaryRole ? primaryToneAt(tone, '#000000') : toneAt(tone, '#000000'),
         textHex: toneAt(tone >= 60 ? 10 : 90, tone >= 60 ? '#1a1a1a' : '#e5e5e5'),
       };
     });
@@ -328,6 +380,10 @@
     'on-surface-variant': 'on_surface_variant',
     outline: 'outline',
     'outline-variant': 'outline_variant',
+    primary: 'primary',
+    'on-primary': 'on_primary',
+    'primary-container': 'primary_container',
+    'on-primary-container': 'on_primary_container',
   };
 
   const handleSurfacePointerMove = (event: PointerEvent) => {
@@ -582,7 +638,12 @@
         :data-surface-tooltip="surfaceTooltip('container_low')"
       >
         <div class="preview-brand">
-          <span class="preview-brand-mark">TS</span>
+          <span
+            class="preview-brand-mark"
+            data-surface-role="primary"
+            :data-surface-tooltip="surfaceTooltip('primary')"
+            >TS</span
+          >
           <span
             data-surface-role="on-surface"
             :data-surface-tooltip="surfaceTooltip('on_surface')"
@@ -596,9 +657,12 @@
         >
           <span>{{ t('tonal_builder.surface_preview.nav.dashboard') }}</span>
           <span>{{ t('tonal_builder.surface_preview.nav.orders') }}</span>
-          <span class="preview-nav-active">{{
-            t('tonal_builder.surface_preview.nav.billing')
-          }}</span>
+          <span
+            class="preview-nav-active"
+            data-surface-role="primary"
+            :data-surface-tooltip="surfaceTooltip('primary')"
+            >{{ t('tonal_builder.surface_preview.nav.billing') }}</span
+          >
         </nav>
 
         <div class="preview-profile">
@@ -627,7 +691,11 @@
             {{ t('tonal_builder.surface_preview.heading') }}
           </h3>
         </div>
-        <button type="button">
+        <button
+          type="button"
+          data-surface-role="primary"
+          :data-surface-tooltip="surfaceTooltip('primary')"
+        >
           <PlusIcon aria-hidden="true" />
           {{ t('tonal_builder.surface_preview.actions.add') }}
         </button>
@@ -724,7 +792,11 @@
 
           <div class="preview-filter-section">
             <span>{{ t('tonal_builder.surface_preview.filters.active') }}</span>
-            <div class="preview-filter-chips">
+            <div
+              class="preview-filter-chips"
+              data-surface-role="primary-container"
+              :data-surface-tooltip="surfaceTooltip('primary_container')"
+            >
               <span>{{ t('tonal_builder.surface_preview.status.review') }}</span>
               <span>{{ t('tonal_builder.surface_preview.filters.high_value') }}</span>
             </div>
@@ -1571,11 +1643,11 @@
   }
 
   .preview-filter-chips span {
-    border: 1px solid var(--preview-outline);
+    border: 1px solid var(--preview-primary);
     border-radius: 999px;
     padding: 4px 7px;
-    background: var(--preview-surface-container-low);
-    color: var(--preview-on-surface);
+    background: var(--preview-primary-container);
+    color: var(--preview-on-primary-container);
     font-size: 8px;
   }
 

@@ -78,7 +78,8 @@ describe('TheImportExportModal', () => {
 
     const textarea = wrapper.find('textarea');
     expect(textarea.exists()).toBe(true);
-    expect(textarea.element.value).toContain('"colorHex":"#123456"');
+    expect(textarea.element.value).toContain('"baseHex":"#123456"');
+    expect(textarea.element.value).toContain('"primary"');
   });
 
   it('calls importState with new JSON when Import button is clicked', async () => {

@@ -1,17 +1,47 @@
-import { onMounted, watch } from 'vue';
+import { useEventListener } from '@vueuse/core';
+import { onBeforeUnmount, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import type { useTonalScaleStore } from '@/stores/tonalScale';
+import { decodeShareState, encodeShareState } from '@/utils/tonal/share-state';
 
 export default function useTonalUrlSync(store: ReturnType<typeof useTonalScaleStore>) {
   const route = useRoute();
   const router = useRouter();
+  const idleDelay = 400;
+  let pendingState: string | null = null;
+  let updateTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const clearUpdateTimer = () => {
+    if (updateTimer === null) return;
+    clearTimeout(updateTimer);
+    updateTimer = null;
+  };
+
+  const flushUrlUpdate = () => {
+    if (!pendingState) return;
+    clearUpdateTimer();
+    const serializedState = pendingState;
+    pendingState = null;
+    router.replace({ query: {}, hash: encodeShareState(serializedState) }).catch(() => undefined);
+  };
+
+  const scheduleUrlUpdate = (serializedState: string) => {
+    pendingState = serializedState;
+    clearUpdateTimer();
+    updateTimer = setTimeout(flushUrlUpdate, idleDelay);
+  };
 
   // Restore state from URL on mount
   onMounted(() => {
+    const hashState = decodeShareState(route.hash);
+    if (hashState && store.importState(hashState)) return;
+
     const { query } = route;
     if (Object.keys(query).length === 0) return;
 
-    // Convert query params (string | null | (string | null)[]) to simple object for importState
+    const encodedState = Array.isArray(query.config) ? query.config[0] : query.config;
+    if (typeof encodedState === 'string' && store.importState(encodedState)) return;
+
     const payload: Record<string, unknown> = {};
 
     Object.keys(query).forEach((key) => {
@@ -30,23 +60,13 @@ export default function useTonalUrlSync(store: ReturnType<typeof useTonalScaleSt
 
   // Sync state to URL
   watch(
-    () => store.scaleParams,
-    (params) => {
-      const query: Record<string, string> = {};
-
-      query.colorHex = params.colorHex.replace('#', '');
-      query.blendMode = params.blendMode;
-      query.blendStrength = String(params.blendStrength);
-      query.blendR = String(params.blendR);
-      query.blendG = String(params.blendG);
-      query.blendB = String(params.blendB);
-      query.middle = String(params.middle);
-      query.spread = String(params.spread);
-      query.satDarker = String(params.satDarker);
-      query.satLighter = String(params.satLighter);
-
-      router.replace({ query });
+    () => store.serializedState,
+    (serializedState) => {
+      scheduleUrlUpdate(serializedState);
     },
-    { deep: true },
+    { flush: 'post' },
   );
+
+  useEventListener(window, ['pointerup', 'pointercancel', 'touchend', 'change'], flushUrlUpdate);
+  onBeforeUnmount(clearUpdateTimer);
 }

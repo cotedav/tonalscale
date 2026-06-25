@@ -55,6 +55,14 @@ describe('TonalBuilderHomeView', () => {
       '--controls-panel-width: 500px',
     );
     expect(wrapper.find('[data-cy="controls-resize-handle"]').exists()).toBe(true);
+    expect(wrapper.get('[data-cy="surface-role-tab"]').attributes('aria-selected')).toBe('true');
+    expect(wrapper.get('[data-cy="primary-role-tab"]').attributes('aria-selected')).toBe('false');
+    expect(wrapper.get('[data-cy="surface-role-color-badge"]').attributes('aria-label')).toContain(
+      '#8000ff',
+    );
+    expect(wrapper.get('[data-cy="primary-role-color-badge"]').attributes('aria-label')).toContain(
+      '#6750a4',
+    );
 
     expect(wrapper.findAll('#gradient-controls [type="range"]').length).toBe(5);
     expect(wrapper.findAll('#gradient-controls [data-cy$="-value"]').length).toBe(5);
@@ -62,8 +70,66 @@ describe('TonalBuilderHomeView', () => {
     const fullStrip = wrapper.get('[data-cy="scale-strip-full"]');
     expect(fullStrip.findAll('[data-cy="tonal-swatch"]').length).toBeGreaterThan(0);
     expect(wrapper.getComponent(MaterialSurfacePreview).props('tones')).toEqual(
-      useTonalScaleStore().extendedStrip,
+      useTonalScaleStore().surfaceExtendedStrip,
     );
+    expect(wrapper.getComponent(MaterialSurfacePreview).props('primaryTones')).toEqual(
+      useTonalScaleStore().primaryExtendedStrip,
+    );
+  });
+
+  it('switches between independent surface and primary workspaces', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const store = useTonalScaleStore();
+    store.importState({
+      version: 2,
+      activeRole: 'surface',
+      roles: {
+        surface: {
+          baseHex: '#123456',
+          blendHex: '#000032',
+          blendMode: 'colordodge',
+          controls: { strength: 0, middle: 0, spread: 50, satDarker: 0, satLighter: 0 },
+        },
+        primary: {
+          baseHex: '#abcdef',
+          blendHex: '#112233',
+          blendMode: 'multiply',
+          controls: { strength: 25, middle: 10, spread: 60, satDarker: 5, satLighter: 7 },
+        },
+      },
+      preview: {
+        darkMode: false,
+        surfaceContrast: 'low',
+        lightSurfaceTone: 100,
+        darkSurfaceTone: 0,
+      },
+    });
+
+    const wrapper = mount(TonalBuilderHomeView, {
+      global: { plugins: [pinia] },
+    });
+
+    expect(wrapper.get('#baseColorPickerInput').text()).toContain('#123456');
+    expect(wrapper.get('[data-cy="surface-role-color-badge"]').attributes('aria-label')).toContain(
+      '#123456',
+    );
+    expect(wrapper.get('[data-cy="primary-role-color-badge"]').attributes('aria-label')).toContain(
+      '#abcdef',
+    );
+    await wrapper.get('[data-cy="primary-role-tab"]').trigger('click');
+    await nextTick();
+
+    expect(store.activeRole).toBe('primary');
+    expect(wrapper.get('#baseColorPickerInput').text()).toContain('#abcdef');
+    expect((wrapper.get('#blendmode').element as HTMLSelectElement).value).toBe('multiply');
+    expect((wrapper.get('[data-cy="strength-value"]').element as HTMLInputElement).value).toBe(
+      '25',
+    );
+
+    await wrapper.get('[data-cy="surface-role-tab"]').trigger('click');
+    await nextTick();
+    expect(wrapper.get('#baseColorPickerInput').text()).toContain('#123456');
   });
 
   it('resizes the color controls panel with the split-pane handle', async () => {

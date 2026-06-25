@@ -1,4 +1,4 @@
-import { computed, nextTick, reactive, ref, watch } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import { defineStore } from 'pinia';
 
 import type { BlendControlId } from '@/composables/useTonalBuilderControls';
@@ -22,6 +22,9 @@ export const KEY_SCALE_INDICES = [
   0, 10, 20, 25, 30, 35, 40, 50, 60, 70, 80, 90, 95, 98, 99, 100,
 ] as const;
 
+export type TonalColorRole = 'surface' | 'primary';
+export type SurfaceContrast = 'low' | 'medium' | 'high';
+
 export type ContrastCandidate = { index: number; hex: string; ratio: number };
 
 export type ToneMetadata = {
@@ -38,7 +41,33 @@ export type BlendDistribution = {
   lineColor: string;
 };
 
+export type RoleTonalState = {
+  baseHex: string;
+  blendHex: string;
+  blendMode: BlendMode;
+  controls: {
+    strength: number;
+    middle: number;
+    spread: number;
+    satDarker: number;
+    satLighter: number;
+  };
+};
+
+export type TonalPersistenceState = {
+  version: 2;
+  activeRole: TonalColorRole;
+  roles: Record<TonalColorRole, RoleTonalState>;
+  preview: {
+    darkMode: boolean;
+    surfaceContrast: SurfaceContrast;
+    lightSurfaceTone: number;
+    darkSurfaceTone: number;
+  };
+};
+
 export type TonalScaleSnapshot = {
+  role: TonalColorRole;
   params: TonalScaleParams;
   baseHex: string;
   blendHex: string;
@@ -51,23 +80,66 @@ export type TonalScaleSnapshot = {
   blendDistribution: BlendDistribution | null;
 };
 
-const DEFAULT_BASE_HEX = '#8000ff';
-const DEFAULT_BLEND_HEX = '#000032';
-
-const DEFAULT_PARAMS: TonalScaleParams = {
-  colorHex: DEFAULT_BASE_HEX,
-  blendMode: 'colordodge',
-  blendStrength: 0,
-  blendR: 0,
-  blendG: 0,
-  blendB: 50,
-  middle: 0,
-  spread: 50,
-  satDarker: 0,
-  satLighter: 0,
+type RoleRuntime = {
+  state: RoleTonalState;
+  scale: TonalScale;
+  metadata: ToneMetadata[];
 };
 
-const serializeParams = (params: TonalScaleParams): string => JSON.stringify(params);
+const DEFAULT_ROLE_STATES: Record<TonalColorRole, RoleTonalState> = {
+  surface: {
+    baseHex: '#8000ff',
+    blendHex: '#000032',
+    blendMode: 'colordodge',
+    controls: {
+      strength: 0,
+      middle: 0,
+      spread: 50,
+      satDarker: 0,
+      satLighter: 0,
+    },
+  },
+  primary: {
+    baseHex: '#6750a4',
+    blendHex: '#000032',
+    blendMode: 'colordodge',
+    controls: {
+      strength: 0,
+      middle: 0,
+      spread: 50,
+      satDarker: 0,
+      satLighter: 0,
+    },
+  },
+};
+
+const DEFAULT_PREVIEW_STATE: TonalPersistenceState['preview'] = {
+  darkMode: false,
+  surfaceContrast: 'low',
+  lightSurfaceTone: 100,
+  darkSurfaceTone: 0,
+};
+
+const cloneRoleState = (state: RoleTonalState): RoleTonalState => ({
+  ...state,
+  controls: { ...state.controls },
+});
+
+const roleStateToParams = (state: RoleTonalState): TonalScaleParams => {
+  const blend = hexToRgb(state.blendHex);
+  return {
+    colorHex: state.baseHex,
+    blendMode: state.blendMode,
+    blendStrength: state.controls.strength,
+    blendR: blend.r,
+    blendG: blend.g,
+    blendB: blend.b,
+    middle: state.controls.middle,
+    spread: state.controls.spread,
+    satDarker: state.controls.satDarker,
+    satLighter: state.controls.satLighter,
+  };
+};
 
 const clampControl = (id: BlendControlId, value: number): number => {
   switch (id) {
@@ -76,9 +148,7 @@ const clampControl = (id: BlendControlId, value: number): number => {
     case 'middle':
       return clamp(value, -50, 50);
     case 'spread':
-      return clamp(value, 0, 100);
     case 'satDarker':
-      return clamp(value, 0, 100);
     case 'satLighter':
       return clamp(value, 0, 100);
     default:
@@ -94,7 +164,6 @@ const findClosestCandidate = (
 ): ContrastCandidate | null => {
   const step = scale[index];
   if (!step) return null;
-
   const increment = direction === 'lighter' ? 1 : -1;
 
   for (let cursor = index + increment; cursor >= 0 && cursor < scale.length; cursor += increment) {
@@ -104,7 +173,6 @@ const findClosestCandidate = (
       return { index: candidate.index, hex: candidate.hex, ratio: candidateRatio };
     }
   }
-
   return null;
 };
 
@@ -126,10 +194,11 @@ const includeBaseIndex = (
   indices: readonly number[],
   scale: TonalStep[],
   baseIndex: number,
-): TonalStep[] => {
-  const combined = Array.from(new Set([...indices, baseIndex])).sort((a, b) => a - b);
-  return pickIndices(combined, scale);
-};
+): TonalStep[] =>
+  pickIndices(
+    Array.from(new Set([...indices, baseIndex])).sort((a, b) => a - b),
+    scale,
+  );
 
 const pickLineColor = (scale: TonalScale): string => {
   const probeIndex = Math.max(
@@ -137,240 +206,365 @@ const pickLineColor = (scale: TonalScale): string => {
     Math.min(scale.colorScale.length - 1, Math.round(scale.luminance / 2)),
   );
   const probe = scale.colorScale[probeIndex]?.hex ?? '#e2e8f0';
-
   const { r, g, b } = hexToRgb(probe);
   return rgbToHex({ r: 255 - r, g: 255 - g, b: 255 - b });
 };
 
 const buildBlendDistribution = (
   params: TonalScaleParams,
-  nextScale: TonalScale,
+  scale: TonalScale,
 ): BlendDistribution | null => {
   const curve = getIntensityCurve((params.middle + 50) / 100, params.spread / 100);
-
   const x: number[] = [];
   const y: number[] = [];
-  const luminanceRange = Math.max(1, nextScale.luminance - 1);
+  const luminanceRange = Math.max(1, scale.luminance - 1);
 
-  for (let i = 0; i < nextScale.luminance; i += 1) {
-    x.push(i);
-    y.push(getIntensity(curve, i, luminanceRange));
+  for (let index = 0; index < scale.luminance; index += 1) {
+    x.push(index);
+    y.push(getIntensity(curve, index, luminanceRange));
   }
 
   return {
     curve: { x, y },
-    widthPercent: Math.max(0, nextScale.luminance - 1),
-    lineColor: pickLineColor(nextScale),
+    widthPercent: Math.max(0, scale.luminance - 1),
+    lineColor: pickLineColor(scale),
+  };
+};
+
+const normalizeRoleState = (
+  input: Partial<RoleTonalState> | Partial<TonalScaleParams> | undefined,
+  fallback: RoleTonalState,
+): RoleTonalState => {
+  const source = input ?? {};
+  const legacySource = source as Partial<TonalScaleParams>;
+  const { blendStrength: legacyBlendStrength } = legacySource;
+  const controls: Partial<RoleTonalState['controls']> =
+    'controls' in source && source.controls ? source.controls : {};
+  const { baseHex: fallbackBaseHex, controls: fallbackControls } = fallback;
+  const { strength: fallbackStrength } = fallbackControls;
+  const { strength: controlStrength } = controls;
+  const blendRgb = hexToRgb(fallback.blendHex);
+  const blendHex =
+    'blendHex' in source && isValidHex(String(source.blendHex))
+      ? normalizeHex(String(source.blendHex))
+      : normalizeHex(
+          `#${[
+            clamp(Number('blendR' in source ? source.blendR : blendRgb.r), 0, 255),
+            clamp(Number('blendG' in source ? source.blendG : blendRgb.g), 0, 255),
+            clamp(Number('blendB' in source ? source.blendB : blendRgb.b), 0, 255),
+          ]
+            .map((channel) => channel.toString(16).padStart(2, '0'))
+            .join('')}`,
+        );
+  let baseHex = fallbackBaseHex;
+  if ('baseHex' in source && isValidHex(String(source.baseHex))) {
+    baseHex = normalizeHex(String(source.baseHex));
+  } else if ('colorHex' in source && isValidHex(String(source.colorHex))) {
+    baseHex = normalizeHex(String(source.colorHex));
+  }
+  let strength = fallbackStrength;
+  if (controlStrength !== undefined) {
+    strength = Number(controlStrength);
+  } else if (legacyBlendStrength !== undefined) {
+    strength = Number(legacyBlendStrength);
+  }
+
+  return {
+    baseHex,
+    blendHex,
+    blendMode:
+      'blendMode' in source && BLEND_MODES.has(source.blendMode as BlendMode)
+        ? (source.blendMode as BlendMode)
+        : fallback.blendMode,
+    controls: {
+      strength: clampControl('strength', strength),
+      middle: clampControl(
+        'middle',
+        Number(
+          'middle' in controls
+            ? controls.middle
+            : (legacySource.middle ?? fallback.controls.middle),
+        ),
+      ),
+      spread: clampControl(
+        'spread',
+        Number(
+          'spread' in controls
+            ? controls.spread
+            : (legacySource.spread ?? fallback.controls.spread),
+        ),
+      ),
+      satDarker: clampControl(
+        'satDarker',
+        Number(
+          'satDarker' in controls
+            ? controls.satDarker
+            : (legacySource.satDarker ?? fallback.controls.satDarker),
+        ),
+      ),
+      satLighter: clampControl(
+        'satLighter',
+        Number(
+          'satLighter' in controls
+            ? controls.satLighter
+            : (legacySource.satLighter ?? fallback.controls.satLighter),
+        ),
+      ),
+    },
+  };
+};
+
+const parsePersistenceState = (payload: unknown): TonalPersistenceState | null => {
+  const parsed = (() => {
+    if (typeof payload !== 'string') return payload;
+    try {
+      return JSON.parse(payload);
+    } catch {
+      return null;
+    }
+  })();
+  if (!parsed || typeof parsed !== 'object') return null;
+
+  const input = parsed as Record<string, unknown>;
+  if (input.version !== undefined && Number(input.version) !== 2) return null;
+
+  if (input.roles && typeof input.roles === 'object') {
+    const roles = input.roles as Partial<Record<TonalColorRole, Partial<RoleTonalState>>>;
+    const previewInput =
+      input.preview && typeof input.preview === 'object'
+        ? (input.preview as Partial<TonalPersistenceState['preview']>)
+        : {};
+    const activeRole: TonalColorRole = input.activeRole === 'primary' ? 'primary' : 'surface';
+    const surfaceContrast: SurfaceContrast = ['low', 'medium', 'high'].includes(
+      String(previewInput.surfaceContrast),
+    )
+      ? (previewInput.surfaceContrast as SurfaceContrast)
+      : DEFAULT_PREVIEW_STATE.surfaceContrast;
+
+    return {
+      version: 2,
+      activeRole,
+      roles: {
+        surface: normalizeRoleState(roles.surface, DEFAULT_ROLE_STATES.surface),
+        primary: normalizeRoleState(roles.primary, DEFAULT_ROLE_STATES.primary),
+      },
+      preview: {
+        darkMode: Boolean(previewInput.darkMode),
+        surfaceContrast,
+        lightSurfaceTone: clamp(
+          Number(previewInput.lightSurfaceTone ?? DEFAULT_PREVIEW_STATE.lightSurfaceTone),
+          80,
+          100,
+        ),
+        darkSurfaceTone: clamp(
+          Number(previewInput.darkSurfaceTone ?? DEFAULT_PREVIEW_STATE.darkSurfaceTone),
+          0,
+          25,
+        ),
+      },
+    };
+  }
+
+  return {
+    version: 2,
+    activeRole: 'surface',
+    roles: {
+      surface: normalizeRoleState(input as Partial<TonalScaleParams>, DEFAULT_ROLE_STATES.surface),
+      primary: cloneRoleState(DEFAULT_ROLE_STATES.primary),
+    },
+    preview: { ...DEFAULT_PREVIEW_STATE },
   };
 };
 
 export const useTonalScaleStore = defineStore('tonalScale', () => {
-  const baseHex = ref<string>(normalizeHex(DEFAULT_BASE_HEX));
-  const blendHex = ref<string>(normalizeHex(DEFAULT_BLEND_HEX));
-  const blendMode = ref<BlendMode>(DEFAULT_PARAMS.blendMode);
-  const controls = reactive({
-    strength: DEFAULT_PARAMS.blendStrength,
-    middle: DEFAULT_PARAMS.middle,
-    spread: DEFAULT_PARAMS.spread,
-    satDarker: DEFAULT_PARAMS.satDarker,
-    satLighter: DEFAULT_PARAMS.satLighter,
+  const activeRole = ref<TonalColorRole>('surface');
+  const preview = reactive({ ...DEFAULT_PREVIEW_STATE });
+  const roles = reactive<Record<TonalColorRole, RoleRuntime>>({
+    surface: {
+      state: cloneRoleState(DEFAULT_ROLE_STATES.surface),
+      scale: generateTonalScale(roleStateToParams(DEFAULT_ROLE_STATES.surface)),
+      metadata: [],
+    },
+    primary: {
+      state: cloneRoleState(DEFAULT_ROLE_STATES.primary),
+      scale: generateTonalScale(roleStateToParams(DEFAULT_ROLE_STATES.primary)),
+      metadata: [],
+    },
   });
-
-  const scale = ref<TonalScale>(generateTonalScale(DEFAULT_PARAMS));
-  const metadata = ref<ToneMetadata[]>(buildMetadata(scale.value.colorScale));
-  let suppressWatchRefresh = false;
-  let pendingRefresh: number | null = null;
-
-  const scaleParams = computed<TonalScaleParams>(() => {
-    const blendRgb = hexToRgb(blendHex.value);
-
-    return {
-      colorHex: baseHex.value,
-      blendMode: blendMode.value,
-      blendStrength: controls.strength,
-      blendR: blendRgb.r,
-      blendG: blendRgb.g,
-      blendB: blendRgb.b,
-      middle: controls.middle,
-      spread: controls.spread,
-      satDarker: controls.satDarker,
-      satLighter: controls.satLighter,
-    };
-  });
-
-  const baseIndex = computed(() => scale.value.luminance);
-  const fullStrip = computed(() => scale.value.colorScale);
-  const extendedStrip = computed(() =>
-    includeBaseIndex(EXTENDED_SCALE_INDICES, scale.value.colorScale, baseIndex.value),
-  );
-  const keyStrip = computed(() =>
-    includeBaseIndex(KEY_SCALE_INDICES, scale.value.colorScale, baseIndex.value),
-  );
-  const serializedParams = computed(() => serializeParams(scaleParams.value));
-  const blendDistribution = computed(() => buildBlendDistribution(scaleParams.value, scale.value));
+  roles.surface.metadata = buildMetadata(roles.surface.scale.colorScale);
+  roles.primary.metadata = buildMetadata(roles.primary.scale.colorScale);
 
   const listeners = new Set<(snapshot: TonalScaleSnapshot) => void>();
+  const pendingRefreshes: Partial<Record<TonalColorRole, number>> = {};
+  let suppressRefresh = false;
 
-  const broadcast = () => {
-    const snapshot: TonalScaleSnapshot = {
-      params: scaleParams.value,
-      baseHex: baseHex.value,
-      blendHex: blendHex.value,
-      scale: scale.value,
-      fullStrip: fullStrip.value,
-      extendedStrip: extendedStrip.value,
-      keyStrip: keyStrip.value,
-      metadata: metadata.value,
-      serializedParams: serializedParams.value,
-      blendDistribution: blendDistribution.value,
+  const getRoleParams = (role: TonalColorRole) => roleStateToParams(roles[role].state);
+  const getRoleFullStrip = (role: TonalColorRole) => roles[role].scale.colorScale;
+  const getRoleExtendedStrip = (role: TonalColorRole) =>
+    includeBaseIndex(
+      EXTENDED_SCALE_INDICES,
+      roles[role].scale.colorScale,
+      roles[role].scale.luminance,
+    );
+  const getRoleKeyStrip = (role: TonalColorRole) =>
+    includeBaseIndex(KEY_SCALE_INDICES, roles[role].scale.colorScale, roles[role].scale.luminance);
+
+  const snapshotFor = (role: TonalColorRole): TonalScaleSnapshot => {
+    const params = getRoleParams(role);
+    return {
+      role,
+      params,
+      baseHex: roles[role].state.baseHex,
+      blendHex: roles[role].state.blendHex,
+      scale: roles[role].scale,
+      fullStrip: getRoleFullStrip(role),
+      extendedStrip: getRoleExtendedStrip(role),
+      keyStrip: getRoleKeyStrip(role),
+      metadata: roles[role].metadata,
+      serializedParams: JSON.stringify(params),
+      blendDistribution: buildBlendDistribution(params, roles[role].scale),
     };
-    listeners.forEach((listener) => listener(snapshot));
   };
 
-  const refreshScale = (params: TonalScaleParams) => {
-    scale.value = generateTonalScale(params);
-    metadata.value = buildMetadata(scale.value.colorScale);
-    broadcast();
+  const refreshRole = (role: TonalColorRole, shouldBroadcast = true) => {
+    const params = getRoleParams(role);
+    roles[role].scale = generateTonalScale(params);
+    roles[role].metadata = buildMetadata(roles[role].scale.colorScale);
+    const snapshot = snapshotFor(role);
+    if (shouldBroadcast) listeners.forEach((listener) => listener(snapshot));
   };
 
-  const cancelPendingRefresh = () => {
-    if (pendingRefresh !== null) {
-      cancelAnimationFrame(pendingRefresh);
-      pendingRefresh = null;
-    }
-  };
-
-  const scheduleRefresh = (params: TonalScaleParams) => {
-    cancelPendingRefresh();
-    pendingRefresh = requestAnimationFrame(() => {
-      refreshScale(params);
-      pendingRefresh = null;
+  const scheduleRefresh = (role: TonalColorRole) => {
+    const pending = pendingRefreshes[role];
+    if (pending !== undefined) cancelAnimationFrame(pending);
+    pendingRefreshes[role] = requestAnimationFrame(() => {
+      refreshRole(role);
+      delete pendingRefreshes[role];
     });
   };
 
-  const withSuppressedRefresh = (params: TonalScaleParams, operation: () => void) => {
-    suppressWatchRefresh = true;
-    try {
-      operation();
-      cancelPendingRefresh();
-      refreshScale(params);
-    } finally {
-      nextTick(() => {
-        suppressWatchRefresh = false;
-      });
-    }
-  };
+  const persistenceState = computed<TonalPersistenceState>(() => ({
+    version: 2,
+    activeRole: activeRole.value,
+    roles: {
+      surface: cloneRoleState(roles.surface.state),
+      primary: cloneRoleState(roles.primary.state),
+    },
+    preview: { ...preview },
+  }));
 
+  const activeState = computed(() => roles[activeRole.value].state);
+  const baseHex = computed({
+    get: () => activeState.value.baseHex,
+    set: (value: string) => {
+      if (isValidHex(value)) activeState.value.baseHex = normalizeHex(value);
+    },
+  });
+  const blendHex = computed({
+    get: () => activeState.value.blendHex,
+    set: (value: string) => {
+      if (isValidHex(value)) activeState.value.blendHex = normalizeHex(value);
+    },
+  });
+  const blendMode = computed({
+    get: () => activeState.value.blendMode,
+    set: (value: BlendMode) => {
+      if (BLEND_MODES.has(value)) activeState.value.blendMode = value;
+    },
+  });
+  const controls = computed(() => activeState.value.controls);
+  const scale = computed(() => roles[activeRole.value].scale);
+  const metadata = computed(() => roles[activeRole.value].metadata);
+  const scaleParams = computed(() => getRoleParams(activeRole.value));
+  const fullStrip = computed(() => getRoleFullStrip(activeRole.value));
+  const extendedStrip = computed(() => getRoleExtendedStrip(activeRole.value));
+  const keyStrip = computed(() => getRoleKeyStrip(activeRole.value));
+  const blendDistribution = computed(() => buildBlendDistribution(scaleParams.value, scale.value));
+  const serializedParams = computed(() => JSON.stringify(scaleParams.value));
+  const serializedState = computed(() => JSON.stringify(persistenceState.value));
+  const surfaceExtendedStrip = computed(() => getRoleExtendedStrip('surface'));
+  const primaryExtendedStrip = computed(() => getRoleExtendedStrip('primary'));
+
+  const setActiveRole = (role: TonalColorRole) => {
+    activeRole.value = role;
+  };
   const updateControl = (id: BlendControlId, value: number) => {
-    controls[id] = clampControl(id, value);
+    activeState.value.controls[id] = clampControl(id, value);
   };
-
   const setBaseHex = (hex: string) => {
     if (!isValidHex(hex)) return false;
-    baseHex.value = normalizeHex(hex);
+    baseHex.value = hex;
     return true;
   };
-
   const setBlendHex = (hex: string) => {
     if (!isValidHex(hex)) return false;
-    blendHex.value = normalizeHex(hex);
+    blendHex.value = hex;
     return true;
   };
-
   const setBlendMode = (mode: BlendMode) => {
     if (!BLEND_MODES.has(mode)) return false;
     blendMode.value = mode;
     return true;
   };
 
-  const loadDefaults = () => {
-    withSuppressedRefresh(DEFAULT_PARAMS, () => {
-      baseHex.value = normalizeHex(DEFAULT_BASE_HEX);
-      blendHex.value = normalizeHex(DEFAULT_BLEND_HEX);
-      blendMode.value = DEFAULT_PARAMS.blendMode;
-      updateControl('strength', DEFAULT_PARAMS.blendStrength);
-      updateControl('middle', DEFAULT_PARAMS.middle);
-      updateControl('spread', DEFAULT_PARAMS.spread);
-      updateControl('satDarker', DEFAULT_PARAMS.satDarker);
-      updateControl('satLighter', DEFAULT_PARAMS.satLighter);
+  const applyPersistenceState = (state: TonalPersistenceState) => {
+    suppressRefresh = true;
+    roles.surface.state = cloneRoleState(state.roles.surface);
+    roles.primary.state = cloneRoleState(state.roles.primary);
+    activeRole.value = state.activeRole;
+    Object.assign(preview, state.preview);
+    Object.values(pendingRefreshes).forEach((pending) => {
+      if (pending !== undefined) cancelAnimationFrame(pending);
     });
+    refreshRole('surface', false);
+    refreshRole('primary', false);
+    const snapshot = snapshotFor(activeRole.value);
+    listeners.forEach((listener) => listener(snapshot));
+    suppressRefresh = false;
   };
 
-  const importState = (payload: string | Partial<TonalScaleParams>) => {
-    const parsed = (() => {
-      if (typeof payload !== 'string') return payload;
-      try {
-        return JSON.parse(payload);
-      } catch {
-        return null;
-      }
-    })();
+  const importState = (payload: unknown) => {
+    const parsed = parsePersistenceState(payload);
     if (!parsed) return false;
-
-    const nextParams: TonalScaleParams = {
-      colorHex: isValidHex(parsed.colorHex ?? '')
-        ? normalizeHex(parsed.colorHex as string)
-        : baseHex.value,
-      blendMode: BLEND_MODES.has(parsed.blendMode as BlendMode)
-        ? (parsed.blendMode as BlendMode)
-        : blendMode.value,
-      blendStrength: clampControl('strength', Number(parsed.blendStrength ?? controls.strength)),
-      blendR: clamp(Number(parsed.blendR ?? hexToRgb(blendHex.value).r), 0, 255),
-      blendG: clamp(Number(parsed.blendG ?? hexToRgb(blendHex.value).g), 0, 255),
-      blendB: clamp(Number(parsed.blendB ?? hexToRgb(blendHex.value).b), 0, 255),
-      middle: clampControl('middle', Number(parsed.middle ?? controls.middle)),
-      spread: clampControl('spread', Number(parsed.spread ?? controls.spread)),
-      satDarker: clampControl('satDarker', Number(parsed.satDarker ?? controls.satDarker)),
-      satLighter: clampControl('satLighter', Number(parsed.satLighter ?? controls.satLighter)),
-    };
-
-    withSuppressedRefresh(nextParams, () => {
-      baseHex.value = nextParams.colorHex;
-      blendHex.value = normalizeHex(
-        `#${[nextParams.blendR, nextParams.blendG, nextParams.blendB]
-          .map((channel) => channel.toString(16).padStart(2, '0'))
-          .join('')}`,
-      );
-      blendMode.value = nextParams.blendMode;
-      controls.strength = nextParams.blendStrength;
-      controls.middle = nextParams.middle;
-      controls.spread = nextParams.spread;
-      controls.satDarker = nextParams.satDarker;
-      controls.satLighter = nextParams.satLighter;
-    });
+    applyPersistenceState(parsed);
     return true;
   };
-
-  const exportState = () => serializedParams.value;
+  const importRoleState = (role: TonalColorRole, payload: Partial<TonalScaleParams>) => {
+    roles[role].state = normalizeRoleState(payload, roles[role].state);
+    return true;
+  };
+  const exportState = () => serializedState.value;
+  const loadDefaults = () =>
+    applyPersistenceState({
+      version: 2,
+      activeRole: 'surface',
+      roles: {
+        surface: cloneRoleState(DEFAULT_ROLE_STATES.surface),
+        primary: cloneRoleState(DEFAULT_ROLE_STATES.primary),
+      },
+      preview: { ...DEFAULT_PREVIEW_STATE },
+    });
 
   const onSnapshot = (listener: (snapshot: TonalScaleSnapshot) => void) => {
     listeners.add(listener);
-    listener({
-      params: scaleParams.value,
-      baseHex: baseHex.value,
-      blendHex: blendHex.value,
-      scale: scale.value,
-      fullStrip: fullStrip.value,
-      extendedStrip: extendedStrip.value,
-      keyStrip: keyStrip.value,
-      metadata: metadata.value,
-      serializedParams: serializedParams.value,
-      blendDistribution: blendDistribution.value,
-    });
-
+    listener(snapshotFor(activeRole.value));
     return () => listeners.delete(listener);
   };
 
-  watch(
-    scaleParams,
-    (nextParams) => {
-      if (suppressWatchRefresh) return;
-      scheduleRefresh(nextParams);
-    },
-    { deep: true },
-  );
+  (['surface', 'primary'] as const).forEach((role) => {
+    watch(
+      () => roles[role].state,
+      () => {
+        if (!suppressRefresh) scheduleRefresh(role);
+      },
+      { deep: true, flush: 'sync' },
+    );
+  });
 
   return {
+    activeRole,
+    preview,
+    roles,
     baseHex,
     blendHex,
     blendMode,
@@ -381,10 +575,16 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
     fullStrip,
     extendedStrip,
     keyStrip,
+    surfaceExtendedStrip,
+    primaryExtendedStrip,
     serializedParams,
+    serializedState,
+    persistenceState,
     blendDistribution,
     exportState,
     importState,
+    importRoleState,
+    setActiveRole,
     setBaseHex,
     setBlendHex,
     setBlendMode,

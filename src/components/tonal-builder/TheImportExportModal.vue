@@ -32,7 +32,7 @@
     () => props.isOpen,
     (open) => {
       if (open) {
-        jsonInput.value = store.serializedParams;
+        jsonInput.value = store.serializedState;
         isValid.value = true;
       }
     },

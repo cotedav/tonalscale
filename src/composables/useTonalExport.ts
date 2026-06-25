@@ -2,6 +2,7 @@ import type { TonalScaleParams, TonalStep } from '@/utils/tonal/scale';
 
 export interface TonalExportInput {
   params: TonalScaleParams;
+  metadata?: string;
   fullStrip: TonalStep[];
   extendedStrip: TonalStep[];
   keyStrip: TonalStep[];
@@ -32,7 +33,7 @@ export const useTonalExport = () => {
     });
 
     const totalHeight = strips.length * swatchHeight;
-    const metadata = JSON.stringify(params);
+    const metadata = input.metadata ?? JSON.stringify(params);
 
     // Position text to the right of the longest strip
     const exportTextX = maxWidth + 20;

@@ -146,4 +146,63 @@ describe('useTonalScaleStore', () => {
     expect(updated?.widthPercent).toBe(Math.max(0, store.scale.luminance - 1));
     expect(updated?.lineColor).toMatch(/^#/);
   });
+
+  it('keeps surface and primary configurations independent', async () => {
+    const store = useTonalScaleStore();
+    store.setBaseHex('#112233');
+    store.updateControl('spread', 61);
+    await flushTimers();
+
+    store.setActiveRole('primary');
+    expect(store.baseHex).toBe('#6750a4');
+    expect(store.controls.spread).toBe(50);
+
+    store.setBaseHex('#445566');
+    store.updateControl('spread', 72);
+    await flushTimers();
+
+    expect(store.primaryExtendedStrip).not.toEqual(store.surfaceExtendedStrip);
+    store.setActiveRole('surface');
+    expect(store.baseHex).toBe('#112233');
+    expect(store.controls.spread).toBe(61);
+    store.setActiveRole('primary');
+    expect(store.baseHex).toBe('#445566');
+    expect(store.controls.spread).toBe(72);
+  });
+
+  it('round-trips the versioned multi-role state and migrates legacy payloads', async () => {
+    const store = useTonalScaleStore();
+    store.setBaseHex('#123456');
+    store.setActiveRole('primary');
+    store.setBaseHex('#abcdef');
+    store.preview.darkMode = true;
+    store.preview.surfaceContrast = 'high';
+    await flushTimers();
+
+    const exported = store.exportState();
+    store.loadDefaults();
+    expect(store.importState(exported)).toBe(true);
+    await flushTimers();
+
+    expect(store.activeRole).toBe('primary');
+    expect(store.baseHex).toBe('#abcdef');
+    expect(store.roles.surface.state.baseHex).toBe('#123456');
+    expect(store.preview.darkMode).toBe(true);
+    expect(store.preview.surfaceContrast).toBe('high');
+
+    expect(store.importState({ colorHex: '#fedcba', blendStrength: 25 })).toBe(true);
+    await flushTimers();
+    expect(store.activeRole).toBe('surface');
+    expect(store.baseHex).toBe('#fedcba');
+    expect(store.controls.strength).toBe(25);
+    expect(store.roles.primary.state.baseHex).toBe('#6750a4');
+  });
+
+  it('rejects unsupported schema versions without partially updating state', () => {
+    const store = useTonalScaleStore();
+    const before = store.exportState();
+
+    expect(store.importState({ version: 99, roles: {} })).toBe(false);
+    expect(store.exportState()).toBe(before);
+  });
 });
