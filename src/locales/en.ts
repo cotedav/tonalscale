@@ -182,6 +182,10 @@ export default {
         swatch_label: 'Tonal swatch {index} at {hex}',
       },
     },
+    export: {
+      exported_color: 'Exported color',
+      surface_roles: 'Surface role mapping',
+    },
     surface_preview: {
       title: 'Material surface preview',
       helper: 'Generated tones applied to an operational workspace',

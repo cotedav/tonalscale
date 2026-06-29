@@ -19,6 +19,7 @@
   import BaseSwitch from '@/components/common/BaseSwitch.vue';
   import type { SurfaceContrast, TonalColorRole } from '@/stores/tonalScale';
   import type { TonalStep } from '@/utils/tonal/scale';
+  import { buildSurfaceRoleTones, type SurfaceToneRole } from '@/utils/tonal/surface-roles';
 
   const props = withDefaults(
     defineProps<{
@@ -56,11 +57,6 @@
     | 'on_primary'
     | 'primary_container'
     | 'on_primary_container';
-  type SurfaceToneRole = Exclude<
-    SurfaceRole,
-    'primary' | 'on_primary' | 'primary_container' | 'on_primary_container'
-  >;
-
   const { t } = useI18n();
   const isDarkMode = defineModel<boolean>('darkMode', { default: false });
   const surfaceContrast = defineModel<SurfaceContrast>('surfaceContrast', { default: 'low' });
@@ -104,105 +100,6 @@
         },
   );
 
-  const getBaseSurfaceTones = (contrast: SurfaceContrast): Record<SurfaceToneRole, number> => {
-    const lightMappings: Record<SurfaceContrast, Record<SurfaceToneRole, number>> = {
-      low: {
-        surface: 100,
-        surface_bright: 100,
-        surface_dim: 0,
-        container_lowest: 100,
-        container_low: 98,
-        container: 95,
-        container_high: 90,
-        container_highest: 80,
-        inverse_surface: 20,
-        on_surface: 10,
-        on_surface_variant: 35,
-        outline: 50,
-        outline_variant: 80,
-      },
-      medium: {
-        surface: 100,
-        surface_bright: 100,
-        surface_dim: 0,
-        container_lowest: 100,
-        container_low: 95,
-        container: 90,
-        container_high: 80,
-        container_highest: 70,
-        inverse_surface: 20,
-        on_surface: 10,
-        on_surface_variant: 35,
-        outline: 50,
-        outline_variant: 80,
-      },
-      high: {
-        surface: 100,
-        surface_bright: 100,
-        surface_dim: 0,
-        container_lowest: 100,
-        container_low: 90,
-        container: 80,
-        container_high: 60,
-        container_highest: 40,
-        inverse_surface: 20,
-        on_surface: 10,
-        on_surface_variant: 35,
-        outline: 50,
-        outline_variant: 80,
-      },
-    };
-    const darkMappings: Record<SurfaceContrast, Record<SurfaceToneRole, number>> = {
-      low: {
-        surface: 0,
-        surface_bright: 100,
-        surface_dim: 0,
-        container_lowest: 0,
-        container_low: 10,
-        container: 20,
-        container_high: 25,
-        container_highest: 30,
-        inverse_surface: 90,
-        on_surface: 90,
-        on_surface_variant: 80,
-        outline: 60,
-        outline_variant: 30,
-      },
-      medium: {
-        surface: 0,
-        surface_bright: 100,
-        surface_dim: 0,
-        container_lowest: 0,
-        container_low: 10,
-        container: 20,
-        container_high: 30,
-        container_highest: 40,
-        inverse_surface: 90,
-        on_surface: 90,
-        on_surface_variant: 80,
-        outline: 60,
-        outline_variant: 30,
-      },
-      high: {
-        surface: 0,
-        surface_bright: 100,
-        surface_dim: 0,
-        container_lowest: 0,
-        container_low: 10,
-        container: 25,
-        container_high: 40,
-        container_highest: 60,
-        inverse_surface: 90,
-        on_surface: 90,
-        on_surface_variant: 80,
-        outline: 60,
-        outline_variant: 30,
-      },
-    };
-
-    return (isDarkMode.value ? darkMappings : lightMappings)[contrast];
-  };
-
   const activeSurfaceTone = computed(() =>
     isDarkMode.value ? darkSurfaceTone.value : lightSurfaceTone.value,
   );
@@ -222,86 +119,41 @@
     }
   };
 
-  const buildSurfaceTones = (
-    tones: TonalStep[],
-    contrast: SurfaceContrast,
-    lightTone: number,
-    darkTone: number,
-  ): Record<SurfaceToneRole, number> => {
-    const baseTones = getBaseSurfaceTones(contrast);
-    const indices = [...new Set(tones.map((tone) => tone.index))].sort(
-      (left, right) => left - right,
-    );
-    const defaultSurfaceTone = isDarkMode.value ? 0 : 100;
-    const defaultIndex = indices.indexOf(defaultSurfaceTone);
-    const selectedIndex = indices.indexOf(isDarkMode.value ? darkTone : lightTone);
-    const shift = selectedIndex - defaultIndex;
-    const shiftedRoles: SurfaceToneRole[] = [
-      'surface',
-      'container_lowest',
-      'container_low',
-      'container',
-      'container_high',
-      'container_highest',
-      'on_surface',
-      'on_surface_variant',
-      'outline',
-      'outline_variant',
-    ];
-
-    const shiftedTones = Object.fromEntries(
-      Object.entries(baseTones).map(([role, tone]) => {
-        if (!shiftedRoles.includes(role as SurfaceToneRole)) return [role, tone];
-
-        const toneIndex = indices.indexOf(tone);
-        const shiftedIndex = Math.min(Math.max(toneIndex + shift, 0), indices.length - 1);
-
-        return [role, indices[shiftedIndex] ?? tone];
-      }),
-    ) as Record<SurfaceToneRole, number>;
-
-    const surfaceFamilyTones = [
-      shiftedTones.surface,
-      shiftedTones.container_lowest,
-      shiftedTones.container_low,
-      shiftedTones.container,
-      shiftedTones.container_high,
-      shiftedTones.container_highest,
-    ];
-
-    shiftedTones.surface_bright = Math.max(...surfaceFamilyTones);
-    shiftedTones.surface_dim = Math.min(...surfaceFamilyTones);
-
-    return shiftedTones;
-  };
-
   const surfaceTones = computed(() =>
-    buildSurfaceTones(
-      props.tones,
-      props.activeRole === 'surface'
-        ? surfaceContrast.value
-        : props.surfaceContrastSettings.surface,
-      props.activeRole === 'surface'
-        ? lightSurfaceTone.value
-        : props.lightSurfaceToneSettings.surface,
-      props.activeRole === 'surface'
-        ? darkSurfaceTone.value
-        : props.darkSurfaceToneSettings.surface,
-    ),
+    buildSurfaceRoleTones({
+      tones: props.tones,
+      isDarkMode: isDarkMode.value,
+      contrast:
+        props.activeRole === 'surface'
+          ? surfaceContrast.value
+          : props.surfaceContrastSettings.surface,
+      lightTone:
+        props.activeRole === 'surface'
+          ? lightSurfaceTone.value
+          : props.lightSurfaceToneSettings.surface,
+      darkTone:
+        props.activeRole === 'surface'
+          ? darkSurfaceTone.value
+          : props.darkSurfaceToneSettings.surface,
+    }),
   );
   const primarySurfaceTones = computed(() =>
-    buildSurfaceTones(
-      props.primaryTones ?? props.tones,
-      props.activeRole === 'primary'
-        ? surfaceContrast.value
-        : props.surfaceContrastSettings.primary,
-      props.activeRole === 'primary'
-        ? lightSurfaceTone.value
-        : props.lightSurfaceToneSettings.primary,
-      props.activeRole === 'primary'
-        ? darkSurfaceTone.value
-        : props.darkSurfaceToneSettings.primary,
-    ),
+    buildSurfaceRoleTones({
+      tones: props.primaryTones ?? props.tones,
+      isDarkMode: isDarkMode.value,
+      contrast:
+        props.activeRole === 'primary'
+          ? surfaceContrast.value
+          : props.surfaceContrastSettings.primary,
+      lightTone:
+        props.activeRole === 'primary'
+          ? lightSurfaceTone.value
+          : props.lightSurfaceToneSettings.primary,
+      darkTone:
+        props.activeRole === 'primary'
+          ? darkSurfaceTone.value
+          : props.darkSurfaceToneSettings.primary,
+    }),
   );
   const activeRoleTones = computed(() =>
     props.activeRole === 'primary' ? primarySurfaceTones.value : surfaceTones.value,

@@ -135,6 +135,39 @@ describe('TonalBuilderHomeView', () => {
     expect(wrapper.get('#baseColorPickerInput').text()).toContain('#123456');
   });
 
+  it('exports the active color role with tonal labels and surface cards', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+
+    const wrapper = mount(TonalBuilderHomeView, {
+      global: { plugins: [pinia] },
+    });
+
+    await wrapper.get('[data-cy="primary-role-tab"]').trigger('click');
+    await wrapper.get('[data-cy="tonal-builder-copy"]').trigger('click');
+    await vi.waitFor(() => expect(writeText).toHaveBeenCalledOnce());
+
+    const svg = writeText.mock.calls[0]?.[0] as string;
+    expect(svg).toContain('Exported color');
+    expect(svg).toContain('>Primary</text>');
+    expect(svg).toContain('Extended key strip');
+    expect(svg).toContain('Primary Surface');
+    expect(svg).toContain('Surface role mapping');
+    expect(svg).toContain('#v2=');
+    expect(svg).toContain('class="footer-text"');
+    expect(svg).toContain('inline-size:');
+    expect(svg).not.toContain('<foreignObject');
+    expect(svg).not.toContain('footer-frame');
+    expect(svg).not.toContain('Link:');
+    expect(svg).not.toContain('Import:');
+    expect(svg).not.toContain('<tspan');
+  });
+
   it('resizes the color controls panel with the split-pane handle', async () => {
     const pinia = createPinia();
     setActivePinia(pinia);

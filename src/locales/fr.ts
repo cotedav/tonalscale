@@ -181,6 +181,10 @@ export default {
         swatch_label: 'Nuancier tonal {index} à {hex}',
       },
     },
+    export: {
+      exported_color: 'Couleur exportee',
+      surface_roles: 'Correspondance des roles de surface',
+    },
     surface_preview: {
       title: 'Apercu des surfaces Material',
       helper: 'Tons generes appliques a un espace operationnel',

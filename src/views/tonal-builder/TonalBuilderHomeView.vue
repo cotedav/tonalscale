@@ -24,6 +24,8 @@
   import { type TonalColorRole, useTonalScaleStore } from '@/stores/tonalScale';
   import { hexToRgb } from '@/utils/color';
   import type { TonalStep } from '@/utils/tonal/scale';
+  import { buildSurfaceRoleTones, SURFACE_TONE_ROLES } from '@/utils/tonal/surface-roles';
+  import { encodeShareState } from '@/utils/tonal/share-state';
   import { useClipboard } from '@/composables/useClipboard';
   import { useTonalExport } from '@/composables/useTonalExport';
   import useTonalUrlSync from '@/composables/useTonalUrlSync';
@@ -393,13 +395,46 @@
   const { generateScaleSvg } = useTonalExport();
 
   const handleCopySvg = async () => {
-    // Generate SVG from all 3 strips
+    const { serializedState } = tonalScale;
+    const { origin, pathname } = window.location;
+    const shareUrl = `${origin}${pathname}${encodeShareState(serializedState)}`;
+    const roleTones = buildSurfaceRoleTones({
+      tones: extendedStrip.value,
+      isDarkMode: tonalScale.preview.darkMode,
+      contrast: activePreviewContrast.value,
+      lightTone: activeLightSurfaceTone.value,
+      darkTone: activeDarkSurfaceTone.value,
+    });
+    const surfaceCards = SURFACE_TONE_ROLES.map((role) => {
+      const tone = roleTones[role];
+      const roleName = t(`tonal_builder.surface_preview.roles.${role}`);
+
+      return {
+        label:
+          activeRole.value === 'primary'
+            ? t('tonal_builder.surface_preview.primary_role', { role: roleName })
+            : roleName,
+        tone,
+        hex: extendedStrip.value.find((step) => step.index === tone)?.hex ?? baseHex.value,
+      };
+    });
+
     const svg = generateScaleSvg({
       params: tonalScale.scaleParams,
-      metadata: tonalScale.serializedState,
+      metadata: serializedState,
+      sourceUrl: shareUrl,
+      roleLabel: t(`tonal_builder.roles.${activeRole.value}`),
+      exportedColorLabel: t('tonal_builder.export.exported_color'),
+      surfaceCardsLabel: t('tonal_builder.export.surface_roles'),
+      stripLabels: {
+        full: t('tonal_builder.scales.full'),
+        extended: t('tonal_builder.scales.extended'),
+        key: t('tonal_builder.scales.key'),
+      },
       fullStrip: fullStrip.value,
       extendedStrip: extendedStrip.value,
       keyStrip: keyStrip.value,
+      surfaceCards,
     });
 
     await copyToClipboard(svg, 'SVG');

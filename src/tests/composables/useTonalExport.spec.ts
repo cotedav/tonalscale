@@ -28,6 +28,18 @@ describe('useTonalExport', () => {
     extendedStrip: [mockStep(100, '#e6e6e6')],
     keyStrip: [mockStep(500, '#808080')],
     params: mockParams,
+    roleLabel: 'Primary',
+    exportedColorLabel: 'Exported color',
+    surfaceCardsLabel: 'Surface role mapping',
+    stripLabels: {
+      full: 'Full scale strip',
+      extended: 'Extended key strip',
+      key: 'Key strip',
+    },
+    surfaceCards: [
+      { label: 'Primary Surface', tone: 100, hex: '#e6e6e6' },
+      { label: 'Primary Outline', tone: 50, hex: '#808080' },
+    ],
   };
 
   const originalLocation = window.location;
@@ -62,6 +74,8 @@ describe('useTonalExport', () => {
     expect(svg).toContain('fill="#f2f2f2"');
     expect(svg).toContain('fill="#e6e6e6"');
     expect(svg).toContain('fill="#808080"');
+    expect(svg).toContain('>50</text>');
+    expect(svg).toContain('>500</text>');
   });
 
   it('should include text metadata', () => {
@@ -70,5 +84,65 @@ describe('useTonalExport', () => {
     expect(svg).toContain('http://test.com');
     expect(svg).toContain('colorHex');
     expect(svg).toContain('#808080');
+  });
+
+  it('labels the exported role and includes surface role cards', () => {
+    const svg = generateScaleSvg(mockInput);
+
+    expect(svg).toContain('Exported color');
+    expect(svg).toContain('>Primary</text>');
+    expect(svg).toContain('Surface role mapping');
+    expect(svg).toContain('Primary Surface');
+    expect(svg).toContain('Tone 100');
+    expect(svg).toContain('Primary Outline');
+  });
+
+  it('preserves long share links and import payloads in full', () => {
+    const longHash = `#${'s'.repeat(260)}tail`;
+    const longUrl = `http://test.com/${longHash}`;
+    const longMetadata = JSON.stringify({
+      ...mockParams,
+      roles: {
+        surface: {
+          baseHex: '#123456',
+          controls: {
+            contrast: 'high',
+            tone: 92,
+          },
+        },
+        primary: {
+          baseHex: '#abcdef',
+          controls: {
+            contrast: 'medium',
+            tone: 84,
+          },
+        },
+      },
+      marker: `${'payload'.repeat(45)}end`,
+    });
+
+    Object.defineProperty(window, 'location', {
+      value: {
+        href: longUrl,
+      },
+      writable: true,
+    });
+
+    const svg = generateScaleSvg({
+      ...mockInput,
+      metadata: longMetadata,
+    });
+
+    expect(svg).toContain(`class="footer-text" style="inline-size: `);
+    expect(svg).toContain(`>${longUrl}</text>`);
+    expect(svg).toContain(`>${longMetadata}</text>`);
+    expect(svg).toContain(`${'s'.repeat(260)}tail`);
+    expect(svg).toContain(`${'payload'.repeat(45)}end`);
+    expect(svg).not.toContain('<foreignObject');
+    expect(svg).not.toContain('footer-frame');
+    expect(svg).not.toContain('<tspan');
+    expect(svg).not.toContain('Link:');
+    expect(svg).not.toContain('Import:');
+    expect(svg).not.toContain('...');
   });
 });

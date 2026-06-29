@@ -10,6 +10,7 @@ This backlog tracks foundational user stories for the new SaaS platform scaffold
 | Pending     | [E2](./E2.md) | Observability, analytics, and resilience epic for production-ready instrumentation.          |
 | Pending     | [E3](./E3.md) | Tonal scale builder migration to Vue 3 with Tailwind CSS and Headless UI.                    |
 | Completed   | [E4](./E4.md) | Multi-role tonal system for independent surface and primary gradients.                       |
+| Pending     | [E5](./E5.md) | Dynamic tonal color roles for built-in and user-created palette roles.                       |
 
 ## Features
 
@@ -36,6 +37,10 @@ This backlog tracks foundational user stories for the new SaaS platform scaffold
 | Completed   | [E4-F2](./E4-F2.md) | [E4](./E4.md) | Surface and primary editing tabs.                           |
 | Completed   | [E4-F3](./E4-F3.md) | [E4](./E4.md) | Combined Material role preview.                             |
 | Completed   | [E4-F4](./E4-F4.md) | [E4](./E4.md) | Multi-role URL and import/export persistence.               |
+| Pending     | [E5-F1](./E5-F1.md) | [E5](./E5.md) | Dynamic role domain model and store architecture.           |
+| Pending     | [E5-F2](./E5-F2.md) | [E5](./E5.md) | Role management experience.                                 |
+| Pending     | [E5-F3](./E5-F3.md) | [E5](./E5.md) | Dynamic role persistence and sharing.                       |
+| Pending     | [E5-F4](./E5-F4.md) | [E5](./E5.md) | Dynamic role preview and export integration.                |
 
 ## Stories
 
@@ -86,3 +91,15 @@ This backlog tracks foundational user stories for the new SaaS platform scaffold
 | Completed | [E4-F4-S1](./E4-F4-S1.md) | [E4-F4](./E4-F4.md) | [E4](./E4.md) | Define a versioned multi-role persistence schema.                                         |
 | Completed | [E4-F4-S2](./E4-F4-S2.md) | [E4-F4](./E4-F4.md) | [E4](./E4.md) | Synchronize both color roles with shareable URLs.                                         |
 | Completed | [E4-F4-S3](./E4-F4-S3.md) | [E4-F4](./E4-F4.md) | [E4](./E4.md) | Import and export complete multi-role configurations.                                     |
+| Pending   | [E5-F1-S1](./E5-F1-S1.md) | [E5-F1](./E5-F1.md) | [E5](./E5.md) | Introduce a dynamic color role registry.                                                  |
+| Pending   | [E5-F1-S2](./E5-F1-S2.md) | [E5-F1](./E5-F1.md) | [E5](./E5.md) | Store per-role surface preview settings generically.                                      |
+| Pending   | [E5-F1-S3](./E5-F1-S3.md) | [E5-F1](./E5-F1.md) | [E5](./E5.md) | Generalize role-aware tonal selectors and refresh logic.                                  |
+| Pending   | [E5-F2-S1](./E5-F2-S1.md) | [E5-F2](./E5-F2.md) | [E5](./E5.md) | Render role tabs from dynamic role order.                                                 |
+| Pending   | [E5-F2-S2](./E5-F2-S2.md) | [E5-F2](./E5-F2.md) | [E5](./E5.md) | Add and duplicate color roles.                                                           |
+| Pending   | [E5-F2-S3](./E5-F2-S3.md) | [E5-F2](./E5-F2.md) | [E5](./E5.md) | Rename, reorder, and delete custom roles.                                                 |
+| Pending   | [E5-F3-S1](./E5-F3-S1.md) | [E5-F3](./E5-F3.md) | [E5](./E5.md) | Define a versioned dynamic role persistence schema.                                       |
+| Pending   | [E5-F3-S2](./E5-F3-S2.md) | [E5-F3](./E5-F3.md) | [E5](./E5.md) | Migrate existing multi-role payloads to the dynamic schema.                               |
+| Pending   | [E5-F3-S3](./E5-F3-S3.md) | [E5-F3](./E5-F3.md) | [E5](./E5.md) | Share dynamic roles through URL, import, and export flows.                                |
+| Pending   | [E5-F4-S1](./E5-F4-S1.md) | [E5-F4](./E5-F4.md) | [E5](./E5.md) | Generalize Material surface role mapping to any palette role.                             |
+| Pending   | [E5-F4-S2](./E5-F4-S2.md) | [E5-F4](./E5-F4.md) | [E5](./E5.md) | Showcase additional roles in the app preview.                                            |
+| Pending   | [E5-F4-S3](./E5-F4-S3.md) | [E5-F4](./E5-F4.md) | [E5](./E5.md) | Export dynamic role surface cards and tone mappings.                                      |
