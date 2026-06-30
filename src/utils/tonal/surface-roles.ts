@@ -1,4 +1,5 @@
 import type { SurfaceContrast } from '@/stores/tonalScale';
+import { findClosestContrastTone, type ContrastDirection } from '@/utils/tonal/contrast';
 import type { TonalStep } from '@/utils/tonal/scale';
 
 export type SurfaceToneRole =
@@ -134,6 +135,50 @@ const getBaseSurfaceTones = (
   return (isDarkMode ? darkMappings : lightMappings)[contrast];
 };
 
+const getUniqueToneIndices = (tones: TonalStep[]) =>
+  [...new Set(tones.map((tone) => tone.index))].sort((left, right) => left - right);
+
+const nearestAvailableTone = (indices: number[], targetTone: number) =>
+  indices.reduce((nearest, tone) =>
+    Math.abs(tone - targetTone) < Math.abs(nearest - targetTone) ? tone : nearest,
+  );
+
+const sortedUniqueTones = (tones: TonalStep[]) =>
+  [...new Map(tones.map((tone) => [tone.index, tone])).values()].sort(
+    (left, right) => left.index - right.index,
+  );
+
+const nearestToneIndex = (tones: TonalStep[], targetTone: number) =>
+  nearestAvailableTone(
+    tones.map((tone) => tone.index),
+    targetTone,
+  );
+
+function applyContrastSurfaceRoles({
+  tones,
+  roleTones,
+  direction,
+}: {
+  tones: TonalStep[];
+  roleTones: Record<SurfaceToneRole, number>;
+  direction: ContrastDirection;
+}) {
+  const sortedTones = sortedUniqueTones(tones);
+  const surfacePosition = sortedTones.findIndex((tone) => tone.index === roleTones.surface);
+  const aaaTone = findClosestContrastTone(sortedTones, surfacePosition, direction, 4.5)?.tone.index;
+  const aaTone = findClosestContrastTone(sortedTones, surfacePosition, direction, 3)?.tone.index;
+  const outlineTone = aaTone ?? roleTones.outline;
+  const outlineVariantTone = nearestToneIndex(sortedTones, (roleTones.surface + outlineTone) / 2);
+
+  return {
+    ...roleTones,
+    on_surface: aaaTone ?? roleTones.on_surface,
+    on_surface_variant: aaTone ?? roleTones.on_surface_variant,
+    outline: outlineTone,
+    outline_variant: outlineVariantTone,
+  };
+}
+
 export const buildSurfaceRoleTones = ({
   tones,
   isDarkMode,
@@ -160,10 +205,6 @@ export const buildSurfaceRoleTones = ({
     'container',
     'container_high',
     'container_highest',
-    'on_surface',
-    'on_surface_variant',
-    'outline',
-    'outline_variant',
   ];
 
   const shiftedTones = Object.fromEntries(
@@ -189,5 +230,84 @@ export const buildSurfaceRoleTones = ({
   shiftedTones.surface_bright = Math.max(...surfaceFamilyTones);
   shiftedTones.surface_dim = Math.min(...surfaceFamilyTones);
 
-  return shiftedTones;
+  return applyContrastSurfaceRoles({
+    tones,
+    roleTones: shiftedTones,
+    direction: isDarkMode ? 'lighter' : 'darker',
+  });
+};
+
+const contrastOffsets: Record<SurfaceContrast, number[]> = {
+  low: [1, 2, 3, 4, 5],
+  medium: [1, 2, 4, 6, 8],
+  high: [1, 3, 6, 9, 12],
+};
+
+export const buildAccentSurfaceRoleTones = ({
+  tones,
+  contrast,
+  surfaceTone,
+  baseTone,
+}: {
+  tones: TonalStep[];
+  contrast: SurfaceContrast;
+  surfaceTone: number;
+  baseTone: number;
+}): Record<SurfaceToneRole, number> => {
+  const indices = getUniqueToneIndices(tones).filter((tone) => tone >= 10 && tone <= 99);
+  const fallbackIndices = getUniqueToneIndices(tones);
+  const scaleIndices = indices.length ? indices : fallbackIndices;
+  const selectedSurfaceTone = nearestAvailableTone(scaleIndices, surfaceTone || baseTone);
+  const surfaceIndex = scaleIndices.indexOf(selectedSurfaceTone);
+  const offsets = contrastOffsets[contrast];
+  const hasEnoughLighterTones = surfaceIndex + offsets[offsets.length - 1] < scaleIndices.length;
+  const toneAtOffset = (offset: number) => {
+    const nextIndex = hasEnoughLighterTones ? surfaceIndex + offset : surfaceIndex - offset;
+    return scaleIndices[Math.min(Math.max(nextIndex, 0), scaleIndices.length - 1)];
+  };
+  const lighterContainers = {
+    container_lowest: toneAtOffset(offsets[0]),
+    container_low: toneAtOffset(offsets[1]),
+    container: toneAtOffset(offsets[2]),
+    container_high: toneAtOffset(offsets[3]),
+    container_highest: toneAtOffset(offsets[4]),
+  };
+  const darkerContainers = {
+    container_lowest: toneAtOffset(offsets[0]),
+    container_low: toneAtOffset(offsets[1]),
+    container: toneAtOffset(offsets[2]),
+    container_high: toneAtOffset(offsets[3]),
+    container_highest: toneAtOffset(offsets[4]),
+  };
+  const containers = hasEnoughLighterTones ? lighterContainers : darkerContainers;
+  const surfaceFamilyTones = [selectedSurfaceTone, ...Object.values(containers)];
+  const isLightSurface = selectedSurfaceTone >= 60;
+
+  const roleTones = {
+    surface: selectedSurfaceTone,
+    surface_bright: Math.max(...surfaceFamilyTones),
+    surface_dim: Math.min(...surfaceFamilyTones),
+    ...containers,
+    inverse_surface: isLightSurface
+      ? nearestAvailableTone(fallbackIndices, 20)
+      : nearestAvailableTone(fallbackIndices, 90),
+    on_surface: isLightSurface
+      ? nearestAvailableTone(fallbackIndices, 10)
+      : nearestAvailableTone(fallbackIndices, 95),
+    on_surface_variant: isLightSurface
+      ? nearestAvailableTone(fallbackIndices, 35)
+      : nearestAvailableTone(fallbackIndices, 80),
+    outline: isLightSurface
+      ? nearestAvailableTone(fallbackIndices, 50)
+      : nearestAvailableTone(fallbackIndices, 60),
+    outline_variant: isLightSurface
+      ? nearestAvailableTone(fallbackIndices, 80)
+      : nearestAvailableTone(fallbackIndices, 30),
+  };
+
+  return applyContrastSurfaceRoles({
+    tones,
+    roleTones,
+    direction: isLightSurface ? 'darker' : 'lighter',
+  });
 };

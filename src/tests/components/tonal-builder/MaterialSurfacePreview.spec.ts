@@ -28,7 +28,7 @@ describe('MaterialSurfacePreview', () => {
     expect(shell.attributes('style')).toContain(
       `--preview-surface-container-lowest: ${toneHex(tones, 100)}`,
     );
-    expect(shell.attributes('style')).toContain(`--preview-primary: ${toneHex(tones, 40)}`);
+    expect(shell.attributes('style')).toContain(`--preview-primary: ${toneHex(tones, 50)}`);
     [
       'surface',
       'surface-bright',
@@ -61,13 +61,13 @@ describe('MaterialSurfacePreview', () => {
     expect(wrapper.get('[data-surface-card="inverse_surface"]').text()).toContain('Tone 20');
     expect(wrapper.get('[data-surface-card="on_surface"]').text()).toContain('Tone 10');
     expect(wrapper.get('[data-surface-card="outline"]').text()).toContain('Tone 50');
-    expect(wrapper.get('[data-surface-card="outline_variant"]').text()).toContain('Tone 80');
+    expect(wrapper.get('[data-surface-card="outline_variant"]').text()).toContain('Tone 70');
 
     const updatedTones = buildTones('aa');
     await wrapper.setProps({ tones: updatedTones });
 
     expect(shell.attributes('style')).toContain(`--preview-surface: ${toneHex(updatedTones, 100)}`);
-    expect(shell.attributes('style')).toContain(`--preview-primary: ${toneHex(updatedTones, 40)}`);
+    expect(shell.attributes('style')).toContain(`--preview-primary: ${toneHex(updatedTones, 50)}`);
     expect(wrapper.get('[data-surface-card="surface"]').text()).toContain(
       toneHex(updatedTones, 100),
     );
@@ -99,8 +99,8 @@ describe('MaterialSurfacePreview', () => {
     expect(shell.attributes('style')).toContain(`--preview-on-surface: ${toneHex(tones, 90)}`);
     expect(shell.attributes('style')).toContain(`--preview-outline: ${toneHex(tones, 60)}`);
     expect(shell.attributes('style')).toContain(`--preview-outline-variant: ${toneHex(tones, 30)}`);
-    expect(shell.attributes('style')).toContain(`--preview-primary: ${toneHex(tones, 80)}`);
-    expect(shell.attributes('style')).toContain(`--preview-on-primary: ${toneHex(tones, 20)}`);
+    expect(shell.attributes('style')).toContain(`--preview-primary: ${toneHex(tones, 50)}`);
+    expect(shell.attributes('style')).toContain(`--preview-on-primary: ${toneHex(tones, 95)}`);
     expect(wrapper.get('[data-surface-card="surface"]').text()).toContain('Tone 0');
     expect(wrapper.get('[data-surface-card="container"]').text()).toContain('Tone 20');
     expect(wrapper.get('[data-surface-card="container_highest"]').text()).toContain('Tone 30');
@@ -182,11 +182,11 @@ describe('MaterialSurfacePreview', () => {
     expect(shell.attributes('style')).toContain(
       `--preview-surface-container: ${toneHex(tones, 90)}`,
     );
-    expect(shell.attributes('style')).toContain(`--preview-on-surface: ${toneHex(tones, 5)}`);
+    expect(shell.attributes('style')).toContain(`--preview-on-surface: ${toneHex(tones, 10)}`);
     expect(shell.attributes('style')).toContain(
-      `--preview-on-surface-variant: ${toneHex(tones, 30)}`,
+      `--preview-on-surface-variant: ${toneHex(tones, 35)}`,
     );
-    expect(shell.attributes('style')).toContain(`--preview-outline: ${toneHex(tones, 40)}`);
+    expect(shell.attributes('style')).toContain(`--preview-outline: ${toneHex(tones, 50)}`);
     expect(shell.attributes('style')).toContain(`--preview-outline-variant: ${toneHex(tones, 70)}`);
     expect(shell.attributes('style')).toContain(`--preview-surface-bright: ${toneHex(tones, 99)}`);
     expect(shell.attributes('style')).toContain(`--preview-surface-dim: ${toneHex(tones, 70)}`);
@@ -207,12 +207,12 @@ describe('MaterialSurfacePreview', () => {
     expect(shell.attributes('style')).toContain(
       `--preview-surface-container: ${toneHex(tones, 25)}`,
     );
-    expect(shell.attributes('style')).toContain(`--preview-on-surface: ${toneHex(tones, 95)}`);
+    expect(shell.attributes('style')).toContain(`--preview-on-surface: ${toneHex(tones, 90)}`);
     expect(shell.attributes('style')).toContain(
-      `--preview-on-surface-variant: ${toneHex(tones, 90)}`,
+      `--preview-on-surface-variant: ${toneHex(tones, 80)}`,
     );
-    expect(shell.attributes('style')).toContain(`--preview-outline: ${toneHex(tones, 70)}`);
-    expect(shell.attributes('style')).toContain(`--preview-outline-variant: ${toneHex(tones, 35)}`);
+    expect(shell.attributes('style')).toContain(`--preview-outline: ${toneHex(tones, 60)}`);
+    expect(shell.attributes('style')).toContain(`--preview-outline-variant: ${toneHex(tones, 30)}`);
     expect(shell.attributes('style')).toContain(`--preview-surface-bright: ${toneHex(tones, 35)}`);
     expect(shell.attributes('style')).toContain(`--preview-surface-dim: ${toneHex(tones, 5)}`);
   });
@@ -277,7 +277,7 @@ describe('MaterialSurfacePreview', () => {
       clientY: 420,
     });
     expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Outline variant');
-    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 80');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 70');
   });
 
   it('keeps the app shell surface-based while showcasing an independent primary surface family', async () => {
@@ -308,9 +308,9 @@ describe('MaterialSurfacePreview', () => {
     );
     expect(wrapper.findAll('[data-surface-card]')).toHaveLength(13);
     expect(wrapper.find('[data-surface-card="primary"]').exists()).toBe(false);
-    expect(shell.attributes('style')).toContain(`--preview-primary: ${toneHex(primaryTones, 40)}`);
+    expect(shell.attributes('style')).toContain(`--preview-primary: ${toneHex(primaryTones, 98)}`);
     expect(shell.attributes('style')).toContain(
-      `--preview-primary-container: ${toneHex(primaryTones, 90)}`,
+      `--preview-primary-container: ${toneHex(primaryTones, 50)}`,
     );
 
     const primaryLightExample = wrapper.get(
@@ -340,16 +340,16 @@ describe('MaterialSurfacePreview', () => {
         clientY: 340,
       });
     expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Primary Outline');
-    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 35');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 50');
 
     await wrapper.get('[data-cy="surface-preview-dark-mode"]').setValue(true);
     expect(shell.attributes('style')).toContain(`--preview-surface: ${toneHex(surfaceTones, 0)}`);
     expect(shell.attributes('style')).toContain(
-      `--preview-primary-surface-bright: ${toneHex(primaryTones, 80)}`,
+      `--preview-primary-surface-bright: ${toneHex(primaryTones, 98)}`,
     );
-    expect(shell.attributes('style')).toContain(`--preview-primary: ${toneHex(primaryTones, 80)}`);
+    expect(shell.attributes('style')).toContain(`--preview-primary: ${toneHex(primaryTones, 98)}`);
     expect(shell.attributes('style')).toContain(
-      `--preview-primary-container: ${toneHex(primaryTones, 30)}`,
+      `--preview-primary-container: ${toneHex(primaryTones, 50)}`,
     );
   });
 
@@ -401,9 +401,41 @@ describe('MaterialSurfacePreview', () => {
       });
 
     expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Secondary Outline');
-    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 30');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 50');
     expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain(
-      toneHex(secondaryTones, 30),
+      toneHex(secondaryTones, 50),
+    );
+
+    await wrapper.setProps({
+      surfaceContrast: 'high',
+      lightSurfaceTone: 90,
+      surfaceContrastSettings: { surface: 'low', primary: 'low', secondary: 'high' },
+      lightSurfaceToneSettings: { surface: 100, primary: 100, secondary: 90 },
+    });
+
+    const secondarySurfaceCard = wrapper.get('[data-surface-card="surface"]');
+    const secondarySurfaceExample = wrapper.get(
+      '.preview-role-showcase[data-surface-palette="secondary"][data-surface-role="surface"]',
+    );
+    const secondaryContainerExample = wrapper.get(
+      '.preview-role-showcase [data-surface-palette="secondary"][data-surface-role="container"]',
+    );
+
+    expect(secondarySurfaceCard.text()).toContain('Secondary Surface');
+    expect(secondarySurfaceCard.text()).toContain('Tone 90');
+    expect(secondarySurfaceCard.text()).toContain(toneHex(secondaryTones, 90));
+    expect(secondarySurfaceExample.attributes('style')).toContain(
+      `--preview-role-surface: ${toneHex(secondaryTones, 90)}`,
+    );
+    expect(secondarySurfaceExample.attributes('style')).toContain(
+      `--preview-role-container: ${toneHex(secondaryTones, 35)}`,
+    );
+
+    expect(secondarySurfaceExample.attributes('data-surface-tooltip')).toBe(
+      'Secondary Surface, tone 90',
+    );
+    expect(secondaryContainerExample.attributes('data-surface-tooltip')).toBe(
+      'Secondary container, tone 35',
     );
   });
 
@@ -434,43 +466,43 @@ describe('MaterialSurfacePreview', () => {
 
     expect(secondaryAction.text()).toContain('Send reminder');
     expect(secondaryAction.attributes('style')).toContain(
-      `--preview-role-action: ${toneHex(secondaryTones, 40)}`,
+      `--preview-role-action: ${toneHex(secondaryTones, 50)}`,
     );
     expect(tertiaryAction.text()).toContain('Schedule follow-up');
     expect(tertiaryAction.attributes('style')).toContain(
-      `--preview-role-action-container: ${toneHex(tertiaryTones, 90)}`,
+      `--preview-role-action-container: ${toneHex(tertiaryTones, 80)}`,
     );
     expect(validation.text()).toContain('Customer email');
     expect(alert.text()).toContain('Invoice requires attention');
     expect(alert.attributes('style')).toContain(
-      `--preview-role-action-container: ${toneHex(errorTones, 90)}`,
+      `--preview-role-action-container: ${toneHex(errorTones, 80)}`,
     );
 
     await secondaryAction.trigger('pointermove', { clientX: 240, clientY: 170 });
-    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Secondary');
-    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 40');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Secondary Surface');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 50');
     expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain(
-      toneHex(secondaryTones, 40),
+      toneHex(secondaryTones, 50),
     );
 
     await tertiaryAction.trigger('pointermove', { clientX: 300, clientY: 170 });
     expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tertiary container');
-    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 90');
-    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain(toneHex(tertiaryTones, 90));
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 80');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain(toneHex(tertiaryTones, 80));
 
     await validation
-      .get('[data-surface-palette="error"][data-surface-role="primary"]')
+      .get('[data-surface-palette="error"][data-surface-role="surface"]')
       .trigger('pointermove', {
         clientX: 140,
         clientY: 420,
       });
-    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Error');
-    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 40');
-    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain(toneHex(errorTones, 40));
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Error Surface');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 50');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain(toneHex(errorTones, 50));
 
     await alert.trigger('pointermove', { clientX: 260, clientY: 360 });
     expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Error container');
-    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 90');
-    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain(toneHex(errorTones, 90));
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 80');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain(toneHex(errorTones, 80));
   });
 });

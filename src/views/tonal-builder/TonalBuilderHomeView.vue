@@ -32,7 +32,11 @@
   import { type TonalColorRole, useTonalScaleStore } from '@/stores/tonalScale';
   import { hexToRgb } from '@/utils/color';
   import type { TonalStep } from '@/utils/tonal/scale';
-  import { buildSurfaceRoleTones, SURFACE_TONE_ROLES } from '@/utils/tonal/surface-roles';
+  import {
+    buildAccentSurfaceRoleTones,
+    buildSurfaceRoleTones,
+    SURFACE_TONE_ROLES,
+  } from '@/utils/tonal/surface-roles';
   import { encodeShareState } from '@/utils/tonal/share-state';
   import { useClipboard } from '@/composables/useClipboard';
   import { useTonalExport } from '@/composables/useTonalExport';
@@ -45,6 +49,8 @@
   type MaterialPreviewRolePalette = {
     role: TonalColorRole;
     label: string;
+    kind?: 'surface' | 'accent' | 'custom';
+    baseTone?: number;
     tones: TonalStep[];
   };
 
@@ -502,6 +508,8 @@
     tonalScale.roleOrder.map((role) => ({
       role,
       label: roleLabel(role),
+      kind: tonalScale.roleMeta[role]?.kind,
+      baseTone: tonalScale.getRoleBaseTone(role),
       tones: tonalScale.getRoleExtendedStrip(role),
     })),
   );
@@ -637,24 +645,39 @@
 
   const surfaceCardLabel = (role: string, palette: TonalColorRole) => {
     const roleName = t(`tonal_builder.surface_preview.roles.${role}`);
-    return palette !== 'surface'
-      ? t('tonal_builder.surface_preview.palette_role', {
-          palette: roleLabel(palette),
-          role: roleName,
-        })
-      : roleName;
+    if (palette === 'surface') return roleName;
+    if (role === 'container') {
+      return t('tonal_builder.surface_preview.roles.role_container', { role: roleLabel(palette) });
+    }
+
+    return t('tonal_builder.surface_preview.palette_role', {
+      palette: roleLabel(palette),
+      role: roleName,
+    });
   };
 
   const buildRoleExportInput = (role: TonalColorRole) => {
     const roleExtendedStrip = tonalScale.getRoleExtendedStrip(role);
     const previewSettings = tonalScale.getRolePreviewSettings(role);
-    const roleTones = buildSurfaceRoleTones({
-      tones: roleExtendedStrip,
-      isDarkMode: tonalScale.preview.darkMode,
-      contrast: previewSettings.contrast,
-      lightTone: previewSettings.lightSurfaceTone,
-      darkTone: previewSettings.darkSurfaceTone,
-    });
+    const roleBaseTone = tonalScale.getRoleBaseTone(role);
+    const roleTones =
+      tonalScale.roleMeta[role]?.kind === 'surface'
+        ? buildSurfaceRoleTones({
+            tones: roleExtendedStrip,
+            isDarkMode: tonalScale.preview.darkMode,
+            contrast: previewSettings.contrast,
+            lightTone: previewSettings.lightSurfaceTone,
+            darkTone: previewSettings.darkSurfaceTone,
+          })
+        : buildAccentSurfaceRoleTones({
+            tones: roleExtendedStrip,
+            contrast: previewSettings.contrast,
+            surfaceTone:
+              previewSettings.lightSurfaceTone >= 10 && previewSettings.lightSurfaceTone <= 99
+                ? previewSettings.lightSurfaceTone
+                : roleBaseTone,
+            baseTone: roleBaseTone,
+          });
     const surfaceCards = SURFACE_TONE_ROLES.map((surfaceRole) => {
       const tone = roleTones[surfaceRole];
 

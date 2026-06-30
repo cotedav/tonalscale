@@ -95,30 +95,41 @@ describe('TonalBuilderHomeView', () => {
     expect(wrapper.getComponent(MaterialSurfacePreview).props('primaryTones')).toEqual(
       useTonalScaleStore().primaryExtendedStrip,
     );
+    const tonalScale = useTonalScaleStore();
     expect(wrapper.getComponent(MaterialSurfacePreview).props('rolePalettes')).toEqual([
       {
         role: 'surface',
         label: 'Surface',
+        kind: 'surface',
+        baseTone: tonalScale.getRoleBaseTone('surface'),
         tones: useTonalScaleStore().surfaceExtendedStrip,
       },
       {
         role: 'primary',
         label: 'Primary',
+        kind: 'accent',
+        baseTone: tonalScale.getRoleBaseTone('primary'),
         tones: useTonalScaleStore().primaryExtendedStrip,
       },
       {
         role: 'secondary',
         label: 'Secondary',
+        kind: 'accent',
+        baseTone: tonalScale.getRoleBaseTone('secondary'),
         tones: useTonalScaleStore().getRoleExtendedStrip('secondary'),
       },
       {
         role: 'tertiary',
         label: 'Tertiary',
+        kind: 'accent',
+        baseTone: tonalScale.getRoleBaseTone('tertiary'),
         tones: useTonalScaleStore().getRoleExtendedStrip('tertiary'),
       },
       {
         role: 'error',
         label: 'Error',
+        kind: 'accent',
+        baseTone: tonalScale.getRoleBaseTone('error'),
         tones: useTonalScaleStore().getRoleExtendedStrip('error'),
       },
     ]);

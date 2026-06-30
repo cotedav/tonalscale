@@ -373,19 +373,40 @@ const normalizeNumber = (value: unknown, fallback: number): number => {
 
 const normalizePreviewSettings = (
   input: Partial<RoleSurfacePreviewSettings> | undefined,
-): RoleSurfacePreviewSettings => ({
-  contrast: normalizeSurfaceContrast(input?.contrast),
-  lightSurfaceTone: clamp(
-    normalizeNumber(input?.lightSurfaceTone, DEFAULT_ROLE_PREVIEW_SETTINGS.lightSurfaceTone),
-    80,
-    100,
-  ),
-  darkSurfaceTone: clamp(
-    normalizeNumber(input?.darkSurfaceTone, DEFAULT_ROLE_PREVIEW_SETTINGS.darkSurfaceTone),
-    0,
-    25,
-  ),
-});
+  role: TonalColorRole = 'surface',
+): RoleSurfacePreviewSettings => {
+  const isSurfaceRole = role === 'surface';
+  const hasLightValue =
+    input?.lightSurfaceTone !== undefined && Number.isFinite(Number(input.lightSurfaceTone));
+  const hasDarkValue =
+    input?.darkSurfaceTone !== undefined && Number.isFinite(Number(input.darkSurfaceTone));
+  const lightValue = !hasLightValue
+    ? DEFAULT_ROLE_PREVIEW_SETTINGS.lightSurfaceTone
+    : normalizeNumber(input.lightSurfaceTone, DEFAULT_ROLE_PREVIEW_SETTINGS.lightSurfaceTone);
+  const darkValue = !hasDarkValue
+    ? DEFAULT_ROLE_PREVIEW_SETTINGS.darkSurfaceTone
+    : normalizeNumber(input.darkSurfaceTone, DEFAULT_ROLE_PREVIEW_SETTINGS.darkSurfaceTone);
+  const normalizeLightSurfaceTone = () => {
+    if (isSurfaceRole) return clamp(lightValue, 80, 100);
+    if (!hasLightValue || lightValue === DEFAULT_ROLE_PREVIEW_SETTINGS.lightSurfaceTone) {
+      return DEFAULT_ROLE_PREVIEW_SETTINGS.lightSurfaceTone;
+    }
+    return clamp(lightValue, 10, 99);
+  };
+  const normalizeDarkSurfaceTone = () => {
+    if (isSurfaceRole) return clamp(darkValue, 0, 25);
+    if (!hasDarkValue || darkValue === DEFAULT_ROLE_PREVIEW_SETTINGS.darkSurfaceTone) {
+      return DEFAULT_ROLE_PREVIEW_SETTINGS.darkSurfaceTone;
+    }
+    return clamp(darkValue, 10, 99);
+  };
+
+  return {
+    contrast: normalizeSurfaceContrast(input?.contrast),
+    lightSurfaceTone: normalizeLightSurfaceTone(),
+    darkSurfaceTone: normalizeDarkSurfaceTone(),
+  };
+};
 
 const createCustomRoleMeta = (id: TonalColorRole, label: string): ColorRoleMeta => ({
   id,
@@ -676,16 +697,22 @@ const parsePersistenceState = (payload: unknown): TonalPersistenceState | null =
     );
 
     const legacyPreviewSettings: Record<TonalColorRole, RoleSurfacePreviewSettings> = {
-      surface: normalizePreviewSettings({
-        contrast: previewInput.surfaceContrast as SurfaceContrast,
-        lightSurfaceTone: Number(previewInput.lightSurfaceTone),
-        darkSurfaceTone: Number(previewInput.darkSurfaceTone),
-      }),
-      primary: normalizePreviewSettings({
-        contrast: previewInput.primarySurfaceContrast as SurfaceContrast,
-        lightSurfaceTone: Number(previewInput.primaryLightSurfaceTone),
-        darkSurfaceTone: Number(previewInput.primaryDarkSurfaceTone),
-      }),
+      surface: normalizePreviewSettings(
+        {
+          contrast: previewInput.surfaceContrast as SurfaceContrast,
+          lightSurfaceTone: Number(previewInput.lightSurfaceTone),
+          darkSurfaceTone: Number(previewInput.darkSurfaceTone),
+        },
+        'surface',
+      ),
+      primary: normalizePreviewSettings(
+        {
+          contrast: previewInput.primarySurfaceContrast as SurfaceContrast,
+          lightSurfaceTone: Number(previewInput.primaryLightSurfaceTone),
+          darkSurfaceTone: Number(previewInput.primaryDarkSurfaceTone),
+        },
+        'primary',
+      ),
     };
     const inputRoleSettings =
       previewInput.roleSettings && typeof previewInput.roleSettings === 'object'
@@ -695,6 +722,7 @@ const parsePersistenceState = (payload: unknown): TonalPersistenceState | null =
       (accumulator, role) => {
         accumulator[role] = normalizePreviewSettings(
           inputRoleSettings[role] ?? legacyPreviewSettings[role],
+          role,
         );
         return accumulator;
       },
@@ -775,12 +803,16 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
     patch: Partial<RoleSurfacePreviewSettings>,
   ) => {
     const resolvedRole = resolveRole(role);
-    preview.roleSettings[resolvedRole] = normalizePreviewSettings({
-      ...getRolePreviewSettings(resolvedRole),
-      ...patch,
-    });
+    preview.roleSettings[resolvedRole] = normalizePreviewSettings(
+      {
+        ...getRolePreviewSettings(resolvedRole),
+        ...patch,
+      },
+      resolvedRole,
+    );
   };
   const getRoleParams = (role: TonalColorRole) => roleStateToParams(roles[resolveRole(role)].state);
+  const getRoleBaseTone = (role: TonalColorRole) => roles[resolveRole(role)].scale.luminance;
   const getRoleFullStrip = (role: TonalColorRole) => roles[resolveRole(role)].scale.colorScale;
   const getRoleExtendedStrip = (role: TonalColorRole) =>
     includeBaseIndex(
@@ -1047,7 +1079,7 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
     roleOrder.value.forEach((role) => {
       roles[role] = createRoleRuntime(state.roles[role] ?? fallbackRoleStateFor(role));
       roleMeta[role] = cloneRoleMeta(state.roleMeta[role] ?? normalizeRoleMeta(role, undefined));
-      preview.roleSettings[role] = normalizePreviewSettings(state.preview.roleSettings[role]);
+      preview.roleSettings[role] = normalizePreviewSettings(state.preview.roleSettings[role], role);
       ensureRoleWatcher(role);
     });
     activeRole.value = state.roles[state.activeRole]
@@ -1107,6 +1139,7 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
     persistenceState,
     blendDistribution,
     getRoleParams,
+    getRoleBaseTone,
     getRoleFullStrip,
     getRoleExtendedStrip,
     getRoleKeyStrip,

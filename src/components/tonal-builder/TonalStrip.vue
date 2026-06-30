@@ -6,7 +6,7 @@
   import { useContextMenu } from '@/composables/useContextMenu';
   import { clamp } from '@/utils/collection';
   import type { BlendDistribution } from '@/stores/tonalScale';
-  import { getContrastRatio } from '@/utils/tonal/contrast';
+  import { findClosestContrastTone, getContrastRatio } from '@/utils/tonal/contrast';
   import type { TonalStep } from '@/utils/tonal/scale';
   import BlendDistributionGraph from './BlendDistributionGraph.vue';
   import type { PairingSelection } from './types';
@@ -68,24 +68,7 @@
   const findClosestMatch = (direction: ContrastDirection, ratio: number): ContrastMatch | null => {
     if (state.activeIndex === null) return null;
 
-    const increment = direction === 'lighter' ? 1 : -1;
-    const baseTone = props.tones[state.activeIndex];
-
-    // Search outwards from active index
-    for (
-      let cursor = state.activeIndex + increment;
-      cursor >= 0 && cursor < props.tones.length;
-      cursor += increment
-    ) {
-      const candidate = props.tones[cursor];
-      const ratioValue = getContrastRatio(baseTone.hex, candidate.hex);
-
-      if (ratioValue >= ratio) {
-        return { tone: candidate, ratio: ratioValue };
-      }
-    }
-
-    return null;
+    return findClosestContrastTone(props.tones, state.activeIndex, direction, ratio);
   };
 
   const anchors = computed(() => {

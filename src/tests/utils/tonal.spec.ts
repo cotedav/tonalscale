@@ -3,6 +3,7 @@ import { applyBlend, applySaturation } from '@/utils/tonal/blending';
 import { cubicBezier, easeInOutQuad, getIntensity, getIntensityCurve } from '@/utils/tonal/easing';
 import { generateTonalScale, type TonalScaleParams } from '@/utils/tonal/scale';
 import { normalizeHexRgb, rgbToHsl, rgbToLab } from '@/utils/tonal/color-math';
+import { buildAccentSurfaceRoleTones } from '@/utils/tonal/surface-roles';
 
 describe('blending', () => {
   it('blends overlay mode with expected result', () => {
@@ -127,5 +128,28 @@ describe('generateTonalScale', () => {
     expect(darkerFar).toBeLessThan(darkerNear);
     expect(lighterFar).toBeLessThan(lighterNear);
     expect(Math.abs(darkerNear - lighterNear)).toBeLessThan(baseChroma * 0.1);
+  });
+});
+
+describe('accent surface roles', () => {
+  const tones = Array.from({ length: 101 }, (_, index) => ({
+    index,
+    hex: `#${index.toString().padStart(6, '0')}`,
+  }));
+
+  it('keeps the lowest container closest to the surface when containers must scale darker', () => {
+    const roles = buildAccentSurfaceRoleTones({
+      tones,
+      contrast: 'low',
+      surfaceTone: 98,
+      baseTone: 50,
+    });
+
+    expect(roles.surface).toBe(98);
+    expect(roles.container_lowest).toBe(97);
+    expect(roles.container_low).toBe(96);
+    expect(roles.container).toBe(95);
+    expect(roles.container_high).toBe(94);
+    expect(roles.container_highest).toBe(93);
   });
 });
