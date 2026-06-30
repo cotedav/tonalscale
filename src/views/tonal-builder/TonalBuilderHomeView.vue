@@ -1,15 +1,23 @@
 <script setup lang="ts">
   import { useEventListener, useTitle } from '@vueuse/core';
-  import { computed, onBeforeUnmount, ref, watch, watchEffect } from 'vue';
+  import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue';
+  import { computed, nextTick, onBeforeUnmount, ref, watch, watchEffect } from 'vue';
   import { useI18n } from 'vue-i18n';
   import { storeToRefs } from 'pinia';
 
+  import ConfirmationDialog from '@/components/tonal-builder/ConfirmationDialog.vue';
   import ColorPickerCard from '@/components/tonal-builder/ColorPickerCard.vue';
   import BaseSwitch from '@/components/common/BaseSwitch.vue';
   import ContrastPreviewCard from '@/components/tonal-builder/ContrastPreviewCard.vue';
   import MaterialSurfacePreview from '@/components/tonal-builder/MaterialSurfacePreview.vue';
   import TonalStrip from '@/components/tonal-builder/TonalStrip.vue';
-  import { ChevronDownIcon } from '@heroicons/vue/24/outline';
+  import {
+    ArrowPathIcon,
+    ChevronDownIcon,
+    DocumentDuplicateIcon,
+    PlusIcon,
+    TrashIcon,
+  } from '@heroicons/vue/24/outline';
   import ThemeToggle from '@/components/common/ThemeToggle.vue';
   import {
     type BlendControlId,
@@ -33,9 +41,21 @@
   import type { PairingSelection } from '@/components/tonal-builder/types';
 
   const { t } = useI18n();
+
+  type MaterialPreviewRolePalette = {
+    role: TonalColorRole;
+    label: string;
+    tones: TonalStep[];
+  };
+
+  type PendingConfirmation =
+    | { type: 'delete-role'; role: TonalColorRole; label: string }
+    | { type: 'reset' };
+
   const isImportModalOpen = ref(false);
   const isBlendEnabled = ref(true);
   const isAccessibilityDockCollapsed = ref(false);
+  const pendingConfirmation = ref<PendingConfirmation | null>(null);
   const workspaceRef = ref<HTMLElement | null>(null);
   const controlsPanelWidth = ref(500);
   const isResizingControls = ref(false);
@@ -199,6 +219,10 @@
 
   const previewSelection = ref<PairingSelection>(null);
   const selectedPreview = ref<PairingSelection>(null);
+  const editingRole = ref<TonalColorRole | null>(null);
+  const roleNameDraft = ref('');
+  const roleNameError = ref<string | null>(null);
+  const draggedRole = ref<TonalColorRole | null>(null);
   const fullStripRef = ref<InstanceType<typeof TonalStrip> | null>(null);
   const extendedStripRef = ref<InstanceType<typeof TonalStrip> | null>(null);
   const keyStripRef = ref<InstanceType<typeof TonalStrip> | null>(null);
@@ -220,80 +244,288 @@
     previewSelection.value = payload;
   };
 
-  const handleSwatchesPanelClick = (event: MouseEvent) => {
-    const target = event.target as Element | null;
-    if (target?.closest('[data-cy="tonal-swatch"]')) return;
-
+  const clearToneSelections = () => {
     fullStripRef.value?.clearSelection();
     extendedStripRef.value?.clearSelection();
     keyStripRef.value?.clearSelection();
     selectedPreview.value = null;
     previewSelection.value = null;
+  };
+
+  const handleSwatchesPanelClick = (event: MouseEvent) => {
+    const target = event.target as Element | null;
+    if (target?.closest('[data-cy="tonal-swatch"]')) return;
+
+    clearToneSelections();
   };
 
   const selectColorRole = (role: TonalColorRole) => {
     tonalScale.setActiveRole(role);
   };
 
-  const handleRoleTabKeydown = (event: KeyboardEvent, role: TonalColorRole) => {
-    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-    event.preventDefault();
-    let nextRole = role;
-    if (event.key === 'ArrowLeft' || event.key === 'Home') nextRole = 'surface';
-    if (event.key === 'ArrowRight' || event.key === 'End') nextRole = 'primary';
-    selectColorRole(nextRole);
-    document.querySelector<HTMLButtonElement>(`[data-role-tab="${nextRole}"]`)?.focus();
+  const roleLabel = (role: TonalColorRole) => {
+    const meta = tonalScale.roleMeta[role];
+    if (!meta) return role;
+    return meta.isBuiltIn ? t(`tonal_builder.roles.${role}`) : meta.label;
   };
 
-  const activePreviewContrast = computed({
-    get: () =>
-      activeRole.value === 'primary'
-        ? tonalScale.preview.primarySurfaceContrast
-        : tonalScale.preview.surfaceContrast,
-    set: (value) => {
-      if (activeRole.value === 'primary') {
-        tonalScale.preview.primarySurfaceContrast = value;
-      } else {
-        tonalScale.preview.surfaceContrast = value;
+  const activeRoleMeta = computed(() => tonalScale.roleMeta[activeRole.value]);
+  const isActiveRoleCustom = computed(() =>
+    Boolean(activeRoleMeta.value && !activeRoleMeta.value.isBuiltIn),
+  );
+
+  const focusRoleTab = async (role: TonalColorRole) => {
+    await nextTick();
+    document.querySelector<HTMLButtonElement>(`[data-role-tab="${role}"]`)?.focus();
+  };
+
+  const focusRoleNameInput = async (role: TonalColorRole) => {
+    await nextTick();
+    const input = document.querySelector<HTMLInputElement>(`[data-role-name-input="${role}"]`);
+    input?.focus();
+    input?.select();
+  };
+
+  const startInlineRename = async (role: TonalColorRole) => {
+    if (tonalScale.roleMeta[role]?.isBuiltIn) return;
+    editingRole.value = role;
+    roleNameDraft.value = roleLabel(role);
+    roleNameError.value = null;
+    await focusRoleNameInput(role);
+  };
+
+  const commitInlineRename = async (options: { allowRevert?: boolean } = {}) => {
+    const role = editingRole.value;
+    if (!role) return;
+
+    const draft = roleNameDraft.value.trim();
+    if (!draft && options.allowRevert) {
+      roleNameDraft.value = roleLabel(role);
+      roleNameError.value = null;
+      editingRole.value = null;
+      await focusRoleTab(role);
+      return;
+    }
+
+    roleNameError.value = null;
+    const result = tonalScale.renameRole(role, roleNameDraft.value);
+    if (!result.success) {
+      roleNameError.value = result.error ?? 'not_found';
+      await focusRoleNameInput(role);
+      return;
+    }
+
+    roleNameDraft.value = roleLabel(role);
+    editingRole.value = null;
+    await focusRoleTab(role);
+  };
+
+  const handleRoleTabClick = async (role: TonalColorRole) => {
+    if (activeRole.value === role) {
+      await startInlineRename(role);
+      return;
+    }
+
+    selectColorRole(role);
+  };
+
+  const handleRoleTabKeydown = async (event: KeyboardEvent, role: TonalColorRole) => {
+    if (event.ctrlKey && ['ArrowLeft', 'ArrowRight'].includes(event.key)) {
+      event.preventDefault();
+      const offset = event.key === 'ArrowLeft' ? -1 : 1;
+      if (tonalScale.moveRoleByOffset(role, offset)) {
+        selectColorRole(role);
+        await focusRoleTab(role);
       }
+      return;
+    }
+
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const roleIndex = tonalScale.roleOrder.indexOf(role);
+    const lastIndex = tonalScale.roleOrder.length - 1;
+    let nextIndex = roleIndex;
+    if (event.key === 'ArrowLeft') nextIndex = Math.max(0, roleIndex - 1);
+    if (event.key === 'ArrowRight') nextIndex = Math.min(lastIndex, roleIndex + 1);
+    if (event.key === 'Home') nextIndex = 0;
+    if (event.key === 'End') nextIndex = lastIndex;
+    const nextRole = tonalScale.roleOrder[nextIndex] ?? role;
+    selectColorRole(nextRole);
+    await focusRoleTab(nextRole);
+  };
+
+  const handleRoleDragStart = (event: DragEvent, role: TonalColorRole) => {
+    draggedRole.value = role;
+    const { dataTransfer } = event;
+    dataTransfer?.setData('text/plain', role);
+    if (dataTransfer) dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleRoleDragOver = (event: DragEvent) => {
+    if (!draggedRole.value) return;
+    event.preventDefault();
+    const { dataTransfer } = event;
+    if (dataTransfer) dataTransfer.dropEffect = 'move';
+  };
+
+  const handleRoleDrop = async (event: DragEvent, targetRole: TonalColorRole) => {
+    event.preventDefault();
+    const sourceRole = draggedRole.value;
+    draggedRole.value = null;
+    if (!sourceRole || sourceRole === targetRole) return;
+
+    const targetIndex = tonalScale.roleOrder.indexOf(targetRole);
+    if (targetIndex === -1) return;
+
+    tonalScale.moveRole(sourceRole, targetIndex);
+    selectColorRole(sourceRole);
+    await focusRoleTab(sourceRole);
+  };
+
+  const handleAddRole = async () => {
+    const role = tonalScale.addRole({ label: t('tonal_builder.roles.custom_default') });
+    await startInlineRename(role);
+  };
+
+  const handleDuplicateRole = async () => {
+    const role = tonalScale.duplicateRole(activeRole.value);
+    await startInlineRename(role);
+  };
+
+  const handleDeleteRole = () => {
+    const label = roleLabel(activeRole.value);
+    pendingConfirmation.value = { type: 'delete-role', role: activeRole.value, label };
+  };
+
+  const resetBuilder = () => {
+    tonalScale.loadDefaults();
+    clearToneSelections();
+    editingRole.value = null;
+    roleNameDraft.value = '';
+    roleNameError.value = null;
+  };
+
+  const handleResetBuilder = () => {
+    if (tonalScale.isDefaultState) {
+      resetBuilder();
+      return;
+    }
+
+    pendingConfirmation.value = { type: 'reset' };
+  };
+
+  const closeConfirmation = () => {
+    pendingConfirmation.value = null;
+  };
+
+  const confirmPendingAction = () => {
+    const pending = pendingConfirmation.value;
+    pendingConfirmation.value = null;
+    if (!pending) return;
+
+    if (pending.type === 'delete-role') {
+      tonalScale.removeRole(pending.role);
+      return;
+    }
+
+    resetBuilder();
+  };
+
+  const confirmationDialog = computed(() => {
+    const pending = pendingConfirmation.value;
+    if (!pending) return null;
+
+    if (pending.type === 'delete-role') {
+      return {
+        title: t('tonal_builder.confirmations.delete_role.title', { role: pending.label }),
+        body: t('tonal_builder.confirmations.delete_role.body', { role: pending.label }),
+        confirmLabel: t('tonal_builder.confirmations.delete_role.confirm'),
+        cancelLabel: t('tonal_builder.actions.cancel'),
+        tone: 'danger' as const,
+      };
+    }
+
+    return {
+      title: t('tonal_builder.confirmations.reset.title'),
+      body: t('tonal_builder.confirmations.reset.body'),
+      confirmLabel: t('tonal_builder.confirmations.reset.confirm'),
+      cancelLabel: t('tonal_builder.actions.cancel'),
+      tone: 'danger' as const,
+    };
+  });
+
+  const activePreviewContrast = computed({
+    get: () => tonalScale.getRolePreviewSettings(activeRole.value).contrast,
+    set: (value) => {
+      tonalScale.updateRolePreviewSettings(activeRole.value, { contrast: value });
     },
   });
 
   const activeLightSurfaceTone = computed({
-    get: () =>
-      activeRole.value === 'primary'
-        ? tonalScale.preview.primaryLightSurfaceTone
-        : tonalScale.preview.lightSurfaceTone,
+    get: () => tonalScale.getRolePreviewSettings(activeRole.value).lightSurfaceTone,
     set: (value) => {
-      if (activeRole.value === 'primary') {
-        tonalScale.preview.primaryLightSurfaceTone = value;
-      } else {
-        tonalScale.preview.lightSurfaceTone = value;
-      }
+      tonalScale.updateRolePreviewSettings(activeRole.value, { lightSurfaceTone: value });
     },
   });
 
   const activeDarkSurfaceTone = computed({
-    get: () =>
-      activeRole.value === 'primary'
-        ? tonalScale.preview.primaryDarkSurfaceTone
-        : tonalScale.preview.darkSurfaceTone,
+    get: () => tonalScale.getRolePreviewSettings(activeRole.value).darkSurfaceTone,
     set: (value) => {
-      if (activeRole.value === 'primary') {
-        tonalScale.preview.primaryDarkSurfaceTone = value;
-      } else {
-        tonalScale.preview.darkSurfaceTone = value;
-      }
+      tonalScale.updateRolePreviewSettings(activeRole.value, { darkSurfaceTone: value });
     },
   });
 
-  watch(activeRole, () => {
+  const surfaceContrastSettings = computed(() =>
+    Object.fromEntries(
+      tonalScale.roleOrder.map((role) => [role, tonalScale.getRolePreviewSettings(role).contrast]),
+    ),
+  );
+
+  const lightSurfaceToneSettings = computed(() =>
+    Object.fromEntries(
+      tonalScale.roleOrder.map((role) => [
+        role,
+        tonalScale.getRolePreviewSettings(role).lightSurfaceTone,
+      ]),
+    ),
+  );
+
+  const darkSurfaceToneSettings = computed(() =>
+    Object.fromEntries(
+      tonalScale.roleOrder.map((role) => [
+        role,
+        tonalScale.getRolePreviewSettings(role).darkSurfaceTone,
+      ]),
+    ),
+  );
+  const previewRolePalettes = computed<MaterialPreviewRolePalette[]>(() =>
+    tonalScale.roleOrder.map((role) => ({
+      role,
+      label: roleLabel(role),
+      tones: tonalScale.getRoleExtendedStrip(role),
+    })),
+  );
+
+  watch(activeRole, (role) => {
     fullStripRef.value?.clearSelection();
     extendedStripRef.value?.clearSelection();
     keyStripRef.value?.clearSelection();
     selectedPreview.value = null;
     previewSelection.value = null;
+    if (editingRole.value !== role) {
+      editingRole.value = null;
+      roleNameDraft.value = '';
+      roleNameError.value = null;
+    }
   });
+
+  watch(
+    () => tonalScale.roleMeta[activeRole.value]?.label,
+    () => {
+      roleNameDraft.value = roleLabel(activeRole.value);
+    },
+    { immediate: true },
+  );
 
   const previewCards = computed(() => {
     const base = previewSelection.value?.base ?? null;
@@ -392,49 +624,90 @@
   // Export & Clipboard
 
   const { copyToClipboard } = useClipboard();
-  const { generateScaleSvg } = useTonalExport();
+  const { generateScaleSvg, generateMultiRoleScaleSvg } = useTonalExport();
 
-  const handleCopySvg = async () => {
+  const shareExportContext = () => {
     const { serializedState } = tonalScale;
     const { origin, pathname } = window.location;
-    const shareUrl = `${origin}${pathname}${encodeShareState(serializedState)}`;
+    return {
+      serializedState,
+      shareUrl: `${origin}${pathname}${encodeShareState(serializedState)}`,
+    };
+  };
+
+  const surfaceCardLabel = (role: string, palette: TonalColorRole) => {
+    const roleName = t(`tonal_builder.surface_preview.roles.${role}`);
+    return palette !== 'surface'
+      ? t('tonal_builder.surface_preview.palette_role', {
+          palette: roleLabel(palette),
+          role: roleName,
+        })
+      : roleName;
+  };
+
+  const buildRoleExportInput = (role: TonalColorRole) => {
+    const roleExtendedStrip = tonalScale.getRoleExtendedStrip(role);
+    const previewSettings = tonalScale.getRolePreviewSettings(role);
     const roleTones = buildSurfaceRoleTones({
-      tones: extendedStrip.value,
+      tones: roleExtendedStrip,
       isDarkMode: tonalScale.preview.darkMode,
-      contrast: activePreviewContrast.value,
-      lightTone: activeLightSurfaceTone.value,
-      darkTone: activeDarkSurfaceTone.value,
+      contrast: previewSettings.contrast,
+      lightTone: previewSettings.lightSurfaceTone,
+      darkTone: previewSettings.darkSurfaceTone,
     });
-    const surfaceCards = SURFACE_TONE_ROLES.map((role) => {
-      const tone = roleTones[role];
-      const roleName = t(`tonal_builder.surface_preview.roles.${role}`);
+    const surfaceCards = SURFACE_TONE_ROLES.map((surfaceRole) => {
+      const tone = roleTones[surfaceRole];
 
       return {
-        label:
-          activeRole.value === 'primary'
-            ? t('tonal_builder.surface_preview.primary_role', { role: roleName })
-            : roleName,
+        label: surfaceCardLabel(surfaceRole, role),
         tone,
-        hex: extendedStrip.value.find((step) => step.index === tone)?.hex ?? baseHex.value,
+        hex:
+          roleExtendedStrip.find((step) => step.index === tone)?.hex ??
+          tonalScale.getRoleParams(role).colorHex,
       };
     });
 
+    return {
+      params: tonalScale.getRoleParams(role),
+      roleLabel: roleLabel(role),
+      fullStrip: tonalScale.getRoleFullStrip(role),
+      extendedStrip: roleExtendedStrip,
+      keyStrip: tonalScale.getRoleKeyStrip(role),
+      surfaceCards,
+    };
+  };
+
+  const sharedExportLabels = () => ({
+    exportedColorLabel: t('tonal_builder.export.exported_color'),
+    surfaceCardsLabel: t('tonal_builder.export.surface_roles'),
+    stripLabels: {
+      full: t('tonal_builder.scales.full'),
+      extended: t('tonal_builder.scales.extended'),
+      key: t('tonal_builder.scales.key'),
+    },
+  });
+
+  const handleCopyCurrentRoleSvg = async () => {
+    const { serializedState, shareUrl } = shareExportContext();
     const svg = generateScaleSvg({
-      params: tonalScale.scaleParams,
+      ...buildRoleExportInput(activeRole.value),
       metadata: serializedState,
       sourceUrl: shareUrl,
-      roleLabel: t(`tonal_builder.roles.${activeRole.value}`),
-      exportedColorLabel: t('tonal_builder.export.exported_color'),
-      surfaceCardsLabel: t('tonal_builder.export.surface_roles'),
-      stripLabels: {
-        full: t('tonal_builder.scales.full'),
-        extended: t('tonal_builder.scales.extended'),
-        key: t('tonal_builder.scales.key'),
-      },
-      fullStrip: fullStrip.value,
-      extendedStrip: extendedStrip.value,
-      keyStrip: keyStrip.value,
-      surfaceCards,
+      ...sharedExportLabels(),
+    });
+
+    await copyToClipboard(svg, 'SVG');
+  };
+
+  const handleCopyAllRolesSvg = async () => {
+    const { serializedState, shareUrl } = shareExportContext();
+    const svg = generateMultiRoleScaleSvg({
+      roles: tonalScale.roleOrder.map((role) => buildRoleExportInput(role)),
+      metadata: serializedState,
+      sourceUrl: shareUrl,
+      titleLabel: t('tonal_builder.export.all_roles_title'),
+      ...sharedExportLabels(),
+      exportedColorLabel: t('tonal_builder.export.exported_colors'),
     });
 
     await copyToClipboard(svg, 'SVG');
@@ -464,48 +737,141 @@
       class="flex h-[72px] shrink-0 items-center justify-between gap-4 border-b border-dim bg-surface-soft px-4 sm:px-8"
       :aria-label="t('tonal_builder.actions.toolbar_label')"
     >
-      <div
-        class="flex h-full items-end gap-1"
-        role="tablist"
-        :aria-label="t('tonal_builder.roles.tabs_label')"
-        data-cy="color-role-tabs"
-      >
-        <button
-          v-for="role in ['surface', 'primary'] as TonalColorRole[]"
-          :key="role"
-          type="button"
-          role="tab"
-          class="relative h-12 px-5 text-sm font-semibold text-secondary transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          :class="{ 'text-primary': activeRole === role }"
-          :aria-selected="activeRole === role"
-          :tabindex="activeRole === role ? 0 : -1"
-          :data-role-tab="role"
-          :data-cy="`${role}-role-tab`"
-          @click="selectColorRole(role)"
-          @keydown="handleRoleTabKeydown($event, role)"
+      <div class="flex min-w-0 flex-1 items-center gap-3">
+        <div
+          class="flex h-full min-w-0 flex-1 items-end gap-1 overflow-x-auto"
+          role="tablist"
+          :aria-label="t('tonal_builder.roles.tabs_label')"
+          data-cy="color-role-tabs"
         >
-          <span
-            class="mr-2 inline-block h-3.5 w-3.5 rounded-full border border-dim align-[-2px] shadow-sm"
-            :style="{ backgroundColor: tonalScale.roles[role].state.baseHex }"
-            :aria-label="
-              t('tonal_builder.roles.base_color_badge', {
-                role: t(`tonal_builder.roles.${role}`),
-                color: tonalScale.roles[role].state.baseHex,
-              })
-            "
-            :data-cy="`${role}-role-color-badge`"
-          />
-          {{ t(`tonal_builder.roles.${role}`) }}
-          <span
-            v-if="activeRole === role"
-            class="absolute inset-x-2 bottom-0 h-0.5 bg-accent"
-            aria-hidden="true"
-          />
-        </button>
+          <template
+            v-for="role in tonalScale.roleOrder"
+            :key="role"
+          >
+            <div
+              v-if="editingRole === role"
+              role="tab"
+              class="relative flex h-12 shrink-0 items-center px-5 text-sm font-semibold text-primary"
+              aria-selected="true"
+              tabindex="0"
+              :data-role-tab="role"
+              :data-cy="`${role}-role-tab`"
+            >
+              <span
+                class="mr-2 inline-block h-3.5 w-3.5 rounded-full border border-dim align-[-2px] shadow-sm"
+                :style="{ backgroundColor: tonalScale.roles[role].state.baseHex }"
+                :aria-label="
+                  t('tonal_builder.roles.base_color_badge', {
+                    role: roleLabel(role),
+                    color: tonalScale.roles[role].state.baseHex,
+                  })
+                "
+                :data-cy="`${role}-role-color-badge`"
+              />
+              <input
+                v-model="roleNameDraft"
+                type="text"
+                class="h-8 w-40 rounded-lg border border-dim bg-surface px-2 text-sm text-primary shadow-inner focus:outline-none focus:ring-2 focus:ring-accent"
+                :aria-label="t('tonal_builder.roles.rename_label')"
+                :aria-invalid="Boolean(roleNameError)"
+                :aria-describedby="roleNameError ? 'role-name-error' : undefined"
+                :data-role-name-input="role"
+                data-cy="role-name-input"
+                @keydown.stop.enter.prevent="commitInlineRename()"
+                @blur="commitInlineRename({ allowRevert: true })"
+              />
+              <span
+                class="absolute inset-x-2 bottom-0 h-0.5 bg-accent"
+                aria-hidden="true"
+              />
+              <span
+                v-if="roleNameError"
+                id="role-name-error"
+                class="sr-only"
+                role="alert"
+                data-cy="role-name-error"
+              >
+                {{ t(`tonal_builder.roles.errors.${roleNameError}`) }}
+              </span>
+            </div>
+            <button
+              v-else
+              type="button"
+              role="tab"
+              class="relative flex h-12 shrink-0 items-center px-5 text-sm font-semibold text-secondary transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              :class="{ 'text-primary': activeRole === role }"
+              :aria-selected="activeRole === role"
+              :tabindex="activeRole === role ? 0 : -1"
+              draggable="true"
+              :data-role-tab="role"
+              :data-cy="`${role}-role-tab`"
+              @click="handleRoleTabClick(role)"
+              @dragstart="handleRoleDragStart($event, role)"
+              @dragover="handleRoleDragOver"
+              @drop="handleRoleDrop($event, role)"
+              @dragend="draggedRole = null"
+              @keydown="handleRoleTabKeydown($event, role)"
+            >
+              <span
+                class="mr-2 inline-block h-3.5 w-3.5 rounded-full border border-dim align-[-2px] shadow-sm"
+                :style="{ backgroundColor: tonalScale.roles[role].state.baseHex }"
+                :aria-label="
+                  t('tonal_builder.roles.base_color_badge', {
+                    role: roleLabel(role),
+                    color: tonalScale.roles[role].state.baseHex,
+                  })
+                "
+                :data-cy="`${role}-role-color-badge`"
+              />
+              <span>{{ roleLabel(role) }}</span>
+              <span
+                v-if="activeRole === role"
+                class="absolute inset-x-2 bottom-0 h-0.5 bg-accent"
+                aria-hidden="true"
+              />
+            </button>
+          </template>
+          <button
+            type="button"
+            class="mb-1 ml-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-dim bg-surface text-secondary transition hover:bg-surface-strong hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            :aria-label="t('tonal_builder.roles.add')"
+            data-cy="role-add"
+            @click="handleAddRole"
+          >
+            <PlusIcon class="h-4 w-4" />
+          </button>
+        </div>
+
+        <div
+          class="hidden shrink-0 items-center gap-1 lg:flex"
+          :aria-label="t('tonal_builder.roles.management_label')"
+          data-cy="role-management"
+        >
+          <button
+            type="button"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-dim bg-surface text-secondary transition hover:bg-surface-strong hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            :aria-label="t('tonal_builder.roles.duplicate', { role: roleLabel(activeRole) })"
+            data-cy="role-duplicate"
+            @click="handleDuplicateRole"
+          >
+            <DocumentDuplicateIcon class="h-4 w-4" />
+          </button>
+          <template v-if="isActiveRoleCustom">
+            <button
+              type="button"
+              class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-500/40 bg-rose-500/10 text-rose-200 transition hover:bg-rose-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
+              :aria-label="t('tonal_builder.roles.delete', { role: roleLabel(activeRole) })"
+              data-cy="role-delete"
+              @click="handleDeleteRole"
+            >
+              <TrashIcon class="h-4 w-4" />
+            </button>
+          </template>
+        </div>
       </div>
 
       <div
-        class="flex flex-wrap items-center justify-end gap-3"
+        class="flex shrink-0 flex-wrap items-center justify-end gap-3"
         :aria-label="t('tonal_builder.actions.actions_label')"
       >
         <button
@@ -516,14 +882,57 @@
         >
           {{ t('tonal_builder.actions.import') }}
         </button>
-        <button
-          id="copy-button"
-          type="button"
-          class="inline-flex h-11 items-center justify-center rounded-none bg-accent-strong/15 px-5 text-sm font-semibold text-primary ring-1 ring-inset ring-accent-strong/20 transition hover:bg-accent-strong/25"
-          data-cy="tonal-builder-copy"
-          @click="handleCopySvg"
+        <Menu
+          as="div"
+          class="relative"
         >
-          {{ t('tonal_builder.actions.export') }}
+          <MenuButton
+            id="copy-button"
+            class="inline-flex h-11 items-center justify-center gap-2 rounded-none bg-accent-strong/15 px-5 text-sm font-semibold text-primary ring-1 ring-inset ring-accent-strong/20 transition hover:bg-accent-strong/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            data-cy="tonal-builder-copy"
+          >
+            {{ t('tonal_builder.actions.export') }}
+            <ChevronDownIcon
+              class="h-4 w-4"
+              aria-hidden="true"
+            />
+          </MenuButton>
+          <MenuItems
+            class="absolute right-0 z-50 mt-2 w-48 rounded-xl border border-glass/15 bg-surface-soft/95 p-1 text-sm shadow-card backdrop-blur-xl focus:outline-none"
+            data-cy="export-menu"
+          >
+            <MenuItem v-slot="{ active }">
+              <button
+                type="button"
+                class="flex w-full rounded-lg px-3 py-2 text-left font-semibold text-primary"
+                :class="{ 'bg-glass/10': active }"
+                data-cy="export-current-role"
+                @click="handleCopyCurrentRoleSvg"
+              >
+                {{ t('tonal_builder.export.this_role_only') }}
+              </button>
+            </MenuItem>
+            <MenuItem v-slot="{ active }">
+              <button
+                type="button"
+                class="flex w-full rounded-lg px-3 py-2 text-left font-semibold text-primary"
+                :class="{ 'bg-glass/10': active }"
+                data-cy="export-all-roles"
+                @click="handleCopyAllRolesSvg"
+              >
+                {{ t('tonal_builder.export.all_roles') }}
+              </button>
+            </MenuItem>
+          </MenuItems>
+        </Menu>
+        <button
+          type="button"
+          class="inline-flex h-11 items-center justify-center gap-2 rounded-none bg-accent-strong/15 px-5 text-sm font-semibold text-primary ring-1 ring-inset ring-accent-strong/20 transition hover:bg-accent-strong/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          data-cy="tonal-builder-reset"
+          @click="handleResetBuilder"
+        >
+          <ArrowPathIcon class="h-4 w-4" />
+          {{ t('tonal_builder.actions.reset') }}
         </button>
 
         <ThemeToggle
@@ -636,19 +1045,11 @@
               class="pt-4"
               :tones="surfaceExtendedStrip"
               :primary-tones="primaryExtendedStrip"
+              :role-palettes="previewRolePalettes"
               :active-role="activeRole"
-              :surface-contrast-settings="{
-                surface: tonalScale.preview.surfaceContrast,
-                primary: tonalScale.preview.primarySurfaceContrast,
-              }"
-              :light-surface-tone-settings="{
-                surface: tonalScale.preview.lightSurfaceTone,
-                primary: tonalScale.preview.primaryLightSurfaceTone,
-              }"
-              :dark-surface-tone-settings="{
-                surface: tonalScale.preview.darkSurfaceTone,
-                primary: tonalScale.preview.primaryDarkSurfaceTone,
-              }"
+              :surface-contrast-settings="surfaceContrastSettings"
+              :light-surface-tone-settings="lightSurfaceToneSettings"
+              :dark-surface-tone-settings="darkSurfaceToneSettings"
             />
           </section>
         </div>
@@ -901,6 +1302,17 @@
         </div>
       </section>
     </div>
+
+    <ConfirmationDialog
+      :is-open="Boolean(confirmationDialog)"
+      :title="confirmationDialog?.title ?? ''"
+      :body="confirmationDialog?.body ?? ''"
+      :confirm-label="confirmationDialog?.confirmLabel ?? ''"
+      :cancel-label="confirmationDialog?.cancelLabel ?? ''"
+      :tone="confirmationDialog?.tone"
+      @cancel="closeConfirmation"
+      @confirm="confirmPendingAction"
+    />
   </main>
 </template>
 

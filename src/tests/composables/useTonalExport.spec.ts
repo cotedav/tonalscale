@@ -3,7 +3,7 @@ import { useTonalExport } from '@/composables/useTonalExport';
 import type { TonalStep, TonalScaleParams } from '@/utils/tonal/scale';
 
 describe('useTonalExport', () => {
-  const { generateScaleSvg } = useTonalExport();
+  const { generateScaleSvg, generateMultiRoleScaleSvg } = useTonalExport();
 
   const mockStep = (num: number, hex: string): TonalStep => ({
     index: num,
@@ -144,5 +144,49 @@ describe('useTonalExport', () => {
     expect(svg).not.toContain('Link:');
     expect(svg).not.toContain('Import:');
     expect(svg).not.toContain('...');
+  });
+
+  it('generates a single SVG for multiple roles with complete metadata', () => {
+    const metadata = JSON.stringify({
+      version: 3,
+      roleOrder: ['surface', 'primary', 'support'],
+    });
+    const svg = generateMultiRoleScaleSvg({
+      titleLabel: 'All color roles',
+      exportedColorLabel: 'Exported colors',
+      surfaceCardsLabel: 'Surface role mapping',
+      metadata,
+      sourceUrl: 'http://test.com/#v3=full',
+      stripLabels: mockInput.stripLabels,
+      roles: [
+        { ...mockInput, roleLabel: 'Surface' },
+        {
+          ...mockInput,
+          roleLabel: 'Primary',
+          params: { ...mockParams, colorHex: '#6750a4' },
+          fullStrip: [mockStep(0, '#000000'), mockStep(100, '#ffffff')],
+          surfaceCards: [{ label: 'Primary Surface', tone: 100, hex: '#ffffff' }],
+        },
+        {
+          ...mockInput,
+          roleLabel: 'Support custom',
+          params: { ...mockParams, colorHex: '#224466' },
+          surfaceCards: [{ label: 'Support custom Outline', tone: 50, hex: '#224466' }],
+        },
+      ],
+    });
+
+    expect(svg).toContain('<svg');
+    expect(svg).toContain('All color roles tonal scales');
+    expect(svg).toContain('Exported colors');
+    expect(svg).toContain('>Surface</text>');
+    expect(svg).toContain('>Primary</text>');
+    expect(svg).toContain('>Support custom</text>');
+    expect(svg).toContain('Primary Surface');
+    expect(svg).toContain('Support custom Outline');
+    expect(svg).toContain('http://test.com/#v3=full');
+    expect(svg).toContain(metadata);
+    expect(svg).toContain('<source-url>http://test.com/#v3=full</source-url>');
+    expect(svg).toContain(`<import-data>${metadata}</import-data>`);
   });
 });

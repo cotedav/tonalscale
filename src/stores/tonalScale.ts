@@ -1,4 +1,4 @@
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, reactive, ref, watch, type WatchStopHandle } from 'vue';
 import { defineStore } from 'pinia';
 
 import type { BlendControlId } from '@/composables/useTonalBuilderControls';
@@ -22,7 +22,10 @@ export const KEY_SCALE_INDICES = [
   0, 10, 20, 25, 30, 35, 40, 50, 60, 70, 80, 90, 95, 98, 99, 100,
 ] as const;
 
-export type TonalColorRole = 'surface' | 'primary';
+export const BUILT_IN_ROLE_IDS = ['surface', 'primary', 'secondary', 'tertiary', 'error'] as const;
+export const TONAL_PERSISTENCE_SCHEMA_VERSION = 3;
+export type BuiltInTonalColorRole = (typeof BUILT_IN_ROLE_IDS)[number];
+export type TonalColorRole = string;
 export type SurfaceContrast = 'low' | 'medium' | 'high';
 
 export type ContrastCandidate = { index: number; hex: string; ratio: number };
@@ -54,18 +57,43 @@ export type RoleTonalState = {
   };
 };
 
+export type ColorRoleKind = 'surface' | 'accent' | 'custom';
+
+export type ColorRoleCapabilities = {
+  tonalScale: boolean;
+  materialSurfaces: boolean;
+  appPreviewExamples: boolean;
+};
+
+export type ColorRoleMeta = {
+  id: TonalColorRole;
+  label: string;
+  isBuiltIn: boolean;
+  kind: ColorRoleKind;
+  deletable: boolean;
+  capabilities: ColorRoleCapabilities;
+};
+
+export type RoleSurfacePreviewSettings = {
+  contrast: SurfaceContrast;
+  lightSurfaceTone: number;
+  darkSurfaceTone: number;
+};
+
+export type RoleRenameResult = {
+  success: boolean;
+  error?: 'not_found' | 'protected' | 'empty' | 'duplicate';
+};
+
 export type TonalPersistenceState = {
-  version: 2;
+  version: typeof TONAL_PERSISTENCE_SCHEMA_VERSION;
   activeRole: TonalColorRole;
+  roleOrder: TonalColorRole[];
+  roleMeta: Record<TonalColorRole, ColorRoleMeta>;
   roles: Record<TonalColorRole, RoleTonalState>;
   preview: {
     darkMode: boolean;
-    surfaceContrast: SurfaceContrast;
-    lightSurfaceTone: number;
-    darkSurfaceTone: number;
-    primarySurfaceContrast: SurfaceContrast;
-    primaryLightSurfaceTone: number;
-    primaryDarkSurfaceTone: number;
+    roleSettings: Record<TonalColorRole, RoleSurfacePreviewSettings>;
   };
 };
 
@@ -89,7 +117,7 @@ type RoleRuntime = {
   metadata: ToneMetadata[];
 };
 
-const DEFAULT_ROLE_STATES: Record<TonalColorRole, RoleTonalState> = {
+const DEFAULT_ROLE_STATES: Record<BuiltInTonalColorRole, RoleTonalState> = {
   surface: {
     baseHex: '#8000ff',
     blendHex: '#000032',
@@ -114,22 +142,283 @@ const DEFAULT_ROLE_STATES: Record<TonalColorRole, RoleTonalState> = {
       satLighter: 0,
     },
   },
+  secondary: {
+    baseHex: '#625b71',
+    blendHex: '#000032',
+    blendMode: 'colordodge',
+    controls: {
+      strength: 0,
+      middle: 0,
+      spread: 50,
+      satDarker: 0,
+      satLighter: 0,
+    },
+  },
+  tertiary: {
+    baseHex: '#7d5260',
+    blendHex: '#000032',
+    blendMode: 'colordodge',
+    controls: {
+      strength: 0,
+      middle: 0,
+      spread: 50,
+      satDarker: 0,
+      satLighter: 0,
+    },
+  },
+  error: {
+    baseHex: '#b3261e',
+    blendHex: '#000032',
+    blendMode: 'colordodge',
+    controls: {
+      strength: 0,
+      middle: 0,
+      spread: 50,
+      satDarker: 0,
+      satLighter: 0,
+    },
+  },
+};
+
+const DEFAULT_ROLE_ORDER: BuiltInTonalColorRole[] = [...BUILT_IN_ROLE_IDS];
+
+const DEFAULT_ROLE_CAPABILITIES: ColorRoleCapabilities = {
+  tonalScale: true,
+  materialSurfaces: true,
+  appPreviewExamples: false,
+};
+
+const DEFAULT_ROLE_META: Record<BuiltInTonalColorRole, ColorRoleMeta> = {
+  surface: {
+    id: 'surface',
+    label: 'Surface',
+    isBuiltIn: true,
+    kind: 'surface',
+    deletable: false,
+    capabilities: {
+      ...DEFAULT_ROLE_CAPABILITIES,
+      appPreviewExamples: true,
+    },
+  },
+  primary: {
+    id: 'primary',
+    label: 'Primary',
+    isBuiltIn: true,
+    kind: 'accent',
+    deletable: false,
+    capabilities: {
+      ...DEFAULT_ROLE_CAPABILITIES,
+      appPreviewExamples: true,
+    },
+  },
+  secondary: {
+    id: 'secondary',
+    label: 'Secondary',
+    isBuiltIn: true,
+    kind: 'accent',
+    deletable: false,
+    capabilities: {
+      ...DEFAULT_ROLE_CAPABILITIES,
+      appPreviewExamples: true,
+    },
+  },
+  tertiary: {
+    id: 'tertiary',
+    label: 'Tertiary',
+    isBuiltIn: true,
+    kind: 'accent',
+    deletable: false,
+    capabilities: {
+      ...DEFAULT_ROLE_CAPABILITIES,
+      appPreviewExamples: true,
+    },
+  },
+  error: {
+    id: 'error',
+    label: 'Error',
+    isBuiltIn: true,
+    kind: 'accent',
+    deletable: false,
+    capabilities: {
+      ...DEFAULT_ROLE_CAPABILITIES,
+      appPreviewExamples: true,
+    },
+  },
+};
+
+const DEFAULT_ROLE_PREVIEW_SETTINGS: RoleSurfacePreviewSettings = {
+  contrast: 'low',
+  lightSurfaceTone: 100,
+  darkSurfaceTone: 0,
 };
 
 const DEFAULT_PREVIEW_STATE: TonalPersistenceState['preview'] = {
   darkMode: false,
-  surfaceContrast: 'low',
-  lightSurfaceTone: 100,
-  darkSurfaceTone: 0,
-  primarySurfaceContrast: 'low',
-  primaryLightSurfaceTone: 100,
-  primaryDarkSurfaceTone: 0,
+  roleSettings: {
+    ...Object.fromEntries(
+      DEFAULT_ROLE_ORDER.map((role) => [role, { ...DEFAULT_ROLE_PREVIEW_SETTINGS }]),
+    ),
+  },
 };
 
 const cloneRoleState = (state: RoleTonalState): RoleTonalState => ({
   ...state,
   controls: { ...state.controls },
 });
+
+const cloneRoleMeta = (meta: ColorRoleMeta): ColorRoleMeta => ({
+  ...meta,
+  capabilities: { ...meta.capabilities },
+});
+
+const clonePreviewSettings = (
+  settings: RoleSurfacePreviewSettings,
+): RoleSurfacePreviewSettings => ({
+  ...settings,
+});
+
+const cloneDefaultRoleMeta = () =>
+  Object.fromEntries(
+    DEFAULT_ROLE_ORDER.map((role) => [role, cloneRoleMeta(DEFAULT_ROLE_META[role])]),
+  ) as Record<TonalColorRole, ColorRoleMeta>;
+
+const cloneDefaultRoleStates = () =>
+  Object.fromEntries(
+    DEFAULT_ROLE_ORDER.map((role) => [role, cloneRoleState(DEFAULT_ROLE_STATES[role])]),
+  ) as Record<TonalColorRole, RoleTonalState>;
+
+const cloneDefaultRolePreviewSettings = () =>
+  Object.fromEntries(
+    DEFAULT_ROLE_ORDER.map((role) => [role, clonePreviewSettings(DEFAULT_ROLE_PREVIEW_SETTINGS)]),
+  ) as Record<TonalColorRole, RoleSurfacePreviewSettings>;
+
+const createDefaultPersistenceState = (): TonalPersistenceState => ({
+  version: TONAL_PERSISTENCE_SCHEMA_VERSION,
+  activeRole: 'surface',
+  roleOrder: [...DEFAULT_ROLE_ORDER],
+  roleMeta: cloneDefaultRoleMeta(),
+  roles: cloneDefaultRoleStates(),
+  preview: {
+    darkMode: DEFAULT_PREVIEW_STATE.darkMode,
+    roleSettings: cloneDefaultRolePreviewSettings(),
+  },
+});
+
+const isBuiltInRole = (role: TonalColorRole): role is BuiltInTonalColorRole =>
+  (BUILT_IN_ROLE_IDS as readonly string[]).includes(role);
+
+const fallbackRoleStateFor = (role: TonalColorRole): RoleTonalState =>
+  cloneRoleState(isBuiltInRole(role) ? DEFAULT_ROLE_STATES[role] : DEFAULT_ROLE_STATES.primary);
+
+const normalizeRoleIdBase = (value: string): TonalColorRole => {
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9]+/g, '_')
+    .replaceAll(/^_+|_+$/g, '');
+
+  return normalized || 'custom_role';
+};
+
+const createUniqueRoleId = (
+  label: string,
+  existingIds: Iterable<TonalColorRole>,
+): TonalColorRole => {
+  const existing = new Set(existingIds);
+  const base = normalizeRoleIdBase(label);
+  let candidate = base;
+  let suffix = 2;
+
+  while (existing.has(candidate)) {
+    candidate = `${base}_${suffix}`;
+    suffix += 1;
+  }
+
+  return candidate;
+};
+
+const createUniqueRoleLabel = (label: string, existingLabels: Iterable<string>): string => {
+  const existing = new Set(
+    Array.from(existingLabels).map((existingLabel) => existingLabel.toLowerCase()),
+  );
+  const base = label.trim() || 'Custom role';
+  let candidate = base;
+  let suffix = 2;
+
+  while (existing.has(candidate.toLowerCase())) {
+    candidate = `${base} ${suffix}`;
+    suffix += 1;
+  }
+
+  return candidate;
+};
+
+const normalizeRoleId = (value: unknown): TonalColorRole | null => {
+  if (typeof value !== 'string') return null;
+  const normalized = normalizeRoleIdBase(value);
+
+  return normalized;
+};
+
+const normalizeSurfaceContrast = (
+  value: unknown,
+  fallback: SurfaceContrast = DEFAULT_ROLE_PREVIEW_SETTINGS.contrast,
+): SurfaceContrast =>
+  ['low', 'medium', 'high'].includes(String(value)) ? (value as SurfaceContrast) : fallback;
+
+const normalizeNumber = (value: unknown, fallback: number): number => {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue : fallback;
+};
+
+const normalizePreviewSettings = (
+  input: Partial<RoleSurfacePreviewSettings> | undefined,
+): RoleSurfacePreviewSettings => ({
+  contrast: normalizeSurfaceContrast(input?.contrast),
+  lightSurfaceTone: clamp(
+    normalizeNumber(input?.lightSurfaceTone, DEFAULT_ROLE_PREVIEW_SETTINGS.lightSurfaceTone),
+    80,
+    100,
+  ),
+  darkSurfaceTone: clamp(
+    normalizeNumber(input?.darkSurfaceTone, DEFAULT_ROLE_PREVIEW_SETTINGS.darkSurfaceTone),
+    0,
+    25,
+  ),
+});
+
+const createCustomRoleMeta = (id: TonalColorRole, label: string): ColorRoleMeta => ({
+  id,
+  label,
+  isBuiltIn: false,
+  kind: 'custom',
+  deletable: true,
+  capabilities: { ...DEFAULT_ROLE_CAPABILITIES },
+});
+
+const normalizeRoleMeta = (
+  id: TonalColorRole,
+  input: Partial<ColorRoleMeta> | undefined,
+): ColorRoleMeta => {
+  if (isBuiltInRole(id)) return cloneRoleMeta(DEFAULT_ROLE_META[id]);
+
+  const label = typeof input?.label === 'string' && input.label.trim() ? input.label.trim() : id;
+  const kind: ColorRoleKind = ['surface', 'accent', 'custom'].includes(String(input?.kind))
+    ? (input?.kind as ColorRoleKind)
+    : 'custom';
+
+  return {
+    id,
+    label,
+    isBuiltIn: false,
+    kind,
+    deletable: input?.deletable ?? true,
+    capabilities: {
+      ...DEFAULT_ROLE_CAPABILITIES,
+      ...(input?.capabilities ?? {}),
+    },
+  };
+};
 
 const roleStateToParams = (state: RoleTonalState): TonalScaleParams => {
   const blend = hexToRgb(state.blendHex);
@@ -241,6 +530,8 @@ const normalizeRoleState = (
   input: Partial<RoleTonalState> | Partial<TonalScaleParams> | undefined,
   fallback: RoleTonalState,
 ): RoleTonalState => {
+  if (!input || typeof input !== 'object') return cloneRoleState(fallback);
+
   const source = input ?? {};
   const legacySource = source as Partial<TonalScaleParams>;
   const { blendStrength: legacyBlendStrength } = legacySource;
@@ -332,130 +623,202 @@ const parsePersistenceState = (payload: unknown): TonalPersistenceState | null =
   if (!parsed || typeof parsed !== 'object') return null;
 
   const input = parsed as Record<string, unknown>;
-  if (input.version !== undefined && Number(input.version) !== 2) return null;
+  const inputVersion = Number(input.version ?? TONAL_PERSISTENCE_SCHEMA_VERSION);
+  if (![2, TONAL_PERSISTENCE_SCHEMA_VERSION].includes(inputVersion)) return null;
 
   if (input.roles && typeof input.roles === 'object') {
-    const roles = input.roles as Partial<Record<TonalColorRole, Partial<RoleTonalState>>>;
+    const inputRoles = input.roles as Record<string, Partial<RoleTonalState>>;
     const previewInput =
       input.preview && typeof input.preview === 'object'
-        ? (input.preview as Partial<TonalPersistenceState['preview']>)
+        ? (input.preview as Record<string, unknown>)
         : {};
-    const activeRole: TonalColorRole = input.activeRole === 'primary' ? 'primary' : 'surface';
-    const surfaceContrast: SurfaceContrast = ['low', 'medium', 'high'].includes(
-      String(previewInput.surfaceContrast),
-    )
-      ? (previewInput.surfaceContrast as SurfaceContrast)
-      : DEFAULT_PREVIEW_STATE.surfaceContrast;
+    const roleIds = new Set<TonalColorRole>(DEFAULT_ROLE_ORDER);
+    const roleKeyLookup = new Map<string, TonalColorRole>();
+
+    Object.keys(inputRoles).forEach((key) => {
+      const normalized = normalizeRoleId(key);
+      if (!normalized) return;
+      roleIds.add(normalized);
+      roleKeyLookup.set(key, normalized);
+    });
+
+    const inputRoleOrder = Array.isArray(input.roleOrder)
+      ? input.roleOrder
+          .map((role) => normalizeRoleId(role))
+          .filter((role): role is TonalColorRole => {
+            if (!role) return false;
+            return roleIds.has(role);
+          })
+      : [];
+    const roleOrder = Array.from(new Set([...inputRoleOrder, ...DEFAULT_ROLE_ORDER, ...roleIds]));
+
+    const roles = roleOrder.reduce<Record<TonalColorRole, RoleTonalState>>((accumulator, role) => {
+      accumulator[role] = normalizeRoleState(undefined, fallbackRoleStateFor(role));
+      return accumulator;
+    }, {});
+
+    Object.entries(inputRoles).forEach(([key, value]) => {
+      const role = roleKeyLookup.get(key);
+      if (!role) return;
+      roles[role] = normalizeRoleState(value, fallbackRoleStateFor(role));
+    });
+
+    const inputRoleMeta =
+      input.roleMeta && typeof input.roleMeta === 'object'
+        ? (input.roleMeta as Record<string, Partial<ColorRoleMeta>>)
+        : {};
+    const roleMeta = roleOrder.reduce<Record<TonalColorRole, ColorRoleMeta>>(
+      (accumulator, role) => {
+        accumulator[role] = normalizeRoleMeta(role, inputRoleMeta[role]);
+        return accumulator;
+      },
+      {},
+    );
+
+    const legacyPreviewSettings: Record<TonalColorRole, RoleSurfacePreviewSettings> = {
+      surface: normalizePreviewSettings({
+        contrast: previewInput.surfaceContrast as SurfaceContrast,
+        lightSurfaceTone: Number(previewInput.lightSurfaceTone),
+        darkSurfaceTone: Number(previewInput.darkSurfaceTone),
+      }),
+      primary: normalizePreviewSettings({
+        contrast: previewInput.primarySurfaceContrast as SurfaceContrast,
+        lightSurfaceTone: Number(previewInput.primaryLightSurfaceTone),
+        darkSurfaceTone: Number(previewInput.primaryDarkSurfaceTone),
+      }),
+    };
+    const inputRoleSettings =
+      previewInput.roleSettings && typeof previewInput.roleSettings === 'object'
+        ? (previewInput.roleSettings as Record<string, Partial<RoleSurfacePreviewSettings>>)
+        : {};
+    const roleSettings = roleOrder.reduce<Record<TonalColorRole, RoleSurfacePreviewSettings>>(
+      (accumulator, role) => {
+        accumulator[role] = normalizePreviewSettings(
+          inputRoleSettings[role] ?? legacyPreviewSettings[role],
+        );
+        return accumulator;
+      },
+      {},
+    );
+    const activeRole = normalizeRoleId(input.activeRole);
 
     return {
-      version: 2,
-      activeRole,
-      roles: {
-        surface: normalizeRoleState(roles.surface, DEFAULT_ROLE_STATES.surface),
-        primary: normalizeRoleState(roles.primary, DEFAULT_ROLE_STATES.primary),
-      },
+      version: TONAL_PERSISTENCE_SCHEMA_VERSION,
+      activeRole: activeRole && roleIds.has(activeRole) ? activeRole : 'surface',
+      roleOrder,
+      roleMeta,
+      roles,
       preview: {
         darkMode: Boolean(previewInput.darkMode),
-        surfaceContrast,
-        lightSurfaceTone: clamp(
-          Number(previewInput.lightSurfaceTone ?? DEFAULT_PREVIEW_STATE.lightSurfaceTone),
-          80,
-          100,
-        ),
-        darkSurfaceTone: clamp(
-          Number(previewInput.darkSurfaceTone ?? DEFAULT_PREVIEW_STATE.darkSurfaceTone),
-          0,
-          25,
-        ),
-        primarySurfaceContrast: ['low', 'medium', 'high'].includes(
-          String(previewInput.primarySurfaceContrast),
-        )
-          ? (previewInput.primarySurfaceContrast as SurfaceContrast)
-          : DEFAULT_PREVIEW_STATE.primarySurfaceContrast,
-        primaryLightSurfaceTone: clamp(
-          Number(
-            previewInput.primaryLightSurfaceTone ?? DEFAULT_PREVIEW_STATE.primaryLightSurfaceTone,
-          ),
-          80,
-          100,
-        ),
-        primaryDarkSurfaceTone: clamp(
-          Number(
-            previewInput.primaryDarkSurfaceTone ?? DEFAULT_PREVIEW_STATE.primaryDarkSurfaceTone,
-          ),
-          0,
-          25,
-        ),
+        roleSettings,
       },
     };
   }
 
   return {
-    version: 2,
+    version: TONAL_PERSISTENCE_SCHEMA_VERSION,
     activeRole: 'surface',
+    roleOrder: [...DEFAULT_ROLE_ORDER],
+    roleMeta: cloneDefaultRoleMeta(),
     roles: {
+      ...cloneDefaultRoleStates(),
       surface: normalizeRoleState(input as Partial<TonalScaleParams>, DEFAULT_ROLE_STATES.surface),
-      primary: cloneRoleState(DEFAULT_ROLE_STATES.primary),
     },
-    preview: { ...DEFAULT_PREVIEW_STATE },
+    preview: {
+      darkMode: DEFAULT_PREVIEW_STATE.darkMode,
+      roleSettings: cloneDefaultRolePreviewSettings(),
+    },
   };
 };
 
 export const useTonalScaleStore = defineStore('tonalScale', () => {
   const activeRole = ref<TonalColorRole>('surface');
-  const preview = reactive({ ...DEFAULT_PREVIEW_STATE });
-  const roles = reactive<Record<TonalColorRole, RoleRuntime>>({
-    surface: {
-      state: cloneRoleState(DEFAULT_ROLE_STATES.surface),
-      scale: generateTonalScale(roleStateToParams(DEFAULT_ROLE_STATES.surface)),
-      metadata: [],
-    },
-    primary: {
-      state: cloneRoleState(DEFAULT_ROLE_STATES.primary),
-      scale: generateTonalScale(roleStateToParams(DEFAULT_ROLE_STATES.primary)),
-      metadata: [],
-    },
+  const roleOrder = ref<TonalColorRole[]>([...DEFAULT_ROLE_ORDER]);
+  const roleMeta = reactive<Record<TonalColorRole, ColorRoleMeta>>(cloneDefaultRoleMeta());
+  const preview = reactive<TonalPersistenceState['preview']>({
+    darkMode: DEFAULT_PREVIEW_STATE.darkMode,
+    roleSettings: cloneDefaultRolePreviewSettings(),
   });
-  roles.surface.metadata = buildMetadata(roles.surface.scale.colorScale);
-  roles.primary.metadata = buildMetadata(roles.primary.scale.colorScale);
+  const createRoleRuntime = (state: RoleTonalState): RoleRuntime => {
+    const clonedState = cloneRoleState(state);
+    const scale = generateTonalScale(roleStateToParams(clonedState));
+    return {
+      state: clonedState,
+      scale,
+      metadata: buildMetadata(scale.colorScale),
+    };
+  };
+  const roles = reactive<Record<TonalColorRole, RoleRuntime>>(
+    Object.fromEntries(
+      DEFAULT_ROLE_ORDER.map((role) => [role, createRoleRuntime(DEFAULT_ROLE_STATES[role])]),
+    ),
+  );
 
   const listeners = new Set<(snapshot: TonalScaleSnapshot) => void>();
   const pendingRefreshes: Partial<Record<TonalColorRole, number>> = {};
+  const roleWatchStops: Partial<Record<TonalColorRole, WatchStopHandle>> = {};
   let suppressRefresh = false;
 
-  const getRoleParams = (role: TonalColorRole) => roleStateToParams(roles[role].state);
-  const getRoleFullStrip = (role: TonalColorRole) => roles[role].scale.colorScale;
+  const resolveRole = (role: TonalColorRole) => (roles[role] ? role : 'surface');
+  const ensureRolePreviewSettings = (role: TonalColorRole) => {
+    if (!preview.roleSettings[role]) {
+      preview.roleSettings[role] = clonePreviewSettings(DEFAULT_ROLE_PREVIEW_SETTINGS);
+    }
+  };
+  const getRolePreviewSettings = (role: TonalColorRole): RoleSurfacePreviewSettings => {
+    const resolvedRole = resolveRole(role);
+    ensureRolePreviewSettings(resolvedRole);
+    return preview.roleSettings[resolvedRole];
+  };
+  const updateRolePreviewSettings = (
+    role: TonalColorRole,
+    patch: Partial<RoleSurfacePreviewSettings>,
+  ) => {
+    const resolvedRole = resolveRole(role);
+    preview.roleSettings[resolvedRole] = normalizePreviewSettings({
+      ...getRolePreviewSettings(resolvedRole),
+      ...patch,
+    });
+  };
+  const getRoleParams = (role: TonalColorRole) => roleStateToParams(roles[resolveRole(role)].state);
+  const getRoleFullStrip = (role: TonalColorRole) => roles[resolveRole(role)].scale.colorScale;
   const getRoleExtendedStrip = (role: TonalColorRole) =>
     includeBaseIndex(
       EXTENDED_SCALE_INDICES,
-      roles[role].scale.colorScale,
-      roles[role].scale.luminance,
+      roles[resolveRole(role)].scale.colorScale,
+      roles[resolveRole(role)].scale.luminance,
     );
   const getRoleKeyStrip = (role: TonalColorRole) =>
-    includeBaseIndex(KEY_SCALE_INDICES, roles[role].scale.colorScale, roles[role].scale.luminance);
+    includeBaseIndex(
+      KEY_SCALE_INDICES,
+      roles[resolveRole(role)].scale.colorScale,
+      roles[resolveRole(role)].scale.luminance,
+    );
 
   const snapshotFor = (role: TonalColorRole): TonalScaleSnapshot => {
-    const params = getRoleParams(role);
+    const resolvedRole = resolveRole(role);
+    const params = getRoleParams(resolvedRole);
     return {
-      role,
+      role: resolvedRole,
       params,
-      baseHex: roles[role].state.baseHex,
-      blendHex: roles[role].state.blendHex,
-      scale: roles[role].scale,
-      fullStrip: getRoleFullStrip(role),
-      extendedStrip: getRoleExtendedStrip(role),
-      keyStrip: getRoleKeyStrip(role),
-      metadata: roles[role].metadata,
+      baseHex: roles[resolvedRole].state.baseHex,
+      blendHex: roles[resolvedRole].state.blendHex,
+      scale: roles[resolvedRole].scale,
+      fullStrip: getRoleFullStrip(resolvedRole),
+      extendedStrip: getRoleExtendedStrip(resolvedRole),
+      keyStrip: getRoleKeyStrip(resolvedRole),
+      metadata: roles[resolvedRole].metadata,
       serializedParams: JSON.stringify(params),
-      blendDistribution: buildBlendDistribution(params, roles[role].scale),
+      blendDistribution: buildBlendDistribution(params, roles[resolvedRole].scale),
     };
   };
 
   const refreshRole = (role: TonalColorRole, shouldBroadcast = true) => {
-    const params = getRoleParams(role);
-    roles[role].scale = generateTonalScale(params);
-    roles[role].metadata = buildMetadata(roles[role].scale.colorScale);
-    const snapshot = snapshotFor(role);
+    const resolvedRole = resolveRole(role);
+    const params = getRoleParams(resolvedRole);
+    roles[resolvedRole].scale = generateTonalScale(params);
+    roles[resolvedRole].metadata = buildMetadata(roles[resolvedRole].scale.colorScale);
+    const snapshot = snapshotFor(resolvedRole);
     if (shouldBroadcast) listeners.forEach((listener) => listener(snapshot));
   };
 
@@ -468,17 +831,48 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
     });
   };
 
-  const persistenceState = computed<TonalPersistenceState>(() => ({
-    version: 2,
-    activeRole: activeRole.value,
-    roles: {
-      surface: cloneRoleState(roles.surface.state),
-      primary: cloneRoleState(roles.primary.state),
-    },
-    preview: { ...preview },
-  }));
+  const ensureRoleWatcher = (role: TonalColorRole) => {
+    if (roleWatchStops[role]) return;
+    roleWatchStops[role] = watch(
+      () => roles[role]?.state,
+      () => {
+        if (!suppressRefresh && roles[role]) scheduleRefresh(role);
+      },
+      { deep: true, flush: 'sync' },
+    );
+  };
 
-  const activeState = computed(() => roles[activeRole.value].state);
+  const removeRoleWatcher = (role: TonalColorRole) => {
+    roleWatchStops[role]?.();
+    delete roleWatchStops[role];
+    const pending = pendingRefreshes[role];
+    if (pending !== undefined) cancelAnimationFrame(pending);
+    delete pendingRefreshes[role];
+  };
+
+  DEFAULT_ROLE_ORDER.forEach((role) => ensureRoleWatcher(role));
+
+  const persistenceState = computed<TonalPersistenceState>(() => ({
+    version: TONAL_PERSISTENCE_SCHEMA_VERSION,
+    activeRole: activeRole.value,
+    roleOrder: [...roleOrder.value],
+    roleMeta: Object.fromEntries(
+      roleOrder.value.map((role) => [
+        role,
+        cloneRoleMeta(roleMeta[role] ?? normalizeRoleMeta(role, undefined)),
+      ]),
+    ),
+    roles: Object.fromEntries(
+      roleOrder.value.map((role) => [role, cloneRoleState(roles[role].state)]),
+    ),
+    preview: {
+      darkMode: preview.darkMode,
+      roleSettings: Object.fromEntries(
+        roleOrder.value.map((role) => [role, clonePreviewSettings(getRolePreviewSettings(role))]),
+      ),
+    },
+  }));
+  const activeState = computed(() => roles[resolveRole(activeRole.value)].state);
   const baseHex = computed({
     get: () => activeState.value.baseHex,
     set: (value: string) => {
@@ -498,8 +892,8 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
     },
   });
   const controls = computed(() => activeState.value.controls);
-  const scale = computed(() => roles[activeRole.value].scale);
-  const metadata = computed(() => roles[activeRole.value].metadata);
+  const scale = computed(() => roles[resolveRole(activeRole.value)].scale);
+  const metadata = computed(() => roles[resolveRole(activeRole.value)].metadata);
   const scaleParams = computed(() => getRoleParams(activeRole.value));
   const fullStrip = computed(() => getRoleFullStrip(activeRole.value));
   const extendedStrip = computed(() => getRoleExtendedStrip(activeRole.value));
@@ -507,11 +901,13 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
   const blendDistribution = computed(() => buildBlendDistribution(scaleParams.value, scale.value));
   const serializedParams = computed(() => JSON.stringify(scaleParams.value));
   const serializedState = computed(() => JSON.stringify(persistenceState.value));
+  const defaultSerializedState = JSON.stringify(createDefaultPersistenceState());
+  const isDefaultState = computed(() => serializedState.value === defaultSerializedState);
   const surfaceExtendedStrip = computed(() => getRoleExtendedStrip('surface'));
   const primaryExtendedStrip = computed(() => getRoleExtendedStrip('primary'));
 
   const setActiveRole = (role: TonalColorRole) => {
-    activeRole.value = role;
+    activeRole.value = resolveRole(role);
   };
   const updateControl = (id: BlendControlId, value: number) => {
     activeState.value.controls[id] = clampControl(id, value);
@@ -532,17 +928,136 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
     return true;
   };
 
+  const existingRoleLabels = (excludedRole?: TonalColorRole) =>
+    roleOrder.value
+      .filter((role) => role !== excludedRole)
+      .map((role) => roleMeta[role]?.label)
+      .filter((label): label is string => Boolean(label));
+
+  const addRole = (options: { label?: string; baseHex?: string } = {}) => {
+    const label = createUniqueRoleLabel(
+      options.label?.trim() || 'Custom role',
+      existingRoleLabels(),
+    );
+    const id = createUniqueRoleId(label, roleOrder.value);
+    const roleState = normalizeRoleState(
+      {
+        baseHex: options.baseHex,
+      },
+      DEFAULT_ROLE_STATES.primary,
+    );
+
+    roleOrder.value.push(id);
+    roleMeta[id] = createCustomRoleMeta(id, label);
+    preview.roleSettings[id] = clonePreviewSettings(DEFAULT_ROLE_PREVIEW_SETTINGS);
+    roles[id] = createRoleRuntime(roleState);
+    ensureRoleWatcher(id);
+    activeRole.value = id;
+    return id;
+  };
+
+  const duplicateRole = (sourceRole: TonalColorRole, label?: string) => {
+    const resolvedSourceRole = resolveRole(sourceRole);
+    const sourceMeta = roleMeta[resolvedSourceRole];
+    const nextLabel = createUniqueRoleLabel(
+      label?.trim() || `${sourceMeta?.label ?? resolvedSourceRole} copy`,
+      existingRoleLabels(),
+    );
+    const id = createUniqueRoleId(nextLabel, roleOrder.value);
+
+    roleOrder.value.push(id);
+    roleMeta[id] = createCustomRoleMeta(id, nextLabel);
+    preview.roleSettings[id] = clonePreviewSettings(getRolePreviewSettings(resolvedSourceRole));
+    roles[id] = createRoleRuntime(roles[resolvedSourceRole].state);
+    ensureRoleWatcher(id);
+    activeRole.value = id;
+    return id;
+  };
+
+  const renameRole = (role: TonalColorRole, nextLabel: string): RoleRenameResult => {
+    if (!roleMeta[role]) return { success: false, error: 'not_found' };
+    if (roleMeta[role].isBuiltIn) return { success: false, error: 'protected' };
+
+    const normalizedLabel = nextLabel.trim();
+    if (!normalizedLabel) return { success: false, error: 'empty' };
+
+    const duplicate = existingRoleLabels(role).some(
+      (label) => label.toLowerCase() === normalizedLabel.toLowerCase(),
+    );
+    if (duplicate) return { success: false, error: 'duplicate' };
+
+    roleMeta[role] = {
+      ...roleMeta[role],
+      label: normalizedLabel,
+    };
+    return { success: true };
+  };
+
+  const moveRole = (role: TonalColorRole, targetIndex: number) => {
+    const currentIndex = roleOrder.value.indexOf(role);
+    if (currentIndex === -1) return false;
+
+    const nextIndex = clamp(Math.round(targetIndex), 0, roleOrder.value.length - 1);
+    if (currentIndex === nextIndex) return false;
+
+    const nextOrder = [...roleOrder.value];
+    nextOrder.splice(currentIndex, 1);
+    nextOrder.splice(nextIndex, 0, role);
+    roleOrder.value = nextOrder;
+    return true;
+  };
+
+  const moveRoleByOffset = (role: TonalColorRole, offset: number) => {
+    const currentIndex = roleOrder.value.indexOf(role);
+    if (currentIndex === -1) return false;
+    return moveRole(role, currentIndex + offset);
+  };
+
+  const removeRole = (role: TonalColorRole) => {
+    if (!roles[role] || roleMeta[role]?.deletable === false) return false;
+    const removedIndex = roleOrder.value.indexOf(role);
+
+    removeRoleWatcher(role);
+    delete roles[role];
+    delete roleMeta[role];
+    delete preview.roleSettings[role];
+    roleOrder.value = roleOrder.value.filter((existingRole) => existingRole !== role);
+
+    if (activeRole.value === role) {
+      activeRole.value =
+        roleOrder.value[Math.max(0, Math.min(removedIndex, roleOrder.value.length - 1))] ??
+        'surface';
+    }
+
+    return true;
+  };
+
   const applyPersistenceState = (state: TonalPersistenceState) => {
     suppressRefresh = true;
-    roles.surface.state = cloneRoleState(state.roles.surface);
-    roles.primary.state = cloneRoleState(state.roles.primary);
-    activeRole.value = state.activeRole;
-    Object.assign(preview, state.preview);
+    Object.keys(roles).forEach((role) => {
+      if (!state.roles[role]) {
+        removeRoleWatcher(role);
+        delete roles[role];
+      }
+    });
+    Object.keys(roleMeta).forEach((role) => delete roleMeta[role]);
+    Object.keys(preview.roleSettings).forEach((role) => delete preview.roleSettings[role]);
+
+    roleOrder.value = [...state.roleOrder];
+    roleOrder.value.forEach((role) => {
+      roles[role] = createRoleRuntime(state.roles[role] ?? fallbackRoleStateFor(role));
+      roleMeta[role] = cloneRoleMeta(state.roleMeta[role] ?? normalizeRoleMeta(role, undefined));
+      preview.roleSettings[role] = normalizePreviewSettings(state.preview.roleSettings[role]);
+      ensureRoleWatcher(role);
+    });
+    activeRole.value = state.roles[state.activeRole]
+      ? state.activeRole
+      : (roleOrder.value[0] ?? 'surface');
+    preview.darkMode = state.preview.darkMode;
     Object.values(pendingRefreshes).forEach((pending) => {
       if (pending !== undefined) cancelAnimationFrame(pending);
     });
-    refreshRole('surface', false);
-    refreshRole('primary', false);
+    roleOrder.value.forEach((role) => refreshRole(role, false));
     const snapshot = snapshotFor(activeRole.value);
     listeners.forEach((listener) => listener(snapshot));
     suppressRefresh = false;
@@ -555,20 +1070,12 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
     return true;
   };
   const importRoleState = (role: TonalColorRole, payload: Partial<TonalScaleParams>) => {
-    roles[role].state = normalizeRoleState(payload, roles[role].state);
+    const resolvedRole = resolveRole(role);
+    roles[resolvedRole].state = normalizeRoleState(payload, roles[resolvedRole].state);
     return true;
   };
   const exportState = () => serializedState.value;
-  const loadDefaults = () =>
-    applyPersistenceState({
-      version: 2,
-      activeRole: 'surface',
-      roles: {
-        surface: cloneRoleState(DEFAULT_ROLE_STATES.surface),
-        primary: cloneRoleState(DEFAULT_ROLE_STATES.primary),
-      },
-      preview: { ...DEFAULT_PREVIEW_STATE },
-    });
+  const loadDefaults = () => applyPersistenceState(createDefaultPersistenceState());
 
   const onSnapshot = (listener: (snapshot: TonalScaleSnapshot) => void) => {
     listeners.add(listener);
@@ -576,18 +1083,10 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
     return () => listeners.delete(listener);
   };
 
-  (['surface', 'primary'] as const).forEach((role) => {
-    watch(
-      () => roles[role].state,
-      () => {
-        if (!suppressRefresh) scheduleRefresh(role);
-      },
-      { deep: true, flush: 'sync' },
-    );
-  });
-
   return {
     activeRole,
+    roleOrder,
+    roleMeta,
     preview,
     roles,
     baseHex,
@@ -604,8 +1103,21 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
     primaryExtendedStrip,
     serializedParams,
     serializedState,
+    isDefaultState,
     persistenceState,
     blendDistribution,
+    getRoleParams,
+    getRoleFullStrip,
+    getRoleExtendedStrip,
+    getRoleKeyStrip,
+    getRolePreviewSettings,
+    updateRolePreviewSettings,
+    addRole,
+    duplicateRole,
+    renameRole,
+    moveRole,
+    moveRoleByOffset,
+    removeRole,
     exportState,
     importState,
     importRoleState,

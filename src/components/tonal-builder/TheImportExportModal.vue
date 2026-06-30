@@ -167,6 +167,7 @@
                 <button
                   type="button"
                   class="inline-flex w-full justify-center rounded-xl bg-surface-strong px-3 py-2 text-sm font-semibold text-primary ring-1 ring-inset ring-dim transition hover:bg-surface sm:mt-0 sm:w-auto"
+                  data-cy="modal-copy-json-btn"
                   @click="handleCopy"
                 >
                   {{ t('tonal_builder.actions.copy_json') }}

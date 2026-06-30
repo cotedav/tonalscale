@@ -352,4 +352,125 @@ describe('MaterialSurfacePreview', () => {
       `--preview-primary-container: ${toneHex(primaryTones, 30)}`,
     );
   });
+
+  it('showcases custom role surface families without replacing the surface shell', async () => {
+    const surfaceTones = buildTones('11');
+    const primaryTones = buildTones('aa');
+    const secondaryTones = buildTones('bb');
+    const wrapper = mount(MaterialSurfacePreview, {
+      props: {
+        tones: surfaceTones,
+        primaryTones,
+        rolePalettes: [
+          { role: 'surface', label: 'Surface', tones: surfaceTones },
+          { role: 'primary', label: 'Primary', tones: primaryTones },
+          { role: 'secondary', label: 'Secondary', tones: secondaryTones },
+        ],
+        activeRole: 'secondary',
+        surfaceContrast: 'medium',
+        lightSurfaceTone: 95,
+        darkSurfaceTone: 15,
+        surfaceContrastSettings: { surface: 'low', primary: 'low', secondary: 'medium' },
+        lightSurfaceToneSettings: { surface: 100, primary: 100, secondary: 95 },
+        darkSurfaceToneSettings: { surface: 0, primary: 0, secondary: 15 },
+      },
+    });
+
+    const shell = wrapper.get('[data-cy="surface-preview-shell"]');
+    expect(shell.attributes('style')).toContain(`--preview-surface: ${toneHex(surfaceTones, 100)}`);
+    expect(wrapper.get('[data-surface-card="surface"]').text()).toContain('Secondary Surface');
+    expect(wrapper.get('[data-surface-card="surface"]').text()).toContain(
+      toneHex(secondaryTones, 95),
+    );
+    expect(
+      wrapper
+        .find('[data-surface-palette="secondary"][data-surface-role="surface-bright"]')
+        .exists(),
+    ).toBe(true);
+    expect(
+      wrapper
+        .find('[data-surface-palette="secondary"][data-surface-role="inverse-surface"]')
+        .exists(),
+    ).toBe(true);
+
+    await wrapper
+      .get('[data-surface-palette="secondary"][data-surface-role="outline"]')
+      .trigger('pointermove', {
+        clientX: 240,
+        clientY: 340,
+      });
+
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Secondary Outline');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 30');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain(
+      toneHex(secondaryTones, 30),
+    );
+  });
+
+  it('showcases secondary, tertiary, and error Material role examples with hover metadata', async () => {
+    const surfaceTones = buildTones('11');
+    const primaryTones = buildTones('aa');
+    const secondaryTones = buildTones('bb');
+    const tertiaryTones = buildTones('cc');
+    const errorTones = buildTones('dd');
+    const wrapper = mount(MaterialSurfacePreview, {
+      props: {
+        tones: surfaceTones,
+        primaryTones,
+        rolePalettes: [
+          { role: 'surface', label: 'Surface', tones: surfaceTones },
+          { role: 'primary', label: 'Primary', tones: primaryTones },
+          { role: 'secondary', label: 'Secondary', tones: secondaryTones },
+          { role: 'tertiary', label: 'Tertiary', tones: tertiaryTones },
+          { role: 'error', label: 'Error', tones: errorTones },
+        ],
+      },
+    });
+
+    const secondaryAction = wrapper.get('[data-cy="secondary-action"]');
+    const tertiaryAction = wrapper.get('[data-cy="tertiary-action"]');
+    const validation = wrapper.get('[data-cy="error-validation"]');
+    const alert = wrapper.get('[data-cy="error-alert"]');
+
+    expect(secondaryAction.text()).toContain('Send reminder');
+    expect(secondaryAction.attributes('style')).toContain(
+      `--preview-role-action: ${toneHex(secondaryTones, 40)}`,
+    );
+    expect(tertiaryAction.text()).toContain('Schedule follow-up');
+    expect(tertiaryAction.attributes('style')).toContain(
+      `--preview-role-action-container: ${toneHex(tertiaryTones, 90)}`,
+    );
+    expect(validation.text()).toContain('Customer email');
+    expect(alert.text()).toContain('Invoice requires attention');
+    expect(alert.attributes('style')).toContain(
+      `--preview-role-action-container: ${toneHex(errorTones, 90)}`,
+    );
+
+    await secondaryAction.trigger('pointermove', { clientX: 240, clientY: 170 });
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Secondary');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 40');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain(
+      toneHex(secondaryTones, 40),
+    );
+
+    await tertiaryAction.trigger('pointermove', { clientX: 300, clientY: 170 });
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tertiary container');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 90');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain(toneHex(tertiaryTones, 90));
+
+    await validation
+      .get('[data-surface-palette="error"][data-surface-role="primary"]')
+      .trigger('pointermove', {
+        clientX: 140,
+        clientY: 420,
+      });
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Error');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 40');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain(toneHex(errorTones, 40));
+
+    await alert.trigger('pointermove', { clientX: 260, clientY: 360 });
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Error container');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 90');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain(toneHex(errorTones, 90));
+  });
 });

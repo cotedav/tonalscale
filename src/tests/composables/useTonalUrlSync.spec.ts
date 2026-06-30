@@ -1,7 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import useTonalUrlSync from '@/composables/useTonalUrlSync';
 import { createPinia, setActivePinia } from 'pinia';
-import { useTonalScaleStore } from '@/stores/tonalScale';
+import {
+  BUILT_IN_ROLE_IDS,
+  TONAL_PERSISTENCE_SCHEMA_VERSION,
+  useTonalScaleStore,
+} from '@/stores/tonalScale';
 import { nextTick } from 'vue';
 import { decodeShareState, encodeShareState } from '@/utils/tonal/share-state';
 
@@ -60,10 +64,52 @@ describe('useTonalUrlSync', () => {
     const serialized = decodeShareState(callArgs?.hash as string);
     expect(serialized).toBeTruthy();
     expect(JSON.parse(serialized as string)).toMatchObject({
-      version: 2,
+      version: TONAL_PERSISTENCE_SCHEMA_VERSION,
       roles: {
         surface: {
           baseHex: '#ff0000',
+        },
+      },
+    });
+  });
+
+  it('shares custom roles through compressed URL hashes', async () => {
+    const store = useTonalScaleStore();
+    useTonalUrlSync(store);
+
+    const customRole = store.addRole({ label: 'Support', baseHex: '#224466' });
+    store.updateRolePreviewSettings(customRole, {
+      contrast: 'high',
+      lightSurfaceTone: 90,
+      darkSurfaceTone: 25,
+    });
+    await nextTick();
+    eventHandlers.get('change')?.();
+
+    const serialized = decodeShareState(mockReplace.mock.lastCall?.[0]?.hash);
+    const payload = JSON.parse(serialized as string);
+    expect(payload).toMatchObject({
+      version: TONAL_PERSISTENCE_SCHEMA_VERSION,
+      activeRole: customRole,
+      roleOrder: [...BUILT_IN_ROLE_IDS, customRole],
+      roleMeta: {
+        [customRole]: {
+          label: 'Support',
+          isBuiltIn: false,
+        },
+      },
+      roles: {
+        [customRole]: {
+          baseHex: '#224466',
+        },
+      },
+      preview: {
+        roleSettings: {
+          [customRole]: {
+            contrast: 'high',
+            lightSurfaceTone: 90,
+            darkSurfaceTone: 25,
+          },
         },
       },
     });
@@ -203,5 +249,76 @@ describe('useTonalUrlSync', () => {
 
     expect(store.activeRole).toBe('primary');
     expect(store.baseHex).toBe('#abcdef');
+  });
+
+  it('restores dynamic custom-role configurations from the URL', () => {
+    mockRoute.hash = encodeShareState(
+      JSON.stringify({
+        version: TONAL_PERSISTENCE_SCHEMA_VERSION,
+        activeRole: 'support',
+        roleOrder: ['surface', 'primary', 'support'],
+        roleMeta: {
+          surface: {
+            id: 'surface',
+            label: 'Surface',
+            isBuiltIn: true,
+            kind: 'surface',
+            deletable: false,
+            capabilities: { tonalScale: true, materialSurfaces: true, appPreviewExamples: true },
+          },
+          primary: {
+            id: 'primary',
+            label: 'Primary',
+            isBuiltIn: true,
+            kind: 'accent',
+            deletable: false,
+            capabilities: { tonalScale: true, materialSurfaces: true, appPreviewExamples: true },
+          },
+          support: {
+            id: 'support',
+            label: 'Support',
+            isBuiltIn: false,
+            kind: 'custom',
+            deletable: true,
+            capabilities: { tonalScale: true, materialSurfaces: true, appPreviewExamples: false },
+          },
+        },
+        roles: {
+          surface: { baseHex: '#123456' },
+          primary: { baseHex: '#abcdef' },
+          support: { baseHex: '#224466' },
+        },
+        preview: {
+          darkMode: true,
+          roleSettings: {
+            support: {
+              contrast: 'medium',
+              lightSurfaceTone: 95,
+              darkSurfaceTone: 15,
+            },
+          },
+        },
+      }),
+    );
+
+    const store = useTonalScaleStore();
+    useTonalUrlSync(store);
+
+    expect(store.activeRole).toBe('support');
+    expect(store.roleOrder).toEqual([
+      'surface',
+      'primary',
+      'support',
+      'secondary',
+      'tertiary',
+      'error',
+    ]);
+    expect(store.roleMeta.support.label).toBe('Support');
+    expect(store.baseHex).toBe('#224466');
+    expect(store.getRolePreviewSettings('support')).toEqual({
+      contrast: 'medium',
+      lightSurfaceTone: 95,
+      darkSurfaceTone: 15,
+    });
   });
 });

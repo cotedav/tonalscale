@@ -2,7 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import TheImportExportModal from '@/components/tonal-builder/TheImportExportModal.vue';
-import { useTonalScaleStore } from '@/stores/tonalScale';
+import {
+  BUILT_IN_ROLE_IDS,
+  TONAL_PERSISTENCE_SCHEMA_VERSION,
+  useTonalScaleStore,
+} from '@/stores/tonalScale';
 import { nextTick } from 'vue';
 
 // Mock clipboard
@@ -26,7 +30,22 @@ vi.mock('vue-sonner', () => ({
 // Mock I18n
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
-    t: (key: string) => key,
+    t: (key: string, fallback?: string) =>
+      (
+        ({
+          'tonal_builder.modals.dialog_title': 'Import or export configuration',
+          'tonal_builder.modals.dialog_helper':
+            'Paste your JSON configuration below to restore a previous state.',
+          'tonal_builder.modals.close_label': 'Close import/export dialog',
+          'tonal_builder.actions.import': 'Import',
+          'tonal_builder.actions.copy_json': 'Copy JSON',
+          'tonal_builder.actions.cancel': 'Cancel',
+          'tonal_builder.actions.import_success': 'Imported configuration successfully',
+          'tonal_builder.actions.import_error': 'Invalid JSON configuration',
+        }) as Record<string, string>
+      )[key] ??
+      fallback ??
+      key,
   }),
 }));
 
@@ -80,6 +99,46 @@ describe('TheImportExportModal', () => {
     expect(textarea.exists()).toBe(true);
     expect(textarea.element.value).toContain('"baseHex":"#123456"');
     expect(textarea.element.value).toContain('"primary"');
+    expect(textarea.element.value).toContain(`"version":${TONAL_PERSISTENCE_SCHEMA_VERSION}`);
+    expect(wrapper.get('h3').text()).toBe('Import or export configuration');
+    expect(wrapper.text()).toContain('Paste your JSON configuration below');
+    expect(wrapper.text()).not.toContain('tonal_builder.modals.dialog_title');
+  });
+
+  it('copies complete dynamic role JSON from the modal', async () => {
+    const store = useTonalScaleStore();
+    const customRole = store.addRole({ label: 'Support', baseHex: '#224466' });
+    store.updateRolePreviewSettings(customRole, { contrast: 'high', lightSurfaceTone: 90 });
+
+    const wrapper = mountModal(false);
+    await wrapper.setProps({ isOpen: true });
+    await wrapper.get('[data-cy="modal-copy-json-btn"]').trigger('click');
+
+    expect(mockCopyToClipboard).toHaveBeenCalledOnce();
+    const copiedJson = mockCopyToClipboard.mock.calls[0]?.[0] as string;
+    expect(JSON.parse(copiedJson)).toMatchObject({
+      version: TONAL_PERSISTENCE_SCHEMA_VERSION,
+      activeRole: customRole,
+      roleOrder: [...BUILT_IN_ROLE_IDS, customRole],
+      roleMeta: {
+        [customRole]: {
+          label: 'Support',
+        },
+      },
+      roles: {
+        [customRole]: {
+          baseHex: '#224466',
+        },
+      },
+      preview: {
+        roleSettings: {
+          [customRole]: {
+            contrast: 'high',
+            lightSurfaceTone: 90,
+          },
+        },
+      },
+    });
   });
 
   it('calls importState with new JSON when Import button is clicked', async () => {
@@ -117,5 +176,68 @@ describe('TheImportExportModal', () => {
 
     expect(mockToastError).toHaveBeenCalled();
     expect(wrapper.emitted('close')).toBeFalsy();
+  });
+
+  it('imports complete dynamic role JSON from the modal', async () => {
+    const store = useTonalScaleStore();
+    const wrapper = mountModal(false);
+    await wrapper.setProps({ isOpen: true });
+
+    await wrapper.find('textarea').setValue(
+      JSON.stringify({
+        version: TONAL_PERSISTENCE_SCHEMA_VERSION,
+        activeRole: 'support',
+        roleOrder: ['surface', 'primary', 'support'],
+        roleMeta: {
+          support: {
+            id: 'support',
+            label: 'Support',
+            isBuiltIn: false,
+            kind: 'custom',
+            deletable: true,
+            capabilities: {
+              tonalScale: true,
+              materialSurfaces: true,
+              appPreviewExamples: false,
+            },
+          },
+        },
+        roles: {
+          surface: { baseHex: '#123456' },
+          primary: { baseHex: '#abcdef' },
+          support: { baseHex: '#224466' },
+        },
+        preview: {
+          darkMode: true,
+          roleSettings: {
+            support: {
+              contrast: 'high',
+              lightSurfaceTone: 90,
+              darkSurfaceTone: 25,
+            },
+          },
+        },
+      }),
+    );
+
+    await wrapper.find('button[data-cy="modal-import-btn"]').trigger('click');
+
+    expect(store.activeRole).toBe('support');
+    expect(store.roleOrder).toEqual([
+      'surface',
+      'primary',
+      'support',
+      'secondary',
+      'tertiary',
+      'error',
+    ]);
+    expect(store.roleMeta.support.label).toBe('Support');
+    expect(store.baseHex).toBe('#224466');
+    expect(store.getRolePreviewSettings('support')).toEqual({
+      contrast: 'high',
+      lightSurfaceTone: 90,
+      darkSurfaceTone: 25,
+    });
+    expect(mockToastSuccess).toHaveBeenCalled();
   });
 });

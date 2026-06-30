@@ -240,7 +240,6 @@
 
   const handleWheel = (event: WheelEvent) => {
     if (state.activeIndex === null) {
-      console.error('DEBUG: handleWheel activeIndex is null');
       return;
     }
     event.preventDefault();
