@@ -51,6 +51,7 @@
     label: string;
     kind?: 'surface' | 'accent' | 'custom';
     baseTone?: number;
+    excludedTone?: number | null;
     tones: TonalStep[];
   };
 
@@ -460,10 +461,20 @@
     };
   });
 
-  const activePreviewContrast = computed({
-    get: () => tonalScale.getRolePreviewSettings(activeRole.value).contrast,
+  const isPreviewDarkMode = computed({
+    get: () => tonalScale.preview.darkMode,
     set: (value) => {
-      tonalScale.updateRolePreviewSettings(activeRole.value, { contrast: value });
+      tonalScale.preview.darkMode = value;
+    },
+  });
+
+  const activePreviewContrast = computed({
+    get: () => tonalScale.getRolePreviewContrast(activeRole.value, isPreviewDarkMode.value),
+    set: (value) => {
+      tonalScale.updateRolePreviewSettings(
+        activeRole.value,
+        isPreviewDarkMode.value ? { darkContrast: value } : { lightContrast: value },
+      );
     },
   });
 
@@ -481,9 +492,26 @@
     },
   });
 
+  const activeLightCustomSurfaceTones = computed({
+    get: () => tonalScale.getRolePreviewSettings(activeRole.value).lightCustomSurfaceTones,
+    set: (value) => {
+      tonalScale.updateRolePreviewSettings(activeRole.value, { lightCustomSurfaceTones: value });
+    },
+  });
+
+  const activeDarkCustomSurfaceTones = computed({
+    get: () => tonalScale.getRolePreviewSettings(activeRole.value).darkCustomSurfaceTones,
+    set: (value) => {
+      tonalScale.updateRolePreviewSettings(activeRole.value, { darkCustomSurfaceTones: value });
+    },
+  });
+
   const surfaceContrastSettings = computed(() =>
     Object.fromEntries(
-      tonalScale.roleOrder.map((role) => [role, tonalScale.getRolePreviewSettings(role).contrast]),
+      tonalScale.roleOrder.map((role) => [
+        role,
+        tonalScale.getRolePreviewContrast(role, isPreviewDarkMode.value),
+      ]),
     ),
   );
 
@@ -504,13 +532,31 @@
       ]),
     ),
   );
+
+  const surfaceToneCustomizations = computed(() =>
+    Object.fromEntries(
+      tonalScale.roleOrder.map((role) => {
+        const settings = tonalScale.getRolePreviewSettings(role);
+        return [
+          role,
+          {
+            light: settings.lightCustomSurfaceTones,
+            dark: settings.darkCustomSurfaceTones,
+          },
+        ];
+      }),
+    ),
+  );
+
   const previewRolePalettes = computed<MaterialPreviewRolePalette[]>(() =>
     tonalScale.roleOrder.map((role) => ({
       role,
       label: roleLabel(role),
       kind: tonalScale.roleMeta[role]?.kind,
       baseTone: tonalScale.getRoleBaseTone(role),
-      tones: tonalScale.getRoleExtendedStrip(role),
+      excludedTone: tonalScale.getRoleSurfaceAssignmentExcludedTone(role),
+      tones: tonalScale.getRoleFullStrip(role),
+      surfaceTones: tonalScale.getRoleExtendedStrip(role),
     })),
   );
 
@@ -658,25 +704,30 @@
 
   const buildRoleExportInput = (role: TonalColorRole) => {
     const roleExtendedStrip = tonalScale.getRoleExtendedStrip(role);
+    const roleSurfaceStrip = roleExtendedStrip;
     const previewSettings = tonalScale.getRolePreviewSettings(role);
     const roleBaseTone = tonalScale.getRoleBaseTone(role);
+    const previewContrast = tonalScale.getRolePreviewContrast(role, tonalScale.preview.darkMode);
+    const previewSurfaceTone = tonalScale.preview.darkMode
+      ? previewSettings.darkSurfaceTone
+      : previewSettings.lightSurfaceTone;
     const roleTones =
       tonalScale.roleMeta[role]?.kind === 'surface'
         ? buildSurfaceRoleTones({
-            tones: roleExtendedStrip,
+            tones: roleSurfaceStrip,
             isDarkMode: tonalScale.preview.darkMode,
-            contrast: previewSettings.contrast,
+            contrast: previewContrast,
             lightTone: previewSettings.lightSurfaceTone,
             darkTone: previewSettings.darkSurfaceTone,
+            excludedTone: tonalScale.getRoleSurfaceAssignmentExcludedTone(role),
           })
         : buildAccentSurfaceRoleTones({
-            tones: roleExtendedStrip,
-            contrast: previewSettings.contrast,
-            surfaceTone:
-              previewSettings.lightSurfaceTone >= 10 && previewSettings.lightSurfaceTone <= 99
-                ? previewSettings.lightSurfaceTone
-                : roleBaseTone,
+            tones: roleSurfaceStrip,
+            contrast: previewContrast,
+            surfaceTone: previewSurfaceTone,
             baseTone: roleBaseTone,
+            excludedTone: tonalScale.getRoleSurfaceAssignmentExcludedTone(role),
+            isDarkMode: tonalScale.preview.darkMode,
           });
     const surfaceCards = SURFACE_TONE_ROLES.map((surfaceRole) => {
       const tone = roleTones[surfaceRole];
@@ -685,7 +736,7 @@
         label: surfaceCardLabel(surfaceRole, role),
         tone,
         hex:
-          roleExtendedStrip.find((step) => step.index === tone)?.hex ??
+          roleSurfaceStrip.find((step) => step.index === tone)?.hex ??
           tonalScale.getRoleParams(role).colorHex,
       };
     });
@@ -1061,10 +1112,12 @@
             </div>
 
             <MaterialSurfacePreview
-              v-model:dark-mode="tonalScale.preview.darkMode"
+              v-model:dark-mode="isPreviewDarkMode"
               v-model:surface-contrast="activePreviewContrast"
               v-model:light-surface-tone="activeLightSurfaceTone"
               v-model:dark-surface-tone="activeDarkSurfaceTone"
+              v-model:light-custom-surface-tones="activeLightCustomSurfaceTones"
+              v-model:dark-custom-surface-tones="activeDarkCustomSurfaceTones"
               class="pt-4"
               :tones="surfaceExtendedStrip"
               :primary-tones="primaryExtendedStrip"
@@ -1073,6 +1126,7 @@
               :surface-contrast-settings="surfaceContrastSettings"
               :light-surface-tone-settings="lightSurfaceToneSettings"
               :dark-surface-tone-settings="darkSurfaceToneSettings"
+              :surface-tone-customizations="surfaceToneCustomizations"
             />
           </section>
         </div>

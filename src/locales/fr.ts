@@ -204,6 +204,11 @@ export default {
       palette_role: '{role} {palette}',
       surface_cards: 'Reference des tons par role de surface',
       tone_value: 'Ton {tone}',
+      customize_card:
+        'Selectionner {role}, actuellement au ton {tone}. Utilisez la molette pour personnaliser.',
+      customized: 'Ton personnalise',
+      reset_customization: 'Remettre {role} en attribution automatique',
+      auto: 'Auto',
       surface_tone: {
         label: 'Ton de surface',
       },
@@ -223,8 +228,11 @@ export default {
         container_high: 'Conteneur de surface haut',
         container_highest: 'Conteneur de surface maximal',
         inverse_surface: 'Surface inversee',
+        inverse_on_surface: 'Sur surface inversee',
         on_surface: 'Sur surface',
         on_surface_variant: 'Variante sur surface',
+        on_surface_container: 'Sur conteneur de surface',
+        on_surface_container_variant: 'Variante sur conteneur de surface',
         outline: 'Contour',
         outline_variant: 'Variante de contour',
         primary: 'Primaire',

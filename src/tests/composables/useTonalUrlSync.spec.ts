@@ -106,7 +106,8 @@ describe('useTonalUrlSync', () => {
       preview: {
         roleSettings: {
           [customRole]: {
-            contrast: 'high',
+            lightContrast: 'high',
+            darkContrast: 'high',
             lightSurfaceTone: 90,
             darkSurfaceTone: 25,
           },
@@ -316,9 +317,12 @@ describe('useTonalUrlSync', () => {
     expect(store.roleMeta.support.label).toBe('Support');
     expect(store.baseHex).toBe('#224466');
     expect(store.getRolePreviewSettings('support')).toEqual({
-      contrast: 'medium',
+      lightContrast: 'medium',
+      darkContrast: 'medium',
       lightSurfaceTone: 95,
       darkSurfaceTone: 15,
+      lightCustomSurfaceTones: {},
+      darkCustomSurfaceTones: {},
     });
   });
 });

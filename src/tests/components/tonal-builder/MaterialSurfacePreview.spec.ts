@@ -11,6 +11,12 @@ const buildTones = (prefix: string): TonalStep[] =>
     hex: `#${prefix}${index.toString(16).padStart(4, '0')}`.slice(0, 7),
   }));
 
+const buildFullTones = (prefix: string): TonalStep[] =>
+  Array.from({ length: 101 }, (_, index) => ({
+    index,
+    hex: `#${prefix}${index.toString(16).padStart(4, '0')}`.slice(0, 7),
+  }));
+
 const toneHex = (tones: TonalStep[], index: number) =>
   tones.find((tone) => tone.index === index)?.hex;
 
@@ -32,7 +38,6 @@ describe('MaterialSurfacePreview', () => {
     [
       'surface',
       'surface-bright',
-      'surface-dim',
       'surface-container-lowest',
       'surface-container-low',
       'surface-container',
@@ -43,7 +48,7 @@ describe('MaterialSurfacePreview', () => {
       expect(wrapper.find(`[data-surface-role="${role}"]`).exists()).toBe(true);
     });
     expect(wrapper.get('.preview-inspector').attributes('data-surface-role')).toBe(
-      'surface-container-highest',
+      'surface-container-low',
     );
     expect(wrapper.get('.preview-inspector').text()).toContain('Payment health');
     expect(wrapper.get('.preview-inspector').text()).toContain('Payment summary');
@@ -53,13 +58,18 @@ describe('MaterialSurfacePreview', () => {
     expect(wrapper.findAll('.preview-table-row')).toHaveLength(7);
 
     const surfaceCards = wrapper.findAll('[data-surface-card]');
-    expect(surfaceCards).toHaveLength(13);
+    expect(surfaceCards).toHaveLength(16);
     expect(wrapper.get('[data-surface-card="surface"]').text()).toContain('Tone 100');
     expect(wrapper.get('[data-surface-card="surface"]').text()).toContain(toneHex(tones, 100));
     expect(wrapper.get('[data-surface-card="container"]').text()).toContain('Tone 95');
     expect(wrapper.get('[data-surface-card="container_highest"]').text()).toContain('Tone 80');
     expect(wrapper.get('[data-surface-card="inverse_surface"]').text()).toContain('Tone 20');
+    expect(wrapper.get('[data-surface-card="inverse_on_surface"]').text()).toContain('Tone 98');
     expect(wrapper.get('[data-surface-card="on_surface"]').text()).toContain('Tone 10');
+    expect(wrapper.get('[data-surface-card="on_surface_container"]').text()).toContain('Tone 10');
+    expect(wrapper.get('[data-surface-card="on_surface_container_variant"]').text()).toContain(
+      'Tone 35',
+    );
     expect(wrapper.get('[data-surface-card="outline"]').text()).toContain('Tone 50');
     expect(wrapper.get('[data-surface-card="outline_variant"]').text()).toContain('Tone 70');
 
@@ -105,6 +115,7 @@ describe('MaterialSurfacePreview', () => {
     expect(wrapper.get('[data-surface-card="container"]').text()).toContain('Tone 20');
     expect(wrapper.get('[data-surface-card="container_highest"]').text()).toContain('Tone 30');
     expect(wrapper.get('[data-surface-card="inverse_surface"]').text()).toContain('Tone 90');
+    expect(wrapper.get('[data-surface-card="inverse_on_surface"]').text()).toContain('Tone 20');
     expect(wrapper.find('[data-cy="surface-role-inspector"]').exists()).toBe(false);
   });
 
@@ -217,6 +228,108 @@ describe('MaterialSurfacePreview', () => {
     expect(shell.attributes('style')).toContain(`--preview-surface-dim: ${toneHex(tones, 5)}`);
   });
 
+  it('customizes selected surface cards with the wheel and restores automatic tones', async () => {
+    const tones = buildFullTones('4c');
+    const surfaceTones = buildTones('4c');
+    const wrapper = mount(MaterialSurfacePreview, {
+      props: {
+        tones,
+        rolePalettes: [
+          {
+            role: 'surface',
+            label: 'Surface',
+            kind: 'surface',
+            baseTone: 100,
+            tones,
+            surfaceTones,
+          },
+        ],
+      },
+    });
+    const card = () => wrapper.get('[data-surface-card="container_highest"]');
+    const shell = () => wrapper.get('[data-cy="surface-preview-shell"]');
+
+    await card().trigger('click');
+    expect(card().attributes('data-selected')).toBe('true');
+
+    await card().trigger('wheel', { deltaY: -100 });
+    expect(card().text()).toContain('Tone 81');
+    expect(shell().attributes('style')).toContain(
+      `--preview-surface-container-highest: ${toneHex(tones, 81)}`,
+    );
+    expect(card().attributes('data-customized')).toBe('true');
+    expect(wrapper.emitted('update:lightCustomSurfaceTones')?.at(-1)?.[0]).toEqual({
+      container_highest: 81,
+    });
+
+    await wrapper.get('[data-cy="surface-contrast-slider"]').setValue('2');
+    expect(card().text()).toContain('Tone 81');
+
+    await wrapper.get('[data-cy="surface-card-reset"]').trigger('click');
+    expect(card().text()).toContain('Tone 40');
+    expect(card().attributes('data-customized')).toBeUndefined();
+    expect(wrapper.emitted('update:lightCustomSurfaceTones')?.at(-1)?.[0]).toEqual({});
+
+    await card().trigger('click');
+    window.dispatchEvent(new Event('pointerdown'));
+    await wrapper.vm.$nextTick();
+    expect(card().attributes('data-selected')).toBeUndefined();
+  });
+
+  it('keeps light and dark card customizations independent', async () => {
+    const tones = buildFullTones('4d');
+    const surfaceTones = buildTones('4d');
+    const wrapper = mount(MaterialSurfacePreview, {
+      props: {
+        tones,
+        rolePalettes: [
+          {
+            role: 'surface',
+            label: 'Surface',
+            kind: 'surface',
+            baseTone: 100,
+            tones,
+            surfaceTones,
+          },
+        ],
+      },
+    });
+    const card = () => wrapper.get('[data-surface-card="container"]');
+
+    await card().trigger('click');
+    await card().trigger('wheel', { deltaY: -100 });
+    expect(card().text()).toContain('Tone 96');
+    expect(wrapper.emitted('update:lightCustomSurfaceTones')?.at(-1)?.[0]).toEqual({
+      container: 96,
+    });
+
+    await wrapper.get('[data-cy="surface-preview-dark-mode"]').setValue(true);
+    expect(card().text()).toContain('Tone 20');
+
+    await card().trigger('click');
+    await card().trigger('wheel', { deltaY: -100 });
+    expect(card().text()).toContain('Tone 21');
+    expect(wrapper.emitted('update:darkCustomSurfaceTones')?.at(-1)?.[0]).toEqual({
+      container: 21,
+    });
+
+    await wrapper.get('[data-cy="surface-preview-dark-mode"]').setValue(false);
+    expect(card().text()).toContain('Tone 96');
+  });
+
+  it('allows page scrolling when the pointer is over an unselected surface card', () => {
+    const tones = buildFullTones('4e');
+    const wrapper = mount(MaterialSurfacePreview, {
+      props: { tones },
+    });
+    const card = wrapper.get('[data-surface-card="container"]');
+    const event = new WheelEvent('wheel', { cancelable: true, deltaY: -100 });
+
+    card.element.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+  });
+
   it('shows the hovered surface role and active tone', async () => {
     const tones = buildTones('55');
     const wrapper = mount(MaterialSurfacePreview, {
@@ -306,7 +419,7 @@ describe('MaterialSurfacePreview', () => {
     expect(wrapper.get('[data-surface-card="surface"]').text()).toContain(
       toneHex(primaryTones, 98),
     );
-    expect(wrapper.findAll('[data-surface-card]')).toHaveLength(13);
+    expect(wrapper.findAll('[data-surface-card]')).toHaveLength(16);
     expect(wrapper.find('[data-surface-card="primary"]').exists()).toBe(false);
     expect(shell.attributes('style')).toContain(`--preview-primary: ${toneHex(primaryTones, 98)}`);
     expect(shell.attributes('style')).toContain(
@@ -314,7 +427,7 @@ describe('MaterialSurfacePreview', () => {
     );
 
     const primaryLightExample = wrapper.get(
-      '[data-surface-palette="primary"][data-surface-role="surface-bright"]',
+      '[data-surface-palette="primary"][data-surface-role="surface"]',
     );
     const primaryInverseExample = wrapper.get(
       '[data-surface-palette="primary"][data-surface-role="inverse-surface"]',
@@ -323,7 +436,7 @@ describe('MaterialSurfacePreview', () => {
       clientX: 200,
       clientY: 300,
     });
-    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Primary Surface bright');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Primary Surface');
     expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 98');
 
     await primaryInverseExample.trigger('pointermove', {
@@ -345,12 +458,42 @@ describe('MaterialSurfacePreview', () => {
     await wrapper.get('[data-cy="surface-preview-dark-mode"]').setValue(true);
     expect(shell.attributes('style')).toContain(`--preview-surface: ${toneHex(surfaceTones, 0)}`);
     expect(shell.attributes('style')).toContain(
-      `--preview-primary-surface-bright: ${toneHex(primaryTones, 98)}`,
+      `--preview-primary-surface-bright: ${toneHex(primaryTones, 95)}`,
     );
-    expect(shell.attributes('style')).toContain(`--preview-primary: ${toneHex(primaryTones, 98)}`);
+    expect(shell.attributes('style')).toContain(`--preview-primary: ${toneHex(primaryTones, 10)}`);
     expect(shell.attributes('style')).toContain(
-      `--preview-primary-container: ${toneHex(primaryTones, 50)}`,
+      `--preview-primary-container: ${toneHex(primaryTones, 40)}`,
     );
+  });
+
+  it('keeps accent surface cards anchored while non-surface cards react to dark mode', async () => {
+    const surfaceTones = buildTones('11');
+    const primaryTones = buildTones('aa');
+    const wrapper = mount(MaterialSurfacePreview, {
+      props: {
+        tones: surfaceTones,
+        primaryTones,
+        activeRole: 'primary',
+        surfaceContrast: 'low',
+        lightSurfaceTone: 40,
+        darkSurfaceTone: 0,
+        surfaceContrastSettings: { surface: 'low', primary: 'low' },
+        lightSurfaceToneSettings: { surface: 100, primary: 40 },
+        darkSurfaceToneSettings: { surface: 0, primary: 0 },
+      },
+    });
+
+    expect(wrapper.get('[data-surface-card="surface"]').text()).toContain('Tone 40');
+    expect(wrapper.get('[data-surface-card="container_lowest"]').text()).toContain('Tone 50');
+    expect(wrapper.get('[data-surface-card="container"]').text()).toContain('Tone 70');
+    expect(wrapper.get('[data-surface-card="inverse_surface"]').text()).toContain('Tone 20');
+
+    await wrapper.get('[data-cy="surface-preview-dark-mode"]').setValue(true);
+
+    expect(wrapper.get('[data-surface-card="surface"]').text()).toContain('Tone 5');
+    expect(wrapper.get('[data-surface-card="container_lowest"]').text()).toContain('Tone 10');
+    expect(wrapper.get('[data-surface-card="container"]').text()).toContain('Tone 20');
+    expect(wrapper.get('[data-surface-card="inverse_surface"]').text()).toContain('Tone 90');
   });
 
   it('showcases custom role surface families without replacing the surface shell', async () => {
@@ -362,9 +505,30 @@ describe('MaterialSurfacePreview', () => {
         tones: surfaceTones,
         primaryTones,
         rolePalettes: [
-          { role: 'surface', label: 'Surface', tones: surfaceTones },
-          { role: 'primary', label: 'Primary', tones: primaryTones },
-          { role: 'secondary', label: 'Secondary', tones: secondaryTones },
+          {
+            role: 'surface',
+            label: 'Surface',
+            kind: 'surface',
+            baseTone: 100,
+            tones: surfaceTones,
+            surfaceTones,
+          },
+          {
+            role: 'primary',
+            label: 'Primary',
+            kind: 'accent',
+            baseTone: 50,
+            tones: primaryTones,
+            surfaceTones: primaryTones,
+          },
+          {
+            role: 'secondary',
+            label: 'Secondary',
+            kind: 'accent',
+            baseTone: 50,
+            tones: secondaryTones,
+            surfaceTones: secondaryTones,
+          },
         ],
         activeRole: 'secondary',
         surfaceContrast: 'medium',
@@ -383,9 +547,7 @@ describe('MaterialSurfacePreview', () => {
       toneHex(secondaryTones, 95),
     );
     expect(
-      wrapper
-        .find('[data-surface-palette="secondary"][data-surface-role="surface-bright"]')
-        .exists(),
+      wrapper.find('[data-surface-palette="secondary"][data-surface-role="surface"]').exists(),
     ).toBe(true);
     expect(
       wrapper

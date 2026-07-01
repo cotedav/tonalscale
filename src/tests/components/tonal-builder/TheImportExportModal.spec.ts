@@ -133,7 +133,8 @@ describe('TheImportExportModal', () => {
       preview: {
         roleSettings: {
           [customRole]: {
-            contrast: 'high',
+            lightContrast: 'high',
+            darkContrast: 'high',
             lightSurfaceTone: 90,
           },
         },
@@ -234,9 +235,12 @@ describe('TheImportExportModal', () => {
     expect(store.roleMeta.support.label).toBe('Support');
     expect(store.baseHex).toBe('#224466');
     expect(store.getRolePreviewSettings('support')).toEqual({
-      contrast: 'high',
+      lightContrast: 'high',
+      darkContrast: 'high',
       lightSurfaceTone: 90,
       darkSurfaceTone: 25,
+      lightCustomSurfaceTones: {},
+      darkCustomSurfaceTones: {},
     });
     expect(mockToastSuccess).toHaveBeenCalled();
   });

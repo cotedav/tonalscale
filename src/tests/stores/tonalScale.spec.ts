@@ -6,6 +6,7 @@ import {
   EXTENDED_SCALE_INDICES,
   KEY_SCALE_INDICES,
   TONAL_PERSISTENCE_SCHEMA_VERSION,
+  findNearestBaseAdjacentTone,
   type TonalScaleSnapshot,
   useTonalScaleStore,
 } from '@/stores/tonalScale';
@@ -33,9 +34,18 @@ describe('useTonalScaleStore', () => {
     expect(store.keyStrip.length).toBeGreaterThanOrEqual(KEY_SCALE_INDICES.length);
 
     const baseTone = store.fullStrip.find((step) => step.index === store.scale.luminance);
+    const excludedExtendedTone = findNearestBaseAdjacentTone(
+      EXTENDED_SCALE_INDICES,
+      store.scale.luminance,
+    );
+    const excludedKeyTone = findNearestBaseAdjacentTone(KEY_SCALE_INDICES, store.scale.luminance);
+
     expect(baseTone?.hex).toBe('#8000ff');
     expect(store.extendedStrip.some((step) => step.index === store.scale.luminance)).toBe(true);
     expect(store.keyStrip.some((step) => step.index === store.scale.luminance)).toBe(true);
+    expect(store.extendedStrip.some((step) => step.index === excludedExtendedTone)).toBe(false);
+    expect(store.keyStrip.some((step) => step.index === excludedKeyTone)).toBe(false);
+    expect(store.fullStrip.some((step) => step.index === excludedKeyTone)).toBe(true);
     expect(store.roleOrder).toEqual([...BUILT_IN_ROLE_IDS]);
     expect(store.roleMeta.surface).toMatchObject({
       id: 'surface',
@@ -62,10 +72,20 @@ describe('useTonalScaleStore', () => {
       deletable: false,
     });
     expect(store.preview.roleSettings.surface).toEqual({
-      contrast: 'low',
+      lightContrast: 'low',
+      darkContrast: 'low',
       lightSurfaceTone: 100,
       darkSurfaceTone: 0,
+      lightCustomSurfaceTones: {},
+      darkCustomSurfaceTones: {},
     });
+  });
+
+  it('finds the nearest base-adjacent key tone for exclusion', () => {
+    expect(findNearestBaseAdjacentTone(KEY_SCALE_INDICES, 43)).toBe(40);
+    expect(findNearestBaseAdjacentTone(EXTENDED_SCALE_INDICES, 43)).toBe(40);
+    expect(findNearestBaseAdjacentTone(KEY_SCALE_INDICES, 50)).toBeNull();
+    expect(findNearestBaseAdjacentTone(EXTENDED_SCALE_INDICES, 50)).toBeNull();
   });
 
   it('broadcasts snapshots when parameters change', async () => {
@@ -261,7 +281,8 @@ describe('useTonalScaleStore', () => {
       preview: {
         roleSettings: {
           surface: {
-            contrast: 'high',
+            lightContrast: 'high',
+            darkContrast: 'high',
           },
         },
       },
@@ -274,7 +295,8 @@ describe('useTonalScaleStore', () => {
     expect(store.baseHex).toBe('#abcdef');
     expect(store.roles.surface.state.baseHex).toBe('#123456');
     expect(store.preview.darkMode).toBe(true);
-    expect(store.preview.roleSettings.surface.contrast).toBe('high');
+    expect(store.preview.roleSettings.surface.lightContrast).toBe('high');
+    expect(store.preview.roleSettings.surface.darkContrast).toBe('high');
 
     expect(store.importState({ colorHex: '#fedcba', blendStrength: 25 })).toBe(true);
     await flushTimers();
@@ -324,14 +346,20 @@ describe('useTonalScaleStore', () => {
     expect(store.baseHex).toBe('#abcdef');
     expect(store.roleOrder).toEqual([...BUILT_IN_ROLE_IDS]);
     expect(store.getRolePreviewSettings('surface')).toEqual({
-      contrast: 'medium',
+      lightContrast: 'medium',
+      darkContrast: 'medium',
       lightSurfaceTone: 95,
       darkSurfaceTone: 10,
+      lightCustomSurfaceTones: {},
+      darkCustomSurfaceTones: {},
     });
     expect(store.getRolePreviewSettings('primary')).toEqual({
-      contrast: 'high',
+      lightContrast: 'high',
+      darkContrast: 'high',
       lightSurfaceTone: 98,
       darkSurfaceTone: 15,
+      lightCustomSurfaceTones: {},
+      darkCustomSurfaceTones: {},
     });
     expect(JSON.parse(store.exportState()).version).toBe(TONAL_PERSISTENCE_SCHEMA_VERSION);
   });
@@ -378,20 +406,68 @@ describe('useTonalScaleStore', () => {
     });
 
     expect(store.getRolePreviewSettings(customRole)).toEqual({
-      contrast: 'high',
+      lightContrast: 'high',
+      darkContrast: 'high',
       lightSurfaceTone: 90,
       darkSurfaceTone: 25,
+      lightCustomSurfaceTones: {},
+      darkCustomSurfaceTones: {},
     });
     expect(store.getRolePreviewSettings('surface')).toEqual({
-      contrast: 'medium',
+      lightContrast: 'medium',
+      darkContrast: 'medium',
       lightSurfaceTone: 80,
       darkSurfaceTone: 0,
+      lightCustomSurfaceTones: {},
+      darkCustomSurfaceTones: {},
     });
     expect(store.getRolePreviewSettings('primary')).toEqual({
-      contrast: 'low',
-      lightSurfaceTone: 100,
-      darkSurfaceTone: 0,
+      lightContrast: 'low',
+      darkContrast: 'low',
+      lightSurfaceTone: store.getRoleBaseTone('primary'),
+      darkSurfaceTone: store.getRoleBaseTone('primary'),
+      lightCustomSurfaceTones: {},
+      darkCustomSurfaceTones: {},
     });
+  });
+
+  it('keeps built-in accent and custom preview settings independent by theme mode', () => {
+    const store = useTonalScaleStore();
+    const customRole = store.addRole({ label: 'Support', baseHex: '#224466' });
+
+    store.updateRolePreviewSettings('primary', {
+      lightContrast: 'medium',
+      lightSurfaceTone: 12,
+    });
+    store.updateRolePreviewSettings('primary', {
+      darkContrast: 'high',
+      darkSurfaceTone: 99,
+    });
+    store.updateRolePreviewSettings(customRole, {
+      lightContrast: 'high',
+      lightSurfaceTone: 0,
+    });
+    store.updateRolePreviewSettings(customRole, {
+      darkContrast: 'medium',
+      darkSurfaceTone: 100,
+    });
+
+    expect(store.getRolePreviewSettings('primary')).toMatchObject({
+      lightContrast: 'medium',
+      darkContrast: 'high',
+      lightSurfaceTone: 12,
+      darkSurfaceTone: 99,
+    });
+    expect(store.getRolePreviewContrast('primary', false)).toBe('medium');
+    expect(store.getRolePreviewContrast('primary', true)).toBe('high');
+    expect(store.getRolePreviewSettings(customRole)).toMatchObject({
+      lightContrast: 'high',
+      darkContrast: 'medium',
+      lightSurfaceTone: 5,
+      darkSurfaceTone: 99,
+    });
+    expect(store.getRolePreviewContrast(customRole, false)).toBe('high');
+    expect(store.getRolePreviewContrast(customRole, true)).toBe('medium');
   });
 
   it('duplicates and removes custom roles while preserving active-role fallbacks', async () => {
@@ -406,7 +482,8 @@ describe('useTonalScaleStore', () => {
     expect(store.activeRole).toBe(duplicateRole);
     expect(store.baseHex).toBe('#123456');
     expect(store.getRolePreviewSettings(duplicateRole)).toMatchObject({
-      contrast: 'medium',
+      lightContrast: 'medium',
+      darkContrast: 'medium',
       lightSurfaceTone: 95,
     });
 
@@ -516,6 +593,12 @@ describe('useTonalScaleStore', () => {
             contrast: 'high',
             lightSurfaceTone: 90,
             darkSurfaceTone: 25,
+            lightCustomSurfaceTones: {
+              container: 80,
+            },
+            darkCustomSurfaceTones: {
+              container: 20,
+            },
           },
         },
       },
@@ -536,9 +619,20 @@ describe('useTonalScaleStore', () => {
     expect(store.baseHex).toBe('#333333');
     expect(store.preview.darkMode).toBe(true);
     expect(store.getRolePreviewSettings('support')).toEqual({
-      contrast: 'high',
+      lightContrast: 'high',
+      darkContrast: 'high',
       lightSurfaceTone: 90,
       darkSurfaceTone: 25,
+      lightCustomSurfaceTones: {
+        container: 80,
+      },
+      darkCustomSurfaceTones: {
+        container: 20,
+      },
+    });
+    const exported = JSON.parse(store.exportState());
+    expect(exported.preview.roleSettings.support.lightCustomSurfaceTones).toEqual({
+      container: 80,
     });
   });
 
@@ -589,9 +683,12 @@ describe('useTonalScaleStore', () => {
     expect(store.roles.broken.state.baseHex).toBe('#6750a4');
     expect(store.roles.surface.state.baseHex).toBe('#8000ff');
     expect(store.getRolePreviewSettings('broken')).toEqual({
-      contrast: 'low',
-      lightSurfaceTone: 100,
-      darkSurfaceTone: 0,
+      lightContrast: 'low',
+      darkContrast: 'low',
+      lightSurfaceTone: store.getRoleBaseTone('broken'),
+      darkSurfaceTone: store.getRoleBaseTone('broken'),
+      lightCustomSurfaceTones: {},
+      darkCustomSurfaceTones: {},
     });
   });
 });

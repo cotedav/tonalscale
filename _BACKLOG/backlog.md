@@ -42,6 +42,7 @@ This backlog tracks foundational user stories for the new SaaS platform scaffold
 | Completed   | [E5-F3](./E5-F3.md) | [E5](./E5.md) | Dynamic role persistence and sharing.                       |
 | Done        | [E5-F4](./E5-F4.md) | [E5](./E5.md) | Dynamic role preview and export integration.                |
 | Pending     | [E5-F5](./E5-F5.md) | [E5](./E5.md) | Role toolbar ergonomics and default Material roles.         |
+| Completed   | [E5-F6](./E5-F6.md) | [E5](./E5.md) | Surface role tone assignment and customization.             |
 
 ## Stories
 
@@ -115,3 +116,7 @@ This backlog tracks foundational user stories for the new SaaS platform scaffold
 | Completed | [E5-F5-S9](./E5-F5-S9.md)   | [E5-F5](./E5-F5.md) | [E5](./E5.md) | Polish color control labels for production readiness.                                     |
 | Completed | [E5-F5-S10](./E5-F5-S10.md) | [E5-F5](./E5-F5.md) | [E5](./E5.md) | Fix the import dialog title translation.                                                  |
 | Completed | [E5-F5-S11](./E5-F5-S11.md) | [E5-F5](./E5-F5.md) | [E5](./E5.md) | Replace browser alerts with an accessible dialog.                                         |
+| Completed | [E5-F6-S1](./E5-F6-S1.md)   | [E5-F6](./E5-F6.md) | [E5](./E5.md) | Exclude the base-adjacent tone from key strips and assignments.                           |
+| Completed | [E5-F6-S2](./E5-F6-S2.md)   | [E5-F6](./E5-F6.md) | [E5](./E5.md) | Rework automatic surface-card assignment across light and dark modes.                     |
+| Completed | [E5-F6-S3](./E5-F6-S3.md)   | [E5-F6](./E5-F6.md) | [E5](./E5.md) | Split surface tone and contrast settings by theme mode for every role.                    |
+| Completed | [E5-F6-S4](./E5-F6-S4.md)   | [E5-F6](./E5-F6.md) | [E5](./E5.md) | Customize selected surface card tones with the mouse wheel.                               |

@@ -12,8 +12,11 @@ export type SurfaceToneRole =
   | 'container_high'
   | 'container_highest'
   | 'inverse_surface'
+  | 'inverse_on_surface'
   | 'on_surface'
   | 'on_surface_variant'
+  | 'on_surface_container'
+  | 'on_surface_container_variant'
   | 'outline'
   | 'outline_variant';
 
@@ -27,8 +30,11 @@ export const SURFACE_TONE_ROLES: SurfaceToneRole[] = [
   'container_high',
   'container_highest',
   'inverse_surface',
+  'inverse_on_surface',
   'on_surface',
   'on_surface_variant',
+  'on_surface_container',
+  'on_surface_container_variant',
   'outline',
   'outline_variant',
 ];
@@ -48,8 +54,11 @@ const getBaseSurfaceTones = (
       container_high: 90,
       container_highest: 80,
       inverse_surface: 20,
+      inverse_on_surface: 98,
       on_surface: 10,
       on_surface_variant: 35,
+      on_surface_container: 10,
+      on_surface_container_variant: 35,
       outline: 50,
       outline_variant: 80,
     },
@@ -63,8 +72,11 @@ const getBaseSurfaceTones = (
       container_high: 80,
       container_highest: 70,
       inverse_surface: 20,
+      inverse_on_surface: 98,
       on_surface: 10,
       on_surface_variant: 35,
+      on_surface_container: 10,
+      on_surface_container_variant: 35,
       outline: 50,
       outline_variant: 80,
     },
@@ -78,8 +90,11 @@ const getBaseSurfaceTones = (
       container_high: 60,
       container_highest: 40,
       inverse_surface: 20,
+      inverse_on_surface: 98,
       on_surface: 10,
       on_surface_variant: 35,
+      on_surface_container: 10,
+      on_surface_container_variant: 35,
       outline: 50,
       outline_variant: 80,
     },
@@ -95,8 +110,11 @@ const getBaseSurfaceTones = (
       container_high: 25,
       container_highest: 30,
       inverse_surface: 90,
+      inverse_on_surface: 20,
       on_surface: 90,
       on_surface_variant: 80,
+      on_surface_container: 90,
+      on_surface_container_variant: 80,
       outline: 60,
       outline_variant: 30,
     },
@@ -110,8 +128,11 @@ const getBaseSurfaceTones = (
       container_high: 30,
       container_highest: 40,
       inverse_surface: 90,
+      inverse_on_surface: 20,
       on_surface: 90,
       on_surface_variant: 80,
+      on_surface_container: 90,
+      on_surface_container_variant: 80,
       outline: 60,
       outline_variant: 30,
     },
@@ -125,8 +146,11 @@ const getBaseSurfaceTones = (
       container_high: 40,
       container_highest: 60,
       inverse_surface: 90,
+      inverse_on_surface: 20,
       on_surface: 90,
       on_surface_variant: 80,
+      on_surface_container: 90,
+      on_surface_container_variant: 80,
       outline: 60,
       outline_variant: 30,
     },
@@ -154,6 +178,27 @@ const nearestToneIndex = (tones: TonalStep[], targetTone: number) =>
     targetTone,
   );
 
+const excludeTone = (tones: TonalStep[], excludedTone?: number | null) => {
+  if (excludedTone === undefined || excludedTone === null) return tones;
+  const filteredTones = tones.filter((tone) => tone.index !== excludedTone);
+  return filteredTones.length ? filteredTones : tones;
+};
+
+const nearestIndexPosition = (indices: number[], tone: number) =>
+  Math.max(0, indices.indexOf(nearestAvailableTone(indices, tone)));
+
+const oppositeDirection = (direction: ContrastDirection): ContrastDirection =>
+  direction === 'darker' ? 'lighter' : 'darker';
+
+const findContrastToneIndex = (
+  tones: TonalStep[],
+  basePosition: number,
+  direction: ContrastDirection,
+  ratio: number,
+) =>
+  findClosestContrastTone(tones, basePosition, direction, ratio)?.tone.index ??
+  findClosestContrastTone(tones, basePosition, oppositeDirection(direction), ratio)?.tone.index;
+
 function applyContrastSurfaceRoles({
   tones,
   roleTones,
@@ -165,15 +210,36 @@ function applyContrastSurfaceRoles({
 }) {
   const sortedTones = sortedUniqueTones(tones);
   const surfacePosition = sortedTones.findIndex((tone) => tone.index === roleTones.surface);
-  const aaaTone = findClosestContrastTone(sortedTones, surfacePosition, direction, 4.5)?.tone.index;
-  const aaTone = findClosestContrastTone(sortedTones, surfacePosition, direction, 3)?.tone.index;
+  const containerTones = [
+    roleTones.container_lowest,
+    roleTones.container_low,
+    roleTones.container,
+    roleTones.container_high,
+    roleTones.container_highest,
+  ];
+  const containerAnchorTone = Math.min(...containerTones);
+  const containerPosition = sortedTones.findIndex((tone) => tone.index === containerAnchorTone);
+  const inversePosition = sortedTones.findIndex((tone) => tone.index === roleTones.inverse_surface);
+  const aaaTone = findContrastToneIndex(sortedTones, surfacePosition, direction, 4.5);
+  const aaTone = findContrastToneIndex(sortedTones, surfacePosition, direction, 3);
+  const containerAaaTone = findContrastToneIndex(sortedTones, containerPosition, direction, 4.5);
+  const containerAaTone = findContrastToneIndex(sortedTones, containerPosition, direction, 3);
+  const inverseAaaTone = findContrastToneIndex(
+    sortedTones,
+    inversePosition,
+    oppositeDirection(direction),
+    4.5,
+  );
   const outlineTone = aaTone ?? roleTones.outline;
   const outlineVariantTone = nearestToneIndex(sortedTones, (roleTones.surface + outlineTone) / 2);
 
   return {
     ...roleTones,
+    inverse_on_surface: inverseAaaTone ?? roleTones.inverse_on_surface,
     on_surface: aaaTone ?? roleTones.on_surface,
     on_surface_variant: aaTone ?? roleTones.on_surface_variant,
+    on_surface_container: containerAaaTone ?? roleTones.on_surface_container,
+    on_surface_container_variant: containerAaTone ?? roleTones.on_surface_container_variant,
     outline: outlineTone,
     outline_variant: outlineVariantTone,
   };
@@ -185,18 +251,23 @@ export const buildSurfaceRoleTones = ({
   contrast,
   lightTone,
   darkTone,
+  excludedTone,
 }: {
   tones: TonalStep[];
   isDarkMode: boolean;
   contrast: SurfaceContrast;
   lightTone: number;
   darkTone: number;
+  excludedTone?: number | null;
 }): Record<SurfaceToneRole, number> => {
+  const assignmentTones = excludeTone(tones, excludedTone);
   const baseTones = getBaseSurfaceTones(isDarkMode, contrast);
-  const indices = [...new Set(tones.map((tone) => tone.index))].sort((left, right) => left - right);
+  const indices = [...new Set(assignmentTones.map((tone) => tone.index))].sort(
+    (left, right) => left - right,
+  );
   const defaultSurfaceTone = isDarkMode ? 0 : 100;
-  const defaultIndex = indices.indexOf(defaultSurfaceTone);
-  const selectedIndex = indices.indexOf(isDarkMode ? darkTone : lightTone);
+  const defaultIndex = nearestIndexPosition(indices, defaultSurfaceTone);
+  const selectedIndex = nearestIndexPosition(indices, isDarkMode ? darkTone : lightTone);
   const shift = selectedIndex - defaultIndex;
   const shiftedRoles: SurfaceToneRole[] = [
     'surface',
@@ -211,12 +282,16 @@ export const buildSurfaceRoleTones = ({
     Object.entries(baseTones).map(([role, tone]) => {
       if (!shiftedRoles.includes(role as SurfaceToneRole)) return [role, tone];
 
-      const toneIndex = indices.indexOf(tone);
+      const toneIndex = nearestIndexPosition(indices, tone);
       const shiftedIndex = Math.min(Math.max(toneIndex + shift, 0), indices.length - 1);
 
       return [role, indices[shiftedIndex] ?? tone];
     }),
   ) as Record<SurfaceToneRole, number>;
+
+  Object.entries(shiftedTones).forEach(([role, tone]) => {
+    shiftedTones[role as SurfaceToneRole] = nearestAvailableTone(indices, tone);
+  });
 
   const surfaceFamilyTones = [
     shiftedTones.surface,
@@ -231,7 +306,7 @@ export const buildSurfaceRoleTones = ({
   shiftedTones.surface_dim = Math.min(...surfaceFamilyTones);
 
   return applyContrastSurfaceRoles({
-    tones,
+    tones: assignmentTones,
     roleTones: shiftedTones,
     direction: isDarkMode ? 'lighter' : 'darker',
   });
@@ -248,38 +323,42 @@ export const buildAccentSurfaceRoleTones = ({
   contrast,
   surfaceTone,
   baseTone,
+  excludedTone,
+  isDarkMode = false,
 }: {
   tones: TonalStep[];
   contrast: SurfaceContrast;
   surfaceTone: number;
   baseTone: number;
+  excludedTone?: number | null;
+  isDarkMode?: boolean;
 }): Record<SurfaceToneRole, number> => {
-  const indices = getUniqueToneIndices(tones).filter((tone) => tone >= 10 && tone <= 99);
-  const fallbackIndices = getUniqueToneIndices(tones);
-  const scaleIndices = indices.length ? indices : fallbackIndices;
-  const selectedSurfaceTone = nearestAvailableTone(scaleIndices, surfaceTone || baseTone);
+  const assignmentTones = excludeTone(tones, excludedTone);
+  const fallbackIndices = getUniqueToneIndices(assignmentTones);
+  const preferredIndices = fallbackIndices.filter((tone) => tone >= 5 && tone <= 99);
+  const scaleIndices = preferredIndices.length ? preferredIndices : fallbackIndices;
+  const selectedSurfaceTone = nearestAvailableTone(
+    scaleIndices,
+    Number.isFinite(surfaceTone) ? surfaceTone : baseTone,
+  );
   const surfaceIndex = scaleIndices.indexOf(selectedSurfaceTone);
   const offsets = contrastOffsets[contrast];
-  const hasEnoughLighterTones = surfaceIndex + offsets[offsets.length - 1] < scaleIndices.length;
+  const maxOffset = offsets[offsets.length - 1];
+  const hasEnoughPreferredTones = isDarkMode
+    ? surfaceIndex - maxOffset >= 0
+    : surfaceIndex + maxOffset < scaleIndices.length;
+  const shouldScaleDarker = isDarkMode ? hasEnoughPreferredTones : !hasEnoughPreferredTones;
   const toneAtOffset = (offset: number) => {
-    const nextIndex = hasEnoughLighterTones ? surfaceIndex + offset : surfaceIndex - offset;
+    const nextIndex = shouldScaleDarker ? surfaceIndex - offset : surfaceIndex + offset;
     return scaleIndices[Math.min(Math.max(nextIndex, 0), scaleIndices.length - 1)];
   };
-  const lighterContainers = {
+  const containers = {
     container_lowest: toneAtOffset(offsets[0]),
     container_low: toneAtOffset(offsets[1]),
     container: toneAtOffset(offsets[2]),
     container_high: toneAtOffset(offsets[3]),
     container_highest: toneAtOffset(offsets[4]),
   };
-  const darkerContainers = {
-    container_lowest: toneAtOffset(offsets[0]),
-    container_low: toneAtOffset(offsets[1]),
-    container: toneAtOffset(offsets[2]),
-    container_high: toneAtOffset(offsets[3]),
-    container_highest: toneAtOffset(offsets[4]),
-  };
-  const containers = hasEnoughLighterTones ? lighterContainers : darkerContainers;
   const surfaceFamilyTones = [selectedSurfaceTone, ...Object.values(containers)];
   const isLightSurface = selectedSurfaceTone >= 60;
 
@@ -288,13 +367,22 @@ export const buildAccentSurfaceRoleTones = ({
     surface_bright: Math.max(...surfaceFamilyTones),
     surface_dim: Math.min(...surfaceFamilyTones),
     ...containers,
-    inverse_surface: isLightSurface
+    inverse_surface: isDarkMode
+      ? nearestAvailableTone(fallbackIndices, 90)
+      : nearestAvailableTone(fallbackIndices, 20),
+    inverse_on_surface: isDarkMode
       ? nearestAvailableTone(fallbackIndices, 20)
-      : nearestAvailableTone(fallbackIndices, 90),
+      : nearestAvailableTone(fallbackIndices, 98),
     on_surface: isLightSurface
       ? nearestAvailableTone(fallbackIndices, 10)
       : nearestAvailableTone(fallbackIndices, 95),
     on_surface_variant: isLightSurface
+      ? nearestAvailableTone(fallbackIndices, 35)
+      : nearestAvailableTone(fallbackIndices, 80),
+    on_surface_container: isLightSurface
+      ? nearestAvailableTone(fallbackIndices, 10)
+      : nearestAvailableTone(fallbackIndices, 95),
+    on_surface_container_variant: isLightSurface
       ? nearestAvailableTone(fallbackIndices, 35)
       : nearestAvailableTone(fallbackIndices, 80),
     outline: isLightSurface
@@ -306,7 +394,7 @@ export const buildAccentSurfaceRoleTones = ({
   };
 
   return applyContrastSurfaceRoles({
-    tones,
+    tones: assignmentTones,
     roleTones,
     direction: isLightSurface ? 'darker' : 'lighter',
   });

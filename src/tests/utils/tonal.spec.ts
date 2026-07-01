@@ -3,7 +3,7 @@ import { applyBlend, applySaturation } from '@/utils/tonal/blending';
 import { cubicBezier, easeInOutQuad, getIntensity, getIntensityCurve } from '@/utils/tonal/easing';
 import { generateTonalScale, type TonalScaleParams } from '@/utils/tonal/scale';
 import { normalizeHexRgb, rgbToHsl, rgbToLab } from '@/utils/tonal/color-math';
-import { buildAccentSurfaceRoleTones } from '@/utils/tonal/surface-roles';
+import { buildAccentSurfaceRoleTones, buildSurfaceRoleTones } from '@/utils/tonal/surface-roles';
 
 describe('blending', () => {
   it('blends overlay mode with expected result', () => {
@@ -151,5 +151,78 @@ describe('accent surface roles', () => {
     expect(roles.container).toBe(95);
     expect(roles.container_high).toBe(94);
     expect(roles.container_highest).toBe(93);
+  });
+
+  it('ignores the base-adjacent tone when assigning accent surface roles', () => {
+    const roles = buildAccentSurfaceRoleTones({
+      tones,
+      contrast: 'low',
+      surfaceTone: 43,
+      baseTone: 43,
+      excludedTone: 40,
+    });
+
+    expect(Object.values(roles)).not.toContain(40);
+  });
+
+  it('keeps accent surface anchored while containers and inverse roles respond to dark mode', () => {
+    const lightRoles = buildAccentSurfaceRoleTones({
+      tones,
+      contrast: 'low',
+      surfaceTone: 40,
+      baseTone: 40,
+      isDarkMode: false,
+    });
+    const darkRoles = buildAccentSurfaceRoleTones({
+      tones,
+      contrast: 'low',
+      surfaceTone: 40,
+      baseTone: 40,
+      isDarkMode: true,
+    });
+
+    expect(lightRoles.surface).toBe(40);
+    expect(darkRoles.surface).toBe(40);
+    expect(lightRoles.container_lowest).toBeGreaterThan(lightRoles.surface);
+    expect(darkRoles.container_lowest).toBeLessThan(darkRoles.surface);
+    expect(lightRoles.inverse_surface).toBe(20);
+    expect(darkRoles.inverse_surface).toBe(90);
+  });
+});
+
+describe('surface foreground roles', () => {
+  it('falls back to the opposite direction when no preferred AAA tone exists', () => {
+    const roles = buildSurfaceRoleTones({
+      tones: [
+        { index: 80, hex: '#ffffff' },
+        { index: 90, hex: '#f6f6f6' },
+        { index: 100, hex: '#000000' },
+      ],
+      isDarkMode: false,
+      contrast: 'low',
+      lightTone: 80,
+      darkTone: 0,
+    });
+
+    expect(roles.on_surface).toBe(100);
+    expect(roles.on_surface_container).toBe(100);
+  });
+
+  it('ignores the base-adjacent tone when assigning surface roles', () => {
+    const toneIndices = [0, 10, 20, 25, 30, 35, 40, 50, 60, 70, 80, 90, 95, 98, 99, 100];
+    const tones = toneIndices.map((index) => ({
+      index,
+      hex: `#${index.toString().padStart(6, '0')}`,
+    }));
+    const roles = buildSurfaceRoleTones({
+      tones,
+      isDarkMode: false,
+      contrast: 'high',
+      lightTone: 100,
+      darkTone: 0,
+      excludedTone: 40,
+    });
+
+    expect(Object.values(roles)).not.toContain(40);
   });
 });
