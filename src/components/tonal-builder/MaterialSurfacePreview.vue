@@ -650,12 +650,16 @@
     const onAction = buildSurfaceCard('on_surface', palette.role);
     const container = buildSurfaceCard('container', palette.role);
     const onContainer = buildSurfaceCard('on_surface_container', palette.role);
+    const outline = buildSurfaceCard('outline', palette.role);
+    const outlineVariant = buildSurfaceCard('outline_variant', palette.role);
 
     return {
       '--preview-role-action': action?.hex ?? '#6750a4',
       '--preview-role-on-action': onAction?.hex ?? '#ffffff',
       '--preview-role-action-container': container?.hex ?? '#eaddff',
       '--preview-role-on-action-container': onContainer?.hex ?? '#21005d',
+      '--preview-role-outline': outline?.hex ?? '#79747e',
+      '--preview-role-outline-variant': outlineVariant?.hex ?? '#cac4d0',
     };
   };
 
@@ -1153,9 +1157,8 @@
           </div>
           <span
             class="preview-icon-role preview-metric-icon"
-            data-surface-role="surface"
-            data-surface-palette="primary"
-            :data-surface-tooltip="surfaceTooltip('surface', 'primary')"
+            data-surface-role="on-surface-container"
+            :data-surface-tooltip="surfaceTooltip('on_surface_container')"
           >
             <component
               :is="metric.icon"
@@ -1252,13 +1255,14 @@
           <label
             v-if="errorPalette"
             class="preview-validation-field"
+            :style="buildRoleActionStyles(errorPalette)"
             data-cy="error-validation"
           >
             <span
               class="preview-validation-label"
-              data-surface-role="surface"
+              data-surface-role="on-surface"
               data-surface-palette="error"
-              :data-surface-tooltip="surfaceTooltip('surface', 'error')"
+              :data-surface-tooltip="surfaceTooltip('on_surface', 'error')"
             >
               {{ t('tonal_builder.surface_preview.role_examples.validation_label') }}
             </span>
@@ -1267,7 +1271,6 @@
               data-surface-role="outline"
               data-surface-palette="error"
               :data-surface-tooltip="surfaceTooltip('outline', 'error')"
-              :style="buildRoleActionStyles(errorPalette)"
             >
               <span
                 data-surface-role="on-surface-container"
@@ -1277,11 +1280,17 @@
             </span>
             <small
               class="preview-validation-helper"
-              data-surface-role="surface"
+              data-surface-role="surface-container"
               data-surface-palette="error"
-              :data-surface-tooltip="surfaceTooltip('surface', 'error')"
+              :data-surface-tooltip="surfaceTooltip('container', 'error')"
             >
-              {{ t('tonal_builder.surface_preview.role_examples.validation_helper') }}
+              <span
+                data-surface-role="on-surface-container"
+                data-surface-palette="error"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container', 'error')"
+              >
+                {{ t('tonal_builder.surface_preview.role_examples.validation_helper') }}
+              </span>
             </small>
           </label>
 
@@ -1383,7 +1392,7 @@
               :data-surface-tooltip="surfaceTooltip('container_lowest')"
             >
               <span
-                class="preview-activity-dot"
+                class="preview-collection-progress"
                 data-surface-role="surface"
                 data-surface-palette="primary"
                 :data-surface-tooltip="surfaceTooltip('surface', 'primary')"
@@ -1477,9 +1486,9 @@
           >
             <span
               class="preview-alert-icon"
-              data-surface-role="surface"
+              data-surface-role="on-surface-container"
               data-surface-palette="error"
-              :data-surface-tooltip="surfaceTooltip('surface', 'error')"
+              :data-surface-tooltip="surfaceTooltip('on_surface_container', 'error')"
             >
               <ExclamationTriangleIcon aria-hidden="true" />
             </span>
@@ -1634,12 +1643,15 @@
                 data-surface-role="surface-container-lowest"
                 :data-surface-tooltip="surfaceTooltip('container_lowest')"
               >
-                <span class="preview-reconciliation-icon">
+                <span
+                  class="preview-reconciliation-icon"
+                  data-surface-role="surface-container-highest"
+                  :data-surface-tooltip="surfaceTooltip('container_highest')"
+                >
                   <span
                     class="preview-icon-role preview-reconciliation-icon-svg"
-                    data-surface-role="surface"
-                    data-surface-palette="primary"
-                    :data-surface-tooltip="surfaceTooltip('surface', 'primary')"
+                    data-surface-role="on-surface-container"
+                    :data-surface-tooltip="surfaceTooltip('on_surface_container')"
                   >
                     <CreditCardIcon aria-hidden="true" />
                   </span>
@@ -1667,12 +1679,15 @@
                 data-surface-role="surface-container-high"
                 :data-surface-tooltip="surfaceTooltip('container_high')"
               >
-                <span class="preview-reconciliation-icon">
+                <span
+                  class="preview-reconciliation-icon"
+                  data-surface-role="surface-container-highest"
+                  :data-surface-tooltip="surfaceTooltip('container_highest')"
+                >
                   <span
                     class="preview-icon-role preview-reconciliation-icon-svg"
-                    data-surface-role="surface"
-                    data-surface-palette="primary"
-                    :data-surface-tooltip="surfaceTooltip('surface', 'primary')"
+                    data-surface-role="on-surface-container"
+                    :data-surface-tooltip="surfaceTooltip('on_surface_container')"
                   >
                     <DocumentTextIcon aria-hidden="true" />
                   </span>
@@ -2039,7 +2054,7 @@
               :data-surface-tooltip="surfaceTooltip('container_lowest')"
             >
               <span
-                class="preview-activity-dot"
+                class="preview-health-progress"
                 data-surface-role="surface"
                 data-surface-palette="primary"
                 :data-surface-tooltip="surfaceTooltip('surface', 'primary')"
@@ -2133,51 +2148,29 @@
             </div>
             <p>
               <span
-                class="preview-activity-dot"
-                data-surface-role="surface"
-                data-surface-palette="primary"
-                :data-surface-tooltip="surfaceTooltip('surface', 'primary')"
-              />
-              <span
-                data-surface-role="on-surface-container-variant"
-                :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+                data-surface-role="on-surface-container"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container')"
                 >{{ t('tonal_builder.surface_preview.activity.approved') }}</span
               >
             </p>
             <p>
               <span
-                class="preview-activity-dot"
-                data-surface-role="surface"
-                data-surface-palette="primary"
-                :data-surface-tooltip="surfaceTooltip('surface', 'primary')"
-              />
-              <span
-                data-surface-role="on-surface-container-variant"
-                :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+                data-surface-role="on-surface-container"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container')"
                 >{{ t('tonal_builder.surface_preview.activity.sent') }}</span
               >
             </p>
             <p>
               <span
-                data-surface-role="surface"
-                data-surface-palette="primary"
-                :data-surface-tooltip="surfaceTooltip('surface', 'primary')"
-              />
-              <span
-                data-surface-role="on-surface-container-variant"
-                :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+                data-surface-role="on-surface-container"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container')"
                 >{{ t('tonal_builder.surface_preview.activity.created') }}</span
               >
             </p>
             <p>
               <span
-                data-surface-role="surface"
-                data-surface-palette="primary"
-                :data-surface-tooltip="surfaceTooltip('surface', 'primary')"
-              />
-              <span
-                data-surface-role="on-surface-container-variant"
-                :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+                data-surface-role="on-surface-container"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container')"
                 >{{ t('tonal_builder.surface_preview.activity.viewed') }}</span
               >
             </p>
@@ -2602,7 +2595,7 @@
   }
 
   .preview-toolbar .preview-role-action-tonal {
-    border: 1px solid var(--preview-role-action);
+    border: 1px solid var(--preview-role-outline);
     background: var(--preview-role-action-container);
     color: var(--preview-role-on-action-container);
   }
@@ -2611,7 +2604,7 @@
     width: 18px;
     height: 18px;
     flex: 0 0 auto;
-    color: var(--preview-primary);
+    color: var(--preview-on-surface-container);
   }
 
   .preview-health-heading .preview-icon-role,
@@ -2728,22 +2721,22 @@
   }
 
   .preview-validation-label {
-    color: var(--preview-role-action);
+    color: var(--preview-role-on-action);
   }
 
   .preview-validation-helper {
     width: fit-content;
     border-radius: 4px;
     padding: 4px 6px;
-    background: var(--preview-role-action);
-    color: var(--preview-role-on-action);
+    background: var(--preview-role-action-container);
+    color: var(--preview-role-on-action-container);
   }
 
   .preview-validation-input {
     display: flex;
     min-height: 31px;
     align-items: center;
-    border: 1px solid var(--preview-role-action);
+    border: 1px solid var(--preview-role-outline);
     border-radius: 4px;
     padding: 0 9px;
     background: var(--preview-surface-container-lowest);
@@ -2831,7 +2824,7 @@
     background: var(--preview-surface-container-lowest);
   }
 
-  .preview-collection-track span {
+  .preview-collection-progress {
     display: block;
     width: 74%;
     height: 100%;
@@ -2894,7 +2887,7 @@
   .preview-alert-icon {
     width: 16px;
     height: 16px;
-    color: var(--preview-role-action);
+    color: var(--preview-role-on-action-container);
   }
 
   .preview-alert > div {
@@ -3051,6 +3044,7 @@
   .preview-primary-example-inverse .preview-primary-example-body {
     border-color: var(--preview-role-outline, var(--preview-primary-outline));
     background: transparent;
+    color: var(--preview-role-on-surface, var(--preview-primary-on-inverse));
   }
 
   .preview-primary-example-body > .preview-primary-example-icon {
@@ -3135,7 +3129,7 @@
     place-items: center;
     border-radius: 4px;
     background: var(--preview-surface-container-highest);
-    color: var(--preview-primary);
+    color: var(--preview-on-surface-container);
   }
 
   .preview-reconciliation-icon-svg {
@@ -3323,7 +3317,7 @@
     background: var(--preview-surface-container-lowest);
   }
 
-  .preview-health-track span {
+  .preview-health-progress {
     display: block;
     width: 92%;
     height: 100%;
@@ -3347,15 +3341,7 @@
     margin: 0;
     border-top: 1px solid var(--preview-outline-variant);
     padding: 6px 0;
-    color: var(--preview-on-surface-variant);
-  }
-
-  .preview-activity-dot {
-    width: 5px;
-    height: 5px;
-    flex: 0 0 auto;
-    border-radius: 50%;
-    background: var(--preview-primary);
+    color: var(--preview-on-surface-container);
   }
 
   .preview-snackbar {

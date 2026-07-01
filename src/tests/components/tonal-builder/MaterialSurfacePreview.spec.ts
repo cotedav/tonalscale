@@ -433,7 +433,7 @@ describe('MaterialSurfacePreview', () => {
       clientX: 140,
       clientY: 340,
     });
-    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Error Surface');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Error container');
 
     await wrapper.get('.preview-health-card small').trigger('pointermove', {
       clientX: 830,
@@ -485,10 +485,25 @@ describe('MaterialSurfacePreview', () => {
 
     const activityRows = wrapper.findAll('.preview-activity p');
     expect(activityRows).toHaveLength(4);
-    expect(activityRows[0].get('.preview-activity-dot').attributes('data-surface-role')).toBe(
-      'surface',
-    );
+    expect(activityRows[0].find('.preview-activity-dot').exists()).toBe(false);
+    expect(
+      activityRows[0]
+        .get('[data-surface-role="on-surface-container"]')
+        .attributes('data-surface-role'),
+    ).toBe('on-surface-container');
     expect(activityRows[0].text()).toContain('Invoice approved by Finance');
+
+    await wrapper.get('.preview-metric-icon').trigger('pointermove', {
+      clientX: 760,
+      clientY: 220,
+    });
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('On surface container');
+
+    await wrapper.get('.preview-reconciliation-icon-svg').trigger('pointermove', {
+      clientX: 460,
+      clientY: 620,
+    });
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('On surface container');
 
     expect(wrapper.get('.preview-payment-card dd').text()).toContain('•••• 4832');
 
@@ -496,7 +511,15 @@ describe('MaterialSurfacePreview', () => {
       clientX: 140,
       clientY: 340,
     });
-    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Error Surface');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Error container');
+
+    await wrapper.get('.preview-validation-helper span').trigger('pointermove', {
+      clientX: 150,
+      clientY: 342,
+    });
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain(
+      'Error On surface container',
+    );
   });
 
   it('keeps the app shell surface-based while showcasing an independent primary surface family', async () => {
@@ -759,14 +782,24 @@ describe('MaterialSurfacePreview', () => {
     expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain(toneHex(tertiaryTones, 80));
 
     await validation
-      .get('[data-surface-palette="error"][data-surface-role="surface"]')
+      .get('[data-surface-palette="error"][data-surface-role="surface-container"]')
       .trigger('pointermove', {
         clientX: 140,
         clientY: 420,
       });
-    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Error Surface');
-    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 50');
-    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain(toneHex(errorTones, 50));
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Error container');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 80');
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain(toneHex(errorTones, 80));
+
+    await validation
+      .get('[data-surface-palette="error"][data-surface-role="on-surface-container"]')
+      .trigger('pointermove', {
+        clientX: 150,
+        clientY: 422,
+      });
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain(
+      'Error On surface container',
+    );
 
     await alert.trigger('pointermove', { clientX: 260, clientY: 360 });
     expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Error container');
