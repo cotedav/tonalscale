@@ -386,6 +386,10 @@ export default {
       base_color_badge: 'Couleur de base {role} : {color}',
       add: 'Ajouter un role de couleur',
       duplicate: 'Dupliquer {role}',
+      swap_menu: 'Echanger la configuration de {role} avec un autre role',
+      swap_with: 'Echanger la configuration de {source} avec {target}',
+      apply_menu: 'Appliquer la configuration de {role} a un autre role',
+      apply_to: 'Appliquer la configuration de {source} a {target}',
       move_left: 'Deplacer {role} a gauche',
       move_right: 'Deplacer {role} a droite',
       rename_label: 'Nom du role',
@@ -409,6 +413,11 @@ export default {
         title: 'Reinitialiser le constructeur?',
         body: 'Cette action restaure les roles, couleurs, controles, apercus et donnees de partage initiaux.',
         confirm: 'Reinitialiser',
+      },
+      apply_role: {
+        title: 'Appliquer {source} a {target}?',
+        body: 'Remplace la configuration de couleur modifiable de {target} par la configuration actuelle de {source}. Le libelle, l ordre et le role dans la preview de {target} restent inchanges.',
+        confirm: 'Appliquer la configuration',
       },
     },
     overlays: {

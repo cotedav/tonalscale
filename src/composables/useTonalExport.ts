@@ -50,6 +50,16 @@ export const useTonalExport = () => {
   const cardColumns = 4;
   const cardGap = 16;
   const cardHeight = 104;
+
+  const cleanPageUrl = () => {
+    try {
+      const url = new URL(window.location.href);
+      return `${url.origin}${url.pathname}`;
+    } catch {
+      return window.location.href.split(/[?#]/)[0];
+    }
+  };
+
   const renderStrip = (
     label: string,
     strip: TonalStep[],
@@ -132,7 +142,7 @@ export const useTonalExport = () => {
       : 0;
     const stripsHeight = stripHeight * 3 + stripGap * 2;
     const metadata = input.metadata ?? JSON.stringify(params);
-    const sourceUrl = input.sourceUrl ?? window.location.href;
+    const sourceUrl = input.sourceUrl ?? cleanPageUrl();
     const footerTextWidth = contentWidth;
     const cardToDividerGap = 42;
     const footerTextBaselineOffset = 12;
@@ -205,7 +215,7 @@ export const useTonalExport = () => {
       },
     } = input;
     const metadata = input.metadata ?? JSON.stringify(roles.map((role) => role.params));
-    const sourceUrl = input.sourceUrl ?? window.location.href;
+    const sourceUrl = input.sourceUrl ?? cleanPageUrl();
     const footerTextWidth = contentWidth;
     const roleHeaderHeight = 92;
     const cardsTopGap = 46;

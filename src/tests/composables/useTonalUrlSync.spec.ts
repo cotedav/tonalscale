@@ -1,15 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import useTonalUrlSync from '@/composables/useTonalUrlSync';
 import { createPinia, setActivePinia } from 'pinia';
+import { nextTick } from 'vue';
+import { compressToEncodedURIComponent } from 'lz-string';
+
+import useTonalUrlSync, { TONAL_LOCAL_STORAGE_KEY } from '@/composables/useTonalUrlSync';
 import {
   BUILT_IN_ROLE_IDS,
   TONAL_PERSISTENCE_SCHEMA_VERSION,
   useTonalScaleStore,
 } from '@/stores/tonalScale';
-import { nextTick } from 'vue';
-import { decodeShareState, encodeShareState } from '@/utils/tonal/share-state';
 
-// Mock vue-router
 const mockReplace = vi.fn().mockResolvedValue(undefined);
 const mockRoute = { query: {}, hash: '' };
 const eventHandlers = new Map<string, () => void>();
@@ -26,7 +26,6 @@ vi.mock('vue-router', () => ({
   useRoute: () => mockRoute,
 }));
 
-// Mock onMounted to run immediately
 vi.mock('vue', async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>;
   return {
@@ -36,6 +35,9 @@ vi.mock('vue', async (importOriginal) => {
   };
 });
 
+const legacyHash = (payload: unknown) =>
+  `#v2=${compressToEncodedURIComponent(JSON.stringify(payload))}`;
+
 describe('useTonalUrlSync', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -44,24 +46,24 @@ describe('useTonalUrlSync', () => {
     mockReplace.mockClear();
     mockRoute.query = {};
     mockRoute.hash = '';
+    window.localStorage.clear();
     setActivePinia(createPinia());
   });
 
-  it('updates the URL when store state changes', async () => {
+  it('persists store changes to local storage without updating the URL', async () => {
     const store = useTonalScaleStore();
     useTonalUrlSync(store);
 
-    // Initial state change
     store.baseHex = '#ff0000';
     await nextTick();
 
     expect(mockReplace).not.toHaveBeenCalled();
+    expect(window.localStorage.getItem(TONAL_LOCAL_STORAGE_KEY)).toBeNull();
+
     eventHandlers.get('pointerup')?.();
 
-    expect(mockReplace).toHaveBeenCalled();
-    const callArgs = mockReplace.mock.lastCall?.[0];
-    expect(callArgs?.query).toEqual({});
-    const serialized = decodeShareState(callArgs?.hash as string);
+    expect(mockReplace).not.toHaveBeenCalled();
+    const serialized = window.localStorage.getItem(TONAL_LOCAL_STORAGE_KEY);
     expect(serialized).toBeTruthy();
     expect(JSON.parse(serialized as string)).toMatchObject({
       version: TONAL_PERSISTENCE_SCHEMA_VERSION,
@@ -73,7 +75,7 @@ describe('useTonalUrlSync', () => {
     });
   });
 
-  it('shares custom roles through compressed URL hashes', async () => {
+  it('stores custom roles through local storage', async () => {
     const store = useTonalScaleStore();
     useTonalUrlSync(store);
 
@@ -86,8 +88,7 @@ describe('useTonalUrlSync', () => {
     await nextTick();
     eventHandlers.get('change')?.();
 
-    const serialized = decodeShareState(mockReplace.mock.lastCall?.[0]?.hash);
-    const payload = JSON.parse(serialized as string);
+    const payload = JSON.parse(window.localStorage.getItem(TONAL_LOCAL_STORAGE_KEY) as string);
     expect(payload).toMatchObject({
       version: TONAL_PERSISTENCE_SCHEMA_VERSION,
       activeRole: customRole,
@@ -116,24 +117,24 @@ describe('useTonalUrlSync', () => {
     });
   });
 
-  it('updates after an idle delay for keyboard and text changes', async () => {
+  it('persists after an idle delay for keyboard and text changes', async () => {
     const store = useTonalScaleStore();
     useTonalUrlSync(store);
 
     store.baseHex = '#00ff00';
     await nextTick();
-    expect(mockReplace).not.toHaveBeenCalled();
+    expect(window.localStorage.getItem(TONAL_LOCAL_STORAGE_KEY)).toBeNull();
 
     vi.advanceTimersByTime(399);
-    expect(mockReplace).not.toHaveBeenCalled();
+    expect(window.localStorage.getItem(TONAL_LOCAL_STORAGE_KEY)).toBeNull();
     vi.advanceTimersByTime(1);
 
-    expect(mockReplace).toHaveBeenCalledOnce();
-    const serialized = decodeShareState(mockReplace.mock.lastCall?.[0]?.hash);
+    const serialized = window.localStorage.getItem(TONAL_LOCAL_STORAGE_KEY);
     expect(JSON.parse(serialized as string).roles.surface.baseHex).toBe('#00ff00');
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 
-  it('coalesces repeated drag updates into the final URL state', async () => {
+  it('coalesces repeated drag updates into the final local storage state', async () => {
     const store = useTonalScaleStore();
     useTonalUrlSync(store);
 
@@ -144,38 +145,17 @@ describe('useTonalUrlSync', () => {
     store.updateControl('spread', 73);
     await nextTick();
 
-    expect(mockReplace).not.toHaveBeenCalled();
+    expect(window.localStorage.getItem(TONAL_LOCAL_STORAGE_KEY)).toBeNull();
     eventHandlers.get('pointerup')?.();
 
-    expect(mockReplace).toHaveBeenCalledOnce();
-    const serialized = decodeShareState(mockReplace.mock.lastCall?.[0]?.hash);
+    const serialized = window.localStorage.getItem(TONAL_LOCAL_STORAGE_KEY);
     expect(JSON.parse(serialized as string).roles.surface.controls.spread).toBe(73);
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 
-  it('initializes store from URL query on mount', async () => {
-    mockRoute.query = {
-      colorHex: '00ff00',
-      blendMode: 'multiply',
-      blendStrength: '50',
-    };
-
-    // Create store
-    const store = useTonalScaleStore();
-    const importSpy = vi.spyOn(store, 'importState');
-
-    useTonalUrlSync(store);
-
-    expect(importSpy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        colorHex: '00ff00',
-        blendMode: 'multiply',
-        blendStrength: '50',
-      }),
-    );
-  });
-
-  it('restores a versioned multi-role configuration from the URL', () => {
-    mockRoute.hash = encodeShareState(
+  it('restores state from local storage on mount', () => {
+    window.localStorage.setItem(
+      TONAL_LOCAL_STORAGE_KEY,
       JSON.stringify({
         version: 2,
         activeRole: 'primary',
@@ -212,9 +192,48 @@ describe('useTonalUrlSync', () => {
     expect(store.baseHex).toBe('#abcdef');
     expect(store.roles.surface.state.baseHex).toBe('#112233');
     expect(store.preview.darkMode).toBe(true);
+    expect(mockReplace).not.toHaveBeenCalled();
   });
 
-  it('continues to restore the previous JSON query format', () => {
+  it('migrates a legacy compressed URL hash into local storage and clears the URL', () => {
+    mockRoute.hash = legacyHash({
+      version: 2,
+      activeRole: 'primary',
+      roles: {
+        surface: {
+          baseHex: '#112233',
+          blendHex: '#000032',
+          blendMode: 'colordodge',
+          controls: { strength: 0, middle: 0, spread: 50, satDarker: 0, satLighter: 0 },
+        },
+        primary: {
+          baseHex: '#abcdef',
+          blendHex: '#000032',
+          blendMode: 'multiply',
+          controls: { strength: 20, middle: 5, spread: 60, satDarker: 10, satLighter: 15 },
+        },
+      },
+      preview: {
+        darkMode: true,
+        surfaceContrast: 'medium',
+        lightSurfaceTone: 95,
+        darkSurfaceTone: 10,
+        primarySurfaceContrast: 'high',
+        primaryLightSurfaceTone: 98,
+        primaryDarkSurfaceTone: 15,
+      },
+    });
+
+    const store = useTonalScaleStore();
+    useTonalUrlSync(store);
+
+    expect(store.activeRole).toBe('primary');
+    expect(store.baseHex).toBe('#abcdef');
+    expect(window.localStorage.getItem(TONAL_LOCAL_STORAGE_KEY)).toContain('#abcdef');
+    expect(mockReplace).toHaveBeenCalledWith({ query: {}, hash: '' });
+  });
+
+  it('continues to restore the previous JSON query format once and then clears it', () => {
     mockRoute.query = {
       config: JSON.stringify({
         version: 2,
@@ -250,57 +269,57 @@ describe('useTonalUrlSync', () => {
 
     expect(store.activeRole).toBe('primary');
     expect(store.baseHex).toBe('#abcdef');
+    expect(window.localStorage.getItem(TONAL_LOCAL_STORAGE_KEY)).toContain('#abcdef');
+    expect(mockReplace).toHaveBeenCalledWith({ query: {}, hash: '' });
   });
 
-  it('restores dynamic custom-role configurations from the URL', () => {
-    mockRoute.hash = encodeShareState(
-      JSON.stringify({
-        version: TONAL_PERSISTENCE_SCHEMA_VERSION,
-        activeRole: 'support',
-        roleOrder: ['surface', 'primary', 'support'],
-        roleMeta: {
-          surface: {
-            id: 'surface',
-            label: 'Surface',
-            isBuiltIn: true,
-            kind: 'surface',
-            deletable: false,
-            capabilities: { tonalScale: true, materialSurfaces: true, appPreviewExamples: true },
-          },
-          primary: {
-            id: 'primary',
-            label: 'Primary',
-            isBuiltIn: true,
-            kind: 'accent',
-            deletable: false,
-            capabilities: { tonalScale: true, materialSurfaces: true, appPreviewExamples: true },
-          },
+  it('restores legacy dynamic custom-role configurations from the URL', () => {
+    mockRoute.hash = legacyHash({
+      version: TONAL_PERSISTENCE_SCHEMA_VERSION,
+      activeRole: 'support',
+      roleOrder: ['surface', 'primary', 'support'],
+      roleMeta: {
+        surface: {
+          id: 'surface',
+          label: 'Surface',
+          isBuiltIn: true,
+          kind: 'surface',
+          deletable: false,
+          capabilities: { tonalScale: true, materialSurfaces: true, appPreviewExamples: true },
+        },
+        primary: {
+          id: 'primary',
+          label: 'Primary',
+          isBuiltIn: true,
+          kind: 'accent',
+          deletable: false,
+          capabilities: { tonalScale: true, materialSurfaces: true, appPreviewExamples: true },
+        },
+        support: {
+          id: 'support',
+          label: 'Support',
+          isBuiltIn: false,
+          kind: 'custom',
+          deletable: true,
+          capabilities: { tonalScale: true, materialSurfaces: true, appPreviewExamples: false },
+        },
+      },
+      roles: {
+        surface: { baseHex: '#123456' },
+        primary: { baseHex: '#abcdef' },
+        support: { baseHex: '#224466' },
+      },
+      preview: {
+        darkMode: true,
+        roleSettings: {
           support: {
-            id: 'support',
-            label: 'Support',
-            isBuiltIn: false,
-            kind: 'custom',
-            deletable: true,
-            capabilities: { tonalScale: true, materialSurfaces: true, appPreviewExamples: false },
+            contrast: 'medium',
+            lightSurfaceTone: 95,
+            darkSurfaceTone: 15,
           },
         },
-        roles: {
-          surface: { baseHex: '#123456' },
-          primary: { baseHex: '#abcdef' },
-          support: { baseHex: '#224466' },
-        },
-        preview: {
-          darkMode: true,
-          roleSettings: {
-            support: {
-              contrast: 'medium',
-              lightSurfaceTone: 95,
-              darkSurfaceTone: 15,
-            },
-          },
-        },
-      }),
-    );
+      },
+    });
 
     const store = useTonalScaleStore();
     useTonalUrlSync(store);
@@ -324,5 +343,7 @@ describe('useTonalUrlSync', () => {
       lightCustomSurfaceTones: {},
       darkCustomSurfaceTones: {},
     });
+    expect(window.localStorage.getItem(TONAL_LOCAL_STORAGE_KEY)).toContain('#224466');
+    expect(mockReplace).toHaveBeenCalledWith({ query: {}, hash: '' });
   });
 });

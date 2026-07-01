@@ -380,6 +380,10 @@ export default {
       base_color_badge: '{role} base color: {color}',
       add: 'Add color role',
       duplicate: 'Duplicate {role}',
+      swap_menu: 'Swap {role} configuration with another role',
+      swap_with: 'Swap {source} configuration with {target}',
+      apply_menu: 'Apply {role} configuration to another role',
+      apply_to: 'Apply {source} configuration to {target}',
       move_left: 'Move {role} left',
       move_right: 'Move {role} right',
       rename_label: 'Role name',
@@ -403,6 +407,11 @@ export default {
         title: 'Reset the builder?',
         body: 'This restores the initial roles, colors, controls, preview settings, and share state.',
         confirm: 'Reset builder',
+      },
+      apply_role: {
+        title: 'Apply {source} to {target}?',
+        body: 'This overwrites the editable color configuration for {target} with the current {source} setup. The {target} label, order, and preview purpose stay unchanged.',
+        confirm: 'Apply configuration',
       },
     },
 

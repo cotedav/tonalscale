@@ -543,6 +543,260 @@ describe('useTonalScaleStore', () => {
     ]);
   });
 
+  it('swaps built-in role configurations while keeping role identity and order', async () => {
+    const store = useTonalScaleStore();
+    const originalOrder = [...store.roleOrder];
+    const originalPrimaryMeta = { ...store.roleMeta.primary };
+    const originalSecondaryMeta = { ...store.roleMeta.secondary };
+
+    store.importRoleState('primary', {
+      colorHex: '#225577',
+      blendR: 1,
+      blendG: 2,
+      blendB: 3,
+      blendMode: 'multiply',
+      blendStrength: 22,
+      middle: -10,
+      spread: 80,
+      satDarker: 4,
+      satLighter: 5,
+    });
+    store.importRoleState('secondary', {
+      colorHex: '#aa6633',
+      blendR: 12,
+      blendG: 13,
+      blendB: 14,
+      blendMode: 'screen',
+      blendStrength: 44,
+      middle: 20,
+      spread: 30,
+      satDarker: 6,
+      satLighter: 7,
+    });
+    store.updateRolePreviewSettings('primary', {
+      lightContrast: 'high',
+      darkContrast: 'medium',
+      lightSurfaceTone: 35,
+      darkSurfaceTone: 65,
+      lightCustomSurfaceTones: { container_highest: 42 },
+    });
+    store.updateRolePreviewSettings('secondary', {
+      lightContrast: 'medium',
+      darkContrast: 'high',
+      lightSurfaceTone: 50,
+      darkSurfaceTone: 90,
+      darkCustomSurfaceTones: { outline: 18 },
+    });
+
+    const primaryBefore = store.getRoleParams('primary');
+    const secondaryBefore = store.getRoleParams('secondary');
+    const primarySettingsBefore = store.getRolePreviewSettings('primary');
+    const secondarySettingsBefore = store.getRolePreviewSettings('secondary');
+
+    store.setActiveRole('primary');
+    expect(store.swapRoleConfigurations('primary', 'secondary')).toBe(true);
+    await flushTimers();
+
+    expect(store.activeRole).toBe('primary');
+    expect(store.roleOrder).toEqual(originalOrder);
+    expect(store.roleMeta.primary).toEqual(originalPrimaryMeta);
+    expect(store.roleMeta.secondary).toEqual(originalSecondaryMeta);
+    expect(store.getRoleParams('primary')).toEqual(secondaryBefore);
+    expect(store.getRoleParams('secondary')).toEqual(primaryBefore);
+    expect(store.getRolePreviewSettings('primary')).toEqual(secondarySettingsBefore);
+    expect(store.getRolePreviewSettings('secondary')).toEqual(primarySettingsBefore);
+  });
+
+  it('swaps custom role configurations and persists them through export and import', async () => {
+    const store = useTonalScaleStore();
+    const supportRole = store.addRole({ label: 'Support', baseHex: '#224466' });
+    const accentRole = store.addRole({ label: 'Accent', baseHex: '#663399' });
+
+    store.importRoleState(supportRole, {
+      colorHex: '#224466',
+      blendR: 3,
+      blendG: 4,
+      blendB: 5,
+      blendMode: 'multiply',
+      blendStrength: 14,
+    });
+    store.importRoleState(accentRole, {
+      colorHex: '#663399',
+      blendR: 8,
+      blendG: 9,
+      blendB: 10,
+      blendMode: 'overlay',
+      blendStrength: 36,
+    });
+    store.updateRolePreviewSettings(supportRole, {
+      lightSurfaceTone: 28,
+      lightCustomSurfaceTones: { outline_variant: 61 },
+    });
+    store.updateRolePreviewSettings(accentRole, {
+      lightSurfaceTone: 72,
+      lightCustomSurfaceTones: { container: 88 },
+    });
+
+    const supportBefore = store.getRoleParams(supportRole);
+    const accentBefore = store.getRoleParams(accentRole);
+    const supportSettingsBefore = store.getRolePreviewSettings(supportRole);
+    const accentSettingsBefore = store.getRolePreviewSettings(accentRole);
+
+    expect(store.swapRoleConfigurations(supportRole, accentRole)).toBe(true);
+    await flushTimers();
+
+    expect(store.roleMeta[supportRole].label).toBe('Support');
+    expect(store.roleMeta[accentRole].label).toBe('Accent');
+    expect(store.getRoleParams(supportRole)).toEqual(accentBefore);
+    expect(store.getRoleParams(accentRole)).toEqual(supportBefore);
+    expect(store.getRolePreviewSettings(supportRole)).toEqual(accentSettingsBefore);
+    expect(store.getRolePreviewSettings(accentRole)).toEqual(supportSettingsBefore);
+
+    const exported = store.exportState();
+    setActivePinia(createPinia());
+    const restoredStore = useTonalScaleStore();
+
+    expect(restoredStore.importState(JSON.parse(exported))).toBe(true);
+    await flushTimers();
+
+    expect(restoredStore.getRoleParams(supportRole)).toEqual(accentBefore);
+    expect(restoredStore.getRoleParams(accentRole)).toEqual(supportBefore);
+    expect(restoredStore.getRolePreviewSettings(supportRole)).toEqual(accentSettingsBefore);
+    expect(restoredStore.getRolePreviewSettings(accentRole)).toEqual(supportSettingsBefore);
+  });
+
+  it('rejects invalid same-role configuration swaps', () => {
+    const store = useTonalScaleStore();
+    const before = store.exportState();
+
+    expect(store.swapRoleConfigurations('primary', 'primary')).toBe(false);
+    expect(store.swapRoleConfigurations('missing-role', 'surface')).toBe(false);
+    expect(store.exportState()).toBe(before);
+  });
+
+  it('applies one built-in role configuration to another without mutating the source', async () => {
+    const store = useTonalScaleStore();
+    const originalOrder = [...store.roleOrder];
+    const originalSecondaryMeta = { ...store.roleMeta.secondary };
+
+    store.importRoleState('primary', {
+      colorHex: '#225577',
+      blendR: 1,
+      blendG: 2,
+      blendB: 3,
+      blendMode: 'multiply',
+      blendStrength: 22,
+      middle: -10,
+      spread: 80,
+      satDarker: 4,
+      satLighter: 5,
+    });
+    store.importRoleState('secondary', {
+      colorHex: '#aa6633',
+      blendR: 12,
+      blendG: 13,
+      blendB: 14,
+      blendMode: 'screen',
+      blendStrength: 44,
+      middle: 20,
+      spread: 30,
+      satDarker: 6,
+      satLighter: 7,
+    });
+    store.updateRolePreviewSettings('primary', {
+      lightContrast: 'high',
+      darkContrast: 'medium',
+      lightSurfaceTone: 35,
+      darkSurfaceTone: 65,
+      lightCustomSurfaceTones: { container_highest: 42 },
+    });
+    store.updateRolePreviewSettings('secondary', {
+      lightContrast: 'medium',
+      darkContrast: 'high',
+      lightSurfaceTone: 50,
+      darkSurfaceTone: 90,
+      darkCustomSurfaceTones: { outline: 18 },
+    });
+
+    const primaryBefore = store.getRoleParams('primary');
+    const primarySettingsBefore = store.getRolePreviewSettings('primary');
+    store.setActiveRole('primary');
+
+    expect(store.applyRoleConfiguration('primary', 'secondary')).toBe(true);
+    await flushTimers();
+
+    expect(store.activeRole).toBe('primary');
+    expect(store.roleOrder).toEqual(originalOrder);
+    expect(store.roleMeta.secondary).toEqual(originalSecondaryMeta);
+    expect(store.getRoleParams('primary')).toEqual(primaryBefore);
+    expect(store.getRoleParams('secondary')).toEqual(primaryBefore);
+    expect(store.getRolePreviewSettings('primary')).toEqual(primarySettingsBefore);
+    expect(store.getRolePreviewSettings('secondary')).toEqual(primarySettingsBefore);
+  });
+
+  it('applies custom role configurations and persists them through export and import', async () => {
+    const store = useTonalScaleStore();
+    const supportRole = store.addRole({ label: 'Support', baseHex: '#224466' });
+    const accentRole = store.addRole({ label: 'Accent', baseHex: '#663399' });
+
+    store.importRoleState(supportRole, {
+      colorHex: '#224466',
+      blendR: 3,
+      blendG: 4,
+      blendB: 5,
+      blendMode: 'multiply',
+      blendStrength: 14,
+    });
+    store.importRoleState(accentRole, {
+      colorHex: '#663399',
+      blendR: 8,
+      blendG: 9,
+      blendB: 10,
+      blendMode: 'overlay',
+      blendStrength: 36,
+    });
+    store.updateRolePreviewSettings(supportRole, {
+      lightSurfaceTone: 28,
+      lightCustomSurfaceTones: { outline_variant: 61 },
+    });
+    store.updateRolePreviewSettings(accentRole, {
+      lightSurfaceTone: 72,
+      lightCustomSurfaceTones: { container: 88 },
+    });
+
+    const supportBefore = store.getRoleParams(supportRole);
+    const supportSettingsBefore = store.getRolePreviewSettings(supportRole);
+
+    expect(store.applyRoleConfiguration(supportRole, accentRole)).toBe(true);
+    await flushTimers();
+
+    expect(store.roleMeta[supportRole].label).toBe('Support');
+    expect(store.roleMeta[accentRole].label).toBe('Accent');
+    expect(store.getRoleParams(supportRole)).toEqual(supportBefore);
+    expect(store.getRoleParams(accentRole)).toEqual(supportBefore);
+    expect(store.getRolePreviewSettings(supportRole)).toEqual(supportSettingsBefore);
+    expect(store.getRolePreviewSettings(accentRole)).toEqual(supportSettingsBefore);
+
+    const exported = store.exportState();
+    setActivePinia(createPinia());
+    const restoredStore = useTonalScaleStore();
+
+    expect(restoredStore.importState(JSON.parse(exported))).toBe(true);
+    await flushTimers();
+
+    expect(restoredStore.getRoleParams(accentRole)).toEqual(supportBefore);
+    expect(restoredStore.getRolePreviewSettings(accentRole)).toEqual(supportSettingsBefore);
+  });
+
+  it('rejects invalid same-role configuration applies', () => {
+    const store = useTonalScaleStore();
+    const before = store.exportState();
+
+    expect(store.applyRoleConfiguration('primary', 'primary')).toBe(false);
+    expect(store.applyRoleConfiguration('missing-role', 'surface')).toBe(false);
+    expect(store.exportState()).toBe(before);
+  });
+
   it('uses generic selectors and isolates refreshes per dynamic role', async () => {
     const store = useTonalScaleStore();
     const snapshots: TonalScaleSnapshot[] = [];

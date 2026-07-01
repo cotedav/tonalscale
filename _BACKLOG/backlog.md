@@ -43,6 +43,7 @@ This backlog tracks foundational user stories for the new SaaS platform scaffold
 | Done        | [E5-F4](./E5-F4.md) | [E5](./E5.md) | Dynamic role preview and export integration.                |
 | Pending     | [E5-F5](./E5-F5.md) | [E5](./E5.md) | Role toolbar ergonomics and default Material roles.         |
 | Completed   | [E5-F6](./E5-F6.md) | [E5](./E5.md) | Surface role tone assignment and customization.             |
+| In Progress | [E5-F7](./E5-F7.md) | [E5](./E5.md) | Palette workflow, persistence, and preview fidelity.        |
 
 ## Stories
 
@@ -120,3 +121,8 @@ This backlog tracks foundational user stories for the new SaaS platform scaffold
 | Completed | [E5-F6-S2](./E5-F6-S2.md)   | [E5-F6](./E5-F6.md) | [E5](./E5.md) | Rework automatic surface-card assignment across light and dark modes.                     |
 | Completed | [E5-F6-S3](./E5-F6-S3.md)   | [E5-F6](./E5-F6.md) | [E5](./E5.md) | Split surface tone and contrast settings by theme mode for every role.                    |
 | Completed | [E5-F6-S4](./E5-F6-S4.md)   | [E5-F6](./E5-F6.md) | [E5](./E5.md) | Customize selected surface card tones with the mouse wheel.                               |
+| Completed | [E5-F7-S1](./E5-F7-S1.md)   | [E5-F7](./E5-F7.md) | [E5](./E5.md) | Store share state locally instead of in base64 URLs.                                      |
+| Completed | [E5-F7-S2](./E5-F7-S2.md)   | [E5-F7](./E5-F7.md) | [E5](./E5.md) | Export customized surface role values in SVG.                                            |
+| Completed | [E5-F7-S3](./E5-F7-S3.md)   | [E5-F7](./E5-F7.md) | [E5](./E5.md) | Swap two color role configurations.                                                       |
+| Completed | [E5-F7-S4](./E5-F7-S4.md)   | [E5-F7](./E5-F7.md) | [E5](./E5.md) | Apply one role configuration to another role.                                             |
+| Completed | [E5-F7-S5](./E5-F7-S5.md)   | [E5-F7](./E5-F7.md) | [E5](./E5.md) | Map every preview element to the correct Material role.                                   |

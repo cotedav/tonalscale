@@ -684,6 +684,7 @@
 
   const surfaceRoleNames: Record<string, SurfaceRole> = {
     surface: 'surface',
+    container: 'container',
     'surface-bright': 'surface_bright',
     'surface-dim': 'surface_dim',
     'surface-container-lowest': 'container_lowest',
@@ -1011,20 +1012,37 @@
           class="preview-nav"
           :aria-label="t('tonal_builder.surface_preview.navigation')"
         >
-          <span>{{ t('tonal_builder.surface_preview.nav.dashboard') }}</span>
-          <span>{{ t('tonal_builder.surface_preview.nav.orders') }}</span>
+          <span
+            data-surface-role="on-surface-container-variant"
+            :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+            >{{ t('tonal_builder.surface_preview.nav.dashboard') }}</span
+          >
+          <span
+            data-surface-role="on-surface-container-variant"
+            :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+            >{{ t('tonal_builder.surface_preview.nav.orders') }}</span
+          >
           <span
             class="preview-nav-active"
-            data-surface-role="surface"
-            data-surface-palette="primary"
-            :data-surface-tooltip="surfaceTooltip('surface', 'primary')"
+            data-surface-role="on-surface-container"
+            :data-surface-tooltip="surfaceTooltip('on_surface_container')"
             >{{ t('tonal_builder.surface_preview.nav.billing') }}</span
           >
         </nav>
 
         <div class="preview-profile">
-          <BellIcon aria-hidden="true" />
-          <span>DC</span>
+          <span
+            class="preview-icon-role"
+            data-surface-role="on-surface-container"
+            :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+          >
+            <BellIcon aria-hidden="true" />
+          </span>
+          <span
+            data-surface-role="on-surface-container"
+            :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+            >DC</span
+          >
         </div>
       </header>
 
@@ -1055,8 +1073,20 @@
             data-surface-palette="primary"
             :data-surface-tooltip="surfaceTooltip('surface', 'primary')"
           >
-            <PlusIcon aria-hidden="true" />
-            {{ t('tonal_builder.surface_preview.actions.add') }}
+            <span
+              class="preview-icon-role"
+              data-surface-role="on-surface"
+              data-surface-palette="primary"
+              :data-surface-tooltip="surfaceTooltip('on_surface', 'primary')"
+            >
+              <PlusIcon aria-hidden="true" />
+            </span>
+            <span
+              data-surface-role="on-surface"
+              data-surface-palette="primary"
+              :data-surface-tooltip="surfaceTooltip('on_surface', 'primary')"
+              >{{ t('tonal_builder.surface_preview.actions.add') }}</span
+            >
           </button>
           <button
             v-if="secondaryPalette"
@@ -1068,7 +1098,12 @@
             :style="buildRoleActionStyles(secondaryPalette)"
             data-cy="secondary-action"
           >
-            {{ t('tonal_builder.surface_preview.role_examples.secondary_action') }}
+            <span
+              data-surface-role="on-surface"
+              data-surface-palette="secondary"
+              :data-surface-tooltip="surfaceTooltip('on_surface', 'secondary')"
+              >{{ t('tonal_builder.surface_preview.role_examples.secondary_action') }}</span
+            >
           </button>
           <button
             v-if="tertiaryPalette"
@@ -1080,7 +1115,12 @@
             :style="buildRoleActionStyles(tertiaryPalette)"
             data-cy="tertiary-action"
           >
-            {{ t('tonal_builder.surface_preview.role_examples.tertiary_action') }}
+            <span
+              data-surface-role="on-surface-container"
+              data-surface-palette="tertiary"
+              :data-surface-tooltip="surfaceTooltip('on_surface_container', 'tertiary')"
+              >{{ t('tonal_builder.surface_preview.role_examples.tertiary_action') }}</span
+            >
           </button>
         </div>
       </div>
@@ -1111,10 +1151,17 @@
               >{{ metric.helper }}</small
             >
           </div>
-          <component
-            :is="metric.icon"
-            aria-hidden="true"
-          />
+          <span
+            class="preview-icon-role preview-metric-icon"
+            data-surface-role="surface"
+            data-surface-palette="primary"
+            :data-surface-tooltip="surfaceTooltip('surface', 'primary')"
+          >
+            <component
+              :is="metric.icon"
+              aria-hidden="true"
+            />
+          </span>
         </article>
       </section>
 
@@ -1125,39 +1172,79 @@
           :data-surface-tooltip="surfaceTooltip('container_low')"
         >
           <div class="preview-panel-heading">
-            <span>{{ t('tonal_builder.surface_preview.filters.title') }}</span>
-            <ChevronDownIcon aria-hidden="true" />
+            <span
+              data-surface-role="on-surface-container"
+              :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+              >{{ t('tonal_builder.surface_preview.filters.title') }}</span
+            >
+            <span
+              class="preview-icon-role"
+              data-surface-role="on-surface-container"
+              :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+            >
+              <ChevronDownIcon aria-hidden="true" />
+            </span>
           </div>
 
           <label>
-            <span>{{ t('tonal_builder.surface_preview.filters.search') }}</span>
+            <span
+              data-surface-role="on-surface-container-variant"
+              :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+              >{{ t('tonal_builder.surface_preview.filters.search') }}</span
+            >
             <span
               class="preview-input"
               data-surface-role="outline"
               :data-surface-tooltip="surfaceTooltip('outline')"
             >
-              <MagnifyingGlassIcon aria-hidden="true" />
-              {{ t('tonal_builder.surface_preview.filters.placeholder') }}
+              <span
+                class="preview-icon-role"
+                data-surface-role="on-surface-container-variant"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+              >
+                <MagnifyingGlassIcon aria-hidden="true" />
+              </span>
+              <span
+                data-surface-role="on-surface-container-variant"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+                >{{ t('tonal_builder.surface_preview.filters.placeholder') }}</span
+              >
             </span>
           </label>
 
           <div class="preview-filter-grid">
             <label>
-              <span>{{ t('tonal_builder.surface_preview.filters.status') }}</span>
+              <span
+                data-surface-role="on-surface-container-variant"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+                >{{ t('tonal_builder.surface_preview.filters.status') }}</span
+              >
               <span
                 class="preview-input"
                 data-surface-role="outline"
                 :data-surface-tooltip="surfaceTooltip('outline')"
-                >{{ t('tonal_builder.surface_preview.filters.all') }}</span
+                ><span
+                  data-surface-role="on-surface-container-variant"
+                  :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+                  >{{ t('tonal_builder.surface_preview.filters.all') }}</span
+                ></span
               >
             </label>
             <label>
-              <span>{{ t('tonal_builder.surface_preview.filters.period') }}</span>
+              <span
+                data-surface-role="on-surface-container-variant"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+                >{{ t('tonal_builder.surface_preview.filters.period') }}</span
+              >
               <span
                 class="preview-input"
                 data-surface-role="outline"
                 :data-surface-tooltip="surfaceTooltip('outline')"
-                >{{ t('tonal_builder.surface_preview.filters.month') }}</span
+                ><span
+                  data-surface-role="on-surface-container-variant"
+                  :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+                  >{{ t('tonal_builder.surface_preview.filters.month') }}</span
+                ></span
               >
             </label>
           </div>
@@ -1182,7 +1269,11 @@
               :data-surface-tooltip="surfaceTooltip('outline', 'error')"
               :style="buildRoleActionStyles(errorPalette)"
             >
-              overdue@example
+              <span
+                data-surface-role="on-surface-container"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+                >overdue@example</span
+              >
             </span>
             <small
               class="preview-validation-helper"
@@ -1195,27 +1286,55 @@
           </label>
 
           <div class="preview-filter-section">
-            <span>{{ t('tonal_builder.surface_preview.filters.saved_view') }}</span>
+            <span
+              data-surface-role="on-surface-container-variant"
+              :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+              >{{ t('tonal_builder.surface_preview.filters.saved_view') }}</span
+            >
             <button
               type="button"
               data-surface-role="outline"
               :data-surface-tooltip="surfaceTooltip('outline')"
             >
-              {{ t('tonal_builder.surface_preview.filters.collection') }}
-              <ChevronDownIcon aria-hidden="true" />
+              <span
+                data-surface-role="on-surface-container"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+                >{{ t('tonal_builder.surface_preview.filters.collection') }}</span
+              >
+              <span
+                class="preview-icon-role"
+                data-surface-role="on-surface-container"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+              >
+                <ChevronDownIcon aria-hidden="true" />
+              </span>
             </button>
           </div>
 
           <div class="preview-filter-section">
-            <span>{{ t('tonal_builder.surface_preview.filters.active') }}</span>
+            <span
+              data-surface-role="on-surface-container-variant"
+              :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+              >{{ t('tonal_builder.surface_preview.filters.active') }}</span
+            >
             <div
               class="preview-filter-chips"
-              data-surface-role="surface-container"
+              data-surface-role="container"
               data-surface-palette="primary"
               :data-surface-tooltip="surfaceTooltip('container', 'primary')"
             >
-              <span>{{ t('tonal_builder.surface_preview.status.review') }}</span>
-              <span>{{ t('tonal_builder.surface_preview.filters.high_value') }}</span>
+              <span
+                data-surface-role="on-surface-container"
+                data-surface-palette="primary"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container', 'primary')"
+                >{{ t('tonal_builder.surface_preview.status.review') }}</span
+              >
+              <span
+                data-surface-role="on-surface-container"
+                data-surface-palette="primary"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container', 'primary')"
+                >{{ t('tonal_builder.surface_preview.filters.high_value') }}</span
+              >
             </div>
           </div>
 
@@ -1224,9 +1343,21 @@
             data-surface-role="surface-container-high"
             :data-surface-tooltip="surfaceTooltip('container_high')"
           >
-            <span>{{ t('tonal_builder.surface_preview.summary.label') }}</span>
-            <strong>$42,350</strong>
-            <small>{{ t('tonal_builder.surface_preview.summary.helper') }}</small>
+            <span
+              data-surface-role="on-surface-container-variant"
+              :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+              >{{ t('tonal_builder.surface_preview.summary.label') }}</span
+            >
+            <strong
+              data-surface-role="on-surface-container"
+              :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+              >$42,350</strong
+            >
+            <small
+              data-surface-role="on-surface-container-variant"
+              :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+              >{{ t('tonal_builder.surface_preview.summary.helper') }}</small
+            >
           </div>
 
           <section
@@ -1235,27 +1366,60 @@
             :data-surface-tooltip="surfaceTooltip('container')"
           >
             <div class="preview-panel-heading">
-              <span>{{ t('tonal_builder.surface_preview.collection_health.title') }}</span>
-              <strong>74%</strong>
+              <span
+                data-surface-role="on-surface-container"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+                >{{ t('tonal_builder.surface_preview.collection_health.title') }}</span
+              >
+              <strong
+                data-surface-role="on-surface-container"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+                >74%</strong
+              >
             </div>
-            <div class="preview-collection-track">
-              <span />
+            <div
+              class="preview-collection-track"
+              data-surface-role="surface-container-lowest"
+              :data-surface-tooltip="surfaceTooltip('container_lowest')"
+            >
+              <span
+                class="preview-activity-dot"
+                data-surface-role="surface"
+                data-surface-palette="primary"
+                :data-surface-tooltip="surfaceTooltip('surface', 'primary')"
+              />
             </div>
             <div
               class="preview-collection-stat preview-collection-stat-lowest"
               data-surface-role="surface-container-lowest"
               :data-surface-tooltip="surfaceTooltip('container_lowest')"
             >
-              <span>{{ t('tonal_builder.surface_preview.collection_health.follow_up') }}</span>
-              <strong>8</strong>
+              <span
+                data-surface-role="on-surface-container-variant"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+                >{{ t('tonal_builder.surface_preview.collection_health.follow_up') }}</span
+              >
+              <strong
+                data-surface-role="on-surface-container"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+                >8</strong
+              >
             </div>
             <div
               class="preview-collection-stat preview-collection-stat-highest"
               data-surface-role="surface-container-highest"
               :data-surface-tooltip="surfaceTooltip('container_highest')"
             >
-              <span>{{ t('tonal_builder.surface_preview.collection_health.at_risk') }}</span>
-              <strong>$18,240</strong>
+              <span
+                data-surface-role="on-surface-container-variant"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+                >{{ t('tonal_builder.surface_preview.collection_health.at_risk') }}</span
+              >
+              <strong
+                data-surface-role="on-surface-container"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+                >$18,240</strong
+              >
             </div>
           </section>
         </aside>
@@ -1287,8 +1451,18 @@
               data-surface-role="outline"
               :data-surface-tooltip="surfaceTooltip('outline')"
             >
-              <span>{{ t('tonal_builder.surface_preview.table.view') }}</span>
-              <EllipsisVerticalIcon aria-hidden="true" />
+              <span
+                data-surface-role="on-surface"
+                :data-surface-tooltip="surfaceTooltip('on_surface')"
+                >{{ t('tonal_builder.surface_preview.table.view') }}</span
+              >
+              <span
+                class="preview-icon-role"
+                data-surface-role="on-surface"
+                :data-surface-tooltip="surfaceTooltip('on_surface')"
+              >
+                <EllipsisVerticalIcon aria-hidden="true" />
+              </span>
             </div>
           </div>
 
@@ -1301,13 +1475,14 @@
             :style="buildRoleActionStyles(errorPalette)"
             data-cy="error-alert"
           >
-            <ExclamationTriangleIcon
+            <span
               class="preview-alert-icon"
-              aria-hidden="true"
               data-surface-role="surface"
               data-surface-palette="error"
               :data-surface-tooltip="surfaceTooltip('surface', 'error')"
-            />
+            >
+              <ExclamationTriangleIcon aria-hidden="true" />
+            </span>
             <div>
               <strong
                 data-surface-role="on-surface-container"
@@ -1412,8 +1587,16 @@
             data-surface-role="surface-container-low"
             :data-surface-tooltip="surfaceTooltip('container_low')"
           >
-            <span>{{ t('tonal_builder.surface_preview.table.showing') }}</span>
-            <strong>{{ t('tonal_builder.surface_preview.table.page_total') }} $42,350</strong>
+            <span
+              data-surface-role="on-surface-container-variant"
+              :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+              >{{ t('tonal_builder.surface_preview.table.showing') }}</span
+            >
+            <strong
+              data-surface-role="on-surface-container"
+              :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+              >{{ t('tonal_builder.surface_preview.table.page_total') }} $42,350</strong
+            >
           </div>
 
           <div class="preview-table-dashboard">
@@ -1424,12 +1607,27 @@
             >
               <div class="preview-panel-heading">
                 <div class="preview-panel-title">
-                  <strong>{{ t('tonal_builder.surface_preview.reconciliation.title') }}</strong>
-                  <small>{{ t('tonal_builder.surface_preview.reconciliation.helper') }}</small>
+                  <strong
+                    data-surface-role="on-surface-container"
+                    :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+                    >{{ t('tonal_builder.surface_preview.reconciliation.title') }}</strong
+                  >
+                  <small
+                    data-surface-role="on-surface-container-variant"
+                    :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+                    >{{ t('tonal_builder.surface_preview.reconciliation.helper') }}</small
+                  >
                 </div>
-                <span class="preview-reconciliation-badge">{{
-                  t('tonal_builder.surface_preview.reconciliation.open')
-                }}</span>
+                <span
+                  class="preview-reconciliation-badge"
+                  data-surface-role="surface-container-highest"
+                  :data-surface-tooltip="surfaceTooltip('container_highest')"
+                  ><span
+                    data-surface-role="on-surface-container"
+                    :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+                    >{{ t('tonal_builder.surface_preview.reconciliation.open') }}</span
+                  ></span
+                >
               </div>
               <div
                 class="preview-reconciliation-item preview-reconciliation-item-lowest"
@@ -1437,18 +1635,32 @@
                 :data-surface-tooltip="surfaceTooltip('container_lowest')"
               >
                 <span class="preview-reconciliation-icon">
-                  <CreditCardIcon
-                    class="preview-reconciliation-icon-svg"
-                    aria-hidden="true"
-                  />
+                  <span
+                    class="preview-icon-role preview-reconciliation-icon-svg"
+                    data-surface-role="surface"
+                    data-surface-palette="primary"
+                    :data-surface-tooltip="surfaceTooltip('surface', 'primary')"
+                  >
+                    <CreditCardIcon aria-hidden="true" />
+                  </span>
                 </span>
                 <div class="preview-reconciliation-copy">
-                  <strong>{{ t('tonal_builder.surface_preview.reconciliation.gateway') }}</strong>
-                  <small>{{
-                    t('tonal_builder.surface_preview.reconciliation.gateway_helper')
-                  }}</small>
+                  <strong
+                    data-surface-role="on-surface-container"
+                    :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+                    >{{ t('tonal_builder.surface_preview.reconciliation.gateway') }}</strong
+                  >
+                  <small
+                    data-surface-role="on-surface-container-variant"
+                    :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+                    >{{ t('tonal_builder.surface_preview.reconciliation.gateway_helper') }}</small
+                  >
                 </div>
-                <strong>$6,240</strong>
+                <strong
+                  data-surface-role="on-surface-container"
+                  :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+                  >$6,240</strong
+                >
               </div>
               <div
                 class="preview-reconciliation-item preview-reconciliation-item-high"
@@ -1456,18 +1668,32 @@
                 :data-surface-tooltip="surfaceTooltip('container_high')"
               >
                 <span class="preview-reconciliation-icon">
-                  <DocumentTextIcon
-                    class="preview-reconciliation-icon-svg"
-                    aria-hidden="true"
-                  />
+                  <span
+                    class="preview-icon-role preview-reconciliation-icon-svg"
+                    data-surface-role="surface"
+                    data-surface-palette="primary"
+                    :data-surface-tooltip="surfaceTooltip('surface', 'primary')"
+                  >
+                    <DocumentTextIcon aria-hidden="true" />
+                  </span>
                 </span>
                 <div class="preview-reconciliation-copy">
-                  <strong>{{ t('tonal_builder.surface_preview.reconciliation.credit') }}</strong>
-                  <small>{{
-                    t('tonal_builder.surface_preview.reconciliation.credit_helper')
-                  }}</small>
+                  <strong
+                    data-surface-role="on-surface-container"
+                    :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+                    >{{ t('tonal_builder.surface_preview.reconciliation.credit') }}</strong
+                  >
+                  <small
+                    data-surface-role="on-surface-container-variant"
+                    :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+                    >{{ t('tonal_builder.surface_preview.reconciliation.credit_helper') }}</small
+                  >
                 </div>
-                <strong>$1,890</strong>
+                <strong
+                  data-surface-role="on-surface-container"
+                  :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+                  >$1,890</strong
+                >
               </div>
             </section>
 
@@ -1478,26 +1704,52 @@
             >
               <div class="preview-panel-heading">
                 <div class="preview-panel-title">
-                  <strong>{{ t('tonal_builder.surface_preview.settlement.title') }}</strong>
-                  <small>{{ t('tonal_builder.surface_preview.settlement.helper') }}</small>
+                  <strong
+                    data-surface-role="on-surface"
+                    :data-surface-tooltip="surfaceTooltip('on_surface')"
+                    >{{ t('tonal_builder.surface_preview.settlement.title') }}</strong
+                  >
+                  <small
+                    data-surface-role="on-surface-variant"
+                    :data-surface-tooltip="surfaceTooltip('on_surface_variant')"
+                    >{{ t('tonal_builder.surface_preview.settlement.helper') }}</small
+                  >
                 </div>
-                <strong>$31,860</strong>
+                <strong
+                  data-surface-role="on-surface"
+                  :data-surface-tooltip="surfaceTooltip('on_surface')"
+                  >$31,860</strong
+                >
               </div>
-              <div class="preview-settlement-chart">
-                <span class="preview-settlement-bar preview-settlement-bar-1" />
-                <span class="preview-settlement-bar preview-settlement-bar-2" />
-                <span class="preview-settlement-bar preview-settlement-bar-3" />
-                <span class="preview-settlement-bar preview-settlement-bar-4" />
-                <span class="preview-settlement-bar preview-settlement-bar-5" />
-                <span class="preview-settlement-bar preview-settlement-bar-6" />
+              <div
+                class="preview-settlement-chart"
+                data-surface-role="outline-variant"
+                :data-surface-tooltip="surfaceTooltip('outline_variant')"
+              >
+                <span
+                  v-for="index in 6"
+                  :key="index"
+                  :class="`preview-settlement-bar preview-settlement-bar-${index}`"
+                  data-surface-role="surface"
+                  data-surface-palette="primary"
+                  :data-surface-tooltip="surfaceTooltip('surface', 'primary')"
+                />
               </div>
               <div
                 class="preview-settlement-total"
                 data-surface-role="surface-container-low"
                 :data-surface-tooltip="surfaceTooltip('container_low')"
               >
-                <span>{{ t('tonal_builder.surface_preview.settlement.next') }}</span>
-                <strong>{{ t('tonal_builder.surface_preview.settlement.tomorrow') }}</strong>
+                <span
+                  data-surface-role="on-surface-container-variant"
+                  :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+                  >{{ t('tonal_builder.surface_preview.settlement.next') }}</span
+                >
+                <strong
+                  data-surface-role="on-surface-container"
+                  :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+                  >{{ t('tonal_builder.surface_preview.settlement.tomorrow') }}</strong
+                >
               </div>
             </section>
 
@@ -1516,18 +1768,18 @@
                   <div>
                     <small
                       class="preview-primary-example-eyebrow"
-                      data-surface-role="surface"
+                      data-surface-role="on-surface-variant"
                       :data-surface-palette="showcase.palette.role"
-                      :data-surface-tooltip="surfaceTooltip('surface', showcase.palette.role)"
+                      :data-surface-tooltip="
+                        surfaceTooltip('on_surface_variant', showcase.palette.role)
+                      "
                     >
                       {{ showcase.palette.label }}
                     </small>
                     <strong
-                      data-surface-role="on-surface-container"
+                      data-surface-role="on-surface"
                       :data-surface-palette="showcase.palette.role"
-                      :data-surface-tooltip="
-                        surfaceTooltip('on_surface_container', showcase.palette.role)
-                      "
+                      :data-surface-tooltip="surfaceTooltip('on_surface', showcase.palette.role)"
                     >
                       {{ t('tonal_builder.surface_preview.primary_examples.light_title') }}
                     </strong>
@@ -1547,15 +1799,23 @@
                   :data-surface-palette="showcase.palette.role"
                   :data-surface-tooltip="surfaceTooltip('container', showcase.palette.role)"
                 >
-                  <CreditCardIcon
+                  <span
                     class="preview-primary-example-icon"
-                    aria-hidden="true"
-                  />
+                    data-surface-role="on-surface-container"
+                    :data-surface-palette="showcase.palette.role"
+                    :data-surface-tooltip="
+                      surfaceTooltip('on_surface_container', showcase.palette.role)
+                    "
+                  >
+                    <CreditCardIcon aria-hidden="true" />
+                  </span>
                   <div>
                     <strong
-                      data-surface-role="on-surface"
+                      data-surface-role="on-surface-container"
                       :data-surface-palette="showcase.palette.role"
-                      :data-surface-tooltip="surfaceTooltip('on_surface', showcase.palette.role)"
+                      :data-surface-tooltip="
+                        surfaceTooltip('on_surface_container', showcase.palette.role)
+                      "
                     >
                       $18,920
                     </strong>
@@ -1602,10 +1862,16 @@
                       {{ t('tonal_builder.surface_preview.primary_examples.inverse_title') }}
                     </strong>
                   </div>
-                  <ShieldCheckIcon
+                  <span
                     class="preview-primary-example-icon"
-                    aria-hidden="true"
-                  />
+                    data-surface-role="inverse-on-surface"
+                    :data-surface-palette="showcase.palette.role"
+                    :data-surface-tooltip="
+                      surfaceTooltip('inverse_on_surface', showcase.palette.role)
+                    "
+                  >
+                    <ShieldCheckIcon aria-hidden="true" />
+                  </span>
                 </div>
                 <div
                   class="preview-primary-example-body"
@@ -1665,8 +1931,18 @@
           :data-surface-tooltip="surfaceTooltip('container_low')"
         >
           <div class="preview-panel-heading">
-            <span>{{ t('tonal_builder.surface_preview.details.title') }}</span>
-            <EllipsisVerticalIcon aria-hidden="true" />
+            <span
+              data-surface-role="on-surface-container"
+              :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+              >{{ t('tonal_builder.surface_preview.details.title') }}</span
+            >
+            <span
+              class="preview-icon-role"
+              data-surface-role="on-surface-container"
+              :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+            >
+              <EllipsisVerticalIcon aria-hidden="true" />
+            </span>
           </div>
 
           <section
@@ -1675,20 +1951,60 @@
             :data-surface-tooltip="surfaceTooltip('container_low')"
           >
             <div class="preview-customer">
-              <span class="preview-avatar">AS</span>
+              <span
+                class="preview-avatar"
+                data-surface-role="surface"
+                data-surface-palette="primary"
+                :data-surface-tooltip="surfaceTooltip('surface', 'primary')"
+              >
+                <span
+                  data-surface-role="on-surface"
+                  data-surface-palette="primary"
+                  :data-surface-tooltip="surfaceTooltip('on_surface', 'primary')"
+                  >AS</span
+                >
+              </span>
               <div>
-                <strong>{{ t('tonal_builder.surface_preview.rows.studio') }}</strong>
-                <small>{{ t('tonal_builder.surface_preview.details.customer_since') }}</small>
+                <strong
+                  data-surface-role="on-surface-container"
+                  :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+                  >{{ t('tonal_builder.surface_preview.rows.studio') }}</strong
+                >
+                <small
+                  data-surface-role="on-surface-container-variant"
+                  :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+                  >{{ t('tonal_builder.surface_preview.details.customer_since') }}</small
+                >
               </div>
             </div>
             <dl>
               <div>
-                <dt>{{ t('tonal_builder.surface_preview.details.due') }}</dt>
-                <dd>2026-07-15</dd>
+                <dt
+                  data-surface-role="on-surface-container-variant"
+                  :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+                >
+                  {{ t('tonal_builder.surface_preview.details.due') }}
+                </dt>
+                <dd
+                  data-surface-role="on-surface-container"
+                  :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+                >
+                  2026-07-15
+                </dd>
               </div>
               <div>
-                <dt>{{ t('tonal_builder.surface_preview.details.owner') }}</dt>
-                <dd>D. Cote</dd>
+                <dt
+                  data-surface-role="on-surface-container-variant"
+                  :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+                >
+                  {{ t('tonal_builder.surface_preview.details.owner') }}
+                </dt>
+                <dd
+                  data-surface-role="on-surface-container"
+                  :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+                >
+                  D. Cote
+                </dd>
               </div>
             </dl>
           </section>
@@ -1699,14 +2015,41 @@
             :data-surface-tooltip="surfaceTooltip('container_high')"
           >
             <div class="preview-health-heading">
-              <ShieldCheckIcon aria-hidden="true" />
-              <span>{{ t('tonal_builder.surface_preview.health.title') }}</span>
-              <strong>92%</strong>
+              <span
+                class="preview-icon-role"
+                data-surface-role="on-surface-container"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+              >
+                <ShieldCheckIcon aria-hidden="true" />
+              </span>
+              <span
+                data-surface-role="on-surface-container"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+                >{{ t('tonal_builder.surface_preview.health.title') }}</span
+              >
+              <strong
+                data-surface-role="on-surface-container"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+                >92%</strong
+              >
             </div>
-            <div class="preview-health-track">
-              <span />
+            <div
+              class="preview-health-track"
+              data-surface-role="surface-container-lowest"
+              :data-surface-tooltip="surfaceTooltip('container_lowest')"
+            >
+              <span
+                class="preview-activity-dot"
+                data-surface-role="surface"
+                data-surface-palette="primary"
+                :data-surface-tooltip="surfaceTooltip('surface', 'primary')"
+              />
             </div>
-            <small>{{ t('tonal_builder.surface_preview.health.helper') }}</small>
+            <small
+              data-surface-role="on-surface-container-variant"
+              :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+              >{{ t('tonal_builder.surface_preview.health.helper') }}</small
+            >
           </section>
 
           <section
@@ -1715,17 +2058,45 @@
             :data-surface-tooltip="surfaceTooltip('container_lowest')"
           >
             <div class="preview-panel-heading">
-              <span>{{ t('tonal_builder.surface_preview.payment.title') }}</span>
-              <strong>$8,920</strong>
+              <span
+                data-surface-role="on-surface-container"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+                >{{ t('tonal_builder.surface_preview.payment.title') }}</span
+              >
+              <strong
+                data-surface-role="on-surface-container"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+                >$8,920</strong
+              >
             </div>
             <dl>
               <div>
-                <dt>{{ t('tonal_builder.surface_preview.payment.method') }}</dt>
-                <dd>•••• 4832</dd>
+                <dt
+                  data-surface-role="on-surface-container-variant"
+                  :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+                >
+                  {{ t('tonal_builder.surface_preview.payment.method') }}
+                </dt>
+                <dd
+                  data-surface-role="on-surface-container"
+                  :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+                >
+                  &bull;&bull;&bull;&bull; 4832
+                </dd>
               </div>
               <div>
-                <dt>{{ t('tonal_builder.surface_preview.payment.terms') }}</dt>
-                <dd>Net 30</dd>
+                <dt
+                  data-surface-role="on-surface-container-variant"
+                  :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+                >
+                  {{ t('tonal_builder.surface_preview.payment.terms') }}
+                </dt>
+                <dd
+                  data-surface-role="on-surface-container"
+                  :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+                >
+                  Net 30
+                </dd>
               </div>
             </dl>
           </section>
@@ -1735,8 +2106,17 @@
             data-surface-role="surface-bright"
             :data-surface-tooltip="surfaceTooltip('surface_bright')"
           >
-            <strong>{{ t('tonal_builder.surface_preview.note.title') }}</strong>
-            <p>{{ t('tonal_builder.surface_preview.note.body') }}</p>
+            <strong
+              data-surface-role="on-surface"
+              :data-surface-tooltip="surfaceTooltip('on_surface')"
+              >{{ t('tonal_builder.surface_preview.note.title') }}</strong
+            >
+            <p
+              data-surface-role="on-surface-variant"
+              :data-surface-tooltip="surfaceTooltip('on_surface_variant')"
+            >
+              {{ t('tonal_builder.surface_preview.note.body') }}
+            </p>
           </section>
 
           <section
@@ -1745,23 +2125,61 @@
             :data-surface-tooltip="surfaceTooltip('container')"
           >
             <div class="preview-panel-heading">
-              <span>{{ t('tonal_builder.surface_preview.activity.title') }}</span>
+              <span
+                data-surface-role="on-surface-container"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container')"
+                >{{ t('tonal_builder.surface_preview.activity.title') }}</span
+              >
             </div>
             <p>
-              <span />
-              {{ t('tonal_builder.surface_preview.activity.approved') }}
+              <span
+                class="preview-activity-dot"
+                data-surface-role="surface"
+                data-surface-palette="primary"
+                :data-surface-tooltip="surfaceTooltip('surface', 'primary')"
+              />
+              <span
+                data-surface-role="on-surface-container-variant"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+                >{{ t('tonal_builder.surface_preview.activity.approved') }}</span
+              >
             </p>
             <p>
-              <span />
-              {{ t('tonal_builder.surface_preview.activity.sent') }}
+              <span
+                class="preview-activity-dot"
+                data-surface-role="surface"
+                data-surface-palette="primary"
+                :data-surface-tooltip="surfaceTooltip('surface', 'primary')"
+              />
+              <span
+                data-surface-role="on-surface-container-variant"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+                >{{ t('tonal_builder.surface_preview.activity.sent') }}</span
+              >
             </p>
             <p>
-              <span />
-              {{ t('tonal_builder.surface_preview.activity.created') }}
+              <span
+                data-surface-role="surface"
+                data-surface-palette="primary"
+                :data-surface-tooltip="surfaceTooltip('surface', 'primary')"
+              />
+              <span
+                data-surface-role="on-surface-container-variant"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+                >{{ t('tonal_builder.surface_preview.activity.created') }}</span
+              >
             </p>
             <p>
-              <span />
-              {{ t('tonal_builder.surface_preview.activity.viewed') }}
+              <span
+                data-surface-role="surface"
+                data-surface-palette="primary"
+                :data-surface-tooltip="surfaceTooltip('surface', 'primary')"
+              />
+              <span
+                data-surface-role="on-surface-container-variant"
+                :data-surface-tooltip="surfaceTooltip('on_surface_container_variant')"
+                >{{ t('tonal_builder.surface_preview.activity.viewed') }}</span
+              >
             </p>
           </section>
         </aside>
@@ -1821,8 +2239,8 @@
   }
 
   .preview-contrast-control {
-    flex: 0 1 320px;
-    width: min(320px, 100%);
+    flex: 0 1 220px;
+    width: min(220px, 100%);
   }
 
   .preview-control-heading {
@@ -1840,6 +2258,19 @@
     color: rgb(var(--color-accent));
     font-size: 12px;
     font-weight: 700;
+  }
+
+  .preview-icon-role {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
+  }
+
+  .preview-icon-role > svg {
+    width: 100%;
+    height: 100%;
   }
 
   .preview-tone-control input,
@@ -2116,9 +2547,9 @@
     font-weight: 700;
   }
 
-  .preview-profile svg,
-  .preview-panel-heading svg,
-  .preview-table-tools svg {
+  .preview-profile .preview-icon-role,
+  .preview-panel-heading .preview-icon-role,
+  .preview-table-tools .preview-icon-role {
     width: 15px;
     height: 15px;
   }
@@ -2176,16 +2607,16 @@
     color: var(--preview-role-on-action-container);
   }
 
-  .preview-metric svg {
+  .preview-metric-icon {
     width: 18px;
     height: 18px;
     flex: 0 0 auto;
     color: var(--preview-primary);
   }
 
-  .preview-health-heading svg,
-  .preview-input svg,
-  .preview-toolbar button svg {
+  .preview-health-heading .preview-icon-role,
+  .preview-input .preview-icon-role,
+  .preview-toolbar button .preview-icon-role {
     width: 14px;
     height: 14px;
   }
@@ -2296,9 +2727,16 @@
     margin-top: 13px;
   }
 
-  .preview-validation-label,
-  .preview-validation-helper {
+  .preview-validation-label {
     color: var(--preview-role-action);
+  }
+
+  .preview-validation-helper {
+    width: fit-content;
+    border-radius: 4px;
+    padding: 4px 6px;
+    background: var(--preview-role-action);
+    color: var(--preview-role-on-action);
   }
 
   .preview-validation-input {
@@ -2912,7 +3350,7 @@
     color: var(--preview-on-surface-variant);
   }
 
-  .preview-activity p > span {
+  .preview-activity-dot {
     width: 5px;
     height: 5px;
     flex: 0 0 auto;

@@ -1166,6 +1166,40 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
     return moveRole(role, currentIndex + offset);
   };
 
+  const swapRoleConfigurations = (sourceRole: TonalColorRole, targetRole: TonalColorRole) => {
+    const resolvedSourceRole = resolveRole(sourceRole);
+    const resolvedTargetRole = resolveRole(targetRole);
+    if (resolvedSourceRole === resolvedTargetRole) return false;
+    if (!roles[resolvedSourceRole] || !roles[resolvedTargetRole]) return false;
+
+    const sourceState = cloneRoleState(roles[resolvedSourceRole].state);
+    const targetState = cloneRoleState(roles[resolvedTargetRole].state);
+    const sourceSettings = clonePreviewSettings(getRolePreviewSettings(resolvedSourceRole));
+    const targetSettings = clonePreviewSettings(getRolePreviewSettings(resolvedTargetRole));
+
+    roles[resolvedSourceRole].state = targetState;
+    roles[resolvedTargetRole].state = sourceState;
+    preview.roleSettings[resolvedSourceRole] = targetSettings;
+    preview.roleSettings[resolvedTargetRole] = sourceSettings;
+    refreshRole(resolvedSourceRole, resolvedSourceRole === activeRole.value);
+    refreshRole(resolvedTargetRole, resolvedTargetRole === activeRole.value);
+    return true;
+  };
+
+  const applyRoleConfiguration = (sourceRole: TonalColorRole, targetRole: TonalColorRole) => {
+    const resolvedSourceRole = resolveRole(sourceRole);
+    const resolvedTargetRole = resolveRole(targetRole);
+    if (resolvedSourceRole === resolvedTargetRole) return false;
+    if (!roles[resolvedSourceRole] || !roles[resolvedTargetRole]) return false;
+
+    roles[resolvedTargetRole].state = cloneRoleState(roles[resolvedSourceRole].state);
+    preview.roleSettings[resolvedTargetRole] = clonePreviewSettings(
+      getRolePreviewSettings(resolvedSourceRole),
+    );
+    refreshRole(resolvedTargetRole, resolvedTargetRole === activeRole.value);
+    return true;
+  };
+
   const removeRole = (role: TonalColorRole) => {
     if (!roles[role] || roleMeta[role]?.deletable === false) return false;
     const removedIndex = roleOrder.value.indexOf(role);
@@ -1277,6 +1311,8 @@ export const useTonalScaleStore = defineStore('tonalScale', () => {
     renameRole,
     moveRole,
     moveRoleByOffset,
+    swapRoleConfigurations,
+    applyRoleConfiguration,
     removeRole,
     exportState,
     importState,

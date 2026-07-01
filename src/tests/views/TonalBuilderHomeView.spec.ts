@@ -280,6 +280,99 @@ describe('TonalBuilderHomeView', () => {
     expect(store.roleMeta.support_custom_copy.label).not.toBe(store.roleMeta.custom_role.label);
   });
 
+  it('swaps the active role configuration from the role management menu', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const store = useTonalScaleStore();
+    store.importRoleState('primary', { colorHex: '#225577', blendStrength: 12 });
+    store.importRoleState('secondary', { colorHex: '#aa6633', blendStrength: 34 });
+    store.updateRolePreviewSettings('primary', {
+      lightCustomSurfaceTones: { container_highest: 41 },
+    });
+    store.updateRolePreviewSettings('secondary', {
+      lightCustomSurfaceTones: { outline: 62 },
+    });
+    store.setActiveRole('primary');
+    const originalOrder = [...store.roleOrder];
+    const primaryMeta = { ...store.roleMeta.primary };
+    const secondaryMeta = { ...store.roleMeta.secondary };
+
+    const wrapper = mount(TonalBuilderHomeView, {
+      global: { plugins: [pinia] },
+    });
+
+    await wrapper.get('[data-cy="role-swap-menu"]').trigger('click');
+    await nextTick();
+    await wrapper.get('[data-cy="role-swap-secondary"]').trigger('click');
+
+    expect(store.activeRole).toBe('primary');
+    expect(store.roleOrder).toEqual(originalOrder);
+    expect(store.roleMeta.primary).toMatchObject(primaryMeta);
+    expect(store.roleMeta.secondary).toMatchObject(secondaryMeta);
+    expect(store.roles.primary.state.baseHex).toBe('#aa6633');
+    expect(store.roles.secondary.state.baseHex).toBe('#225577');
+    expect(store.getRolePreviewSettings('primary').lightCustomSurfaceTones).toEqual({
+      outline: 62,
+    });
+    expect(store.getRolePreviewSettings('secondary').lightCustomSurfaceTones).toEqual({
+      container_highest: 41,
+    });
+  });
+
+  it('confirms before applying the active role configuration to another role', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const store = useTonalScaleStore();
+    store.importRoleState('primary', { colorHex: '#225577', blendStrength: 12 });
+    store.importRoleState('secondary', { colorHex: '#aa6633', blendStrength: 34 });
+    store.updateRolePreviewSettings('primary', {
+      lightCustomSurfaceTones: { container_highest: 41 },
+    });
+    store.updateRolePreviewSettings('secondary', {
+      lightCustomSurfaceTones: { outline: 62 },
+    });
+    store.setActiveRole('primary');
+
+    const wrapper = mount(TonalBuilderHomeView, {
+      global: { plugins: [pinia] },
+    });
+
+    await wrapper.get('[data-cy="role-apply-menu"]').trigger('click');
+    await nextTick();
+    await wrapper.get('[data-cy="role-apply-secondary"]').trigger('click');
+    await nextTick();
+
+    expect(getBodyElement('[data-cy="confirmation-dialog-title"]').textContent).toContain(
+      'Primary',
+    );
+    expect(getBodyElement('[data-cy="confirmation-dialog-title"]').textContent).toContain(
+      'Secondary',
+    );
+    getBodyElement('[data-cy="confirmation-cancel"]').click();
+    await nextTick();
+
+    expect(store.roles.primary.state.baseHex).toBe('#225577');
+    expect(store.roles.secondary.state.baseHex).toBe('#aa6633');
+    expect(store.getRolePreviewSettings('secondary').lightCustomSurfaceTones).toEqual({
+      outline: 62,
+    });
+
+    await wrapper.get('[data-cy="role-apply-menu"]').trigger('click');
+    await nextTick();
+    await wrapper.get('[data-cy="role-apply-secondary"]').trigger('click');
+    await nextTick();
+    getBodyElement('[data-cy="confirmation-confirm"]').click();
+    await nextTick();
+
+    expect(store.activeRole).toBe('primary');
+    expect(store.roleMeta.secondary.label).toBe('Secondary');
+    expect(store.roles.primary.state.baseHex).toBe('#225577');
+    expect(store.roles.secondary.state.baseHex).toBe('#225577');
+    expect(store.getRolePreviewSettings('secondary').lightCustomSurfaceTones).toEqual({
+      container_highest: 41,
+    });
+  });
+
   it('renames selected custom tabs inline and deletes custom roles from the toolbar', async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
@@ -454,7 +547,7 @@ describe('TonalBuilderHomeView', () => {
     expect(svg).toContain('Extended key strip');
     expect(svg).toContain('Primary Surface');
     expect(svg).toContain('Surface role mapping');
-    expect(svg).toContain('#v2=');
+    expect(svg).not.toContain('#v2=');
     expect(svg).toContain('class="footer-text"');
     expect(svg).toContain(`"version":${TONAL_PERSISTENCE_SCHEMA_VERSION}`);
     expect(svg).toContain('inline-size:');
@@ -463,6 +556,40 @@ describe('TonalBuilderHomeView', () => {
     expect(svg).not.toContain('Link:');
     expect(svg).not.toContain('Import:');
     expect(svg).not.toContain('<tspan');
+  });
+
+  it('exports customized surface card tones for the active role', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const store = useTonalScaleStore();
+    const customTone = 81;
+    const customHex = store
+      .getRoleFullStrip('surface')
+      .find((tone) => tone.index === customTone)?.hex;
+    store.updateRolePreviewSettings('surface', {
+      lightCustomSurfaceTones: {
+        container_highest: customTone,
+      },
+    });
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+
+    const wrapper = mount(TonalBuilderHomeView, {
+      global: { plugins: [pinia] },
+    });
+
+    await wrapper.get('[data-cy="tonal-builder-copy"]').trigger('click');
+    await nextTick();
+    await wrapper.get('[data-cy="export-current-role"]').trigger('click');
+    await vi.waitFor(() => expect(writeText).toHaveBeenCalledOnce());
+
+    const svg = writeText.mock.calls[0]?.[0] as string;
+    expect(svg).toMatch(/Surface container highest<\/text>[\s\S]*Tone 81<\/text>/);
+    expect(svg).toMatch(new RegExp(`Surface container highest</text>[\\s\\S]*${customHex}`));
+    expect(svg).toContain('"lightCustomSurfaceTones":{"container_highest":81}');
   });
 
   it('exports custom roles to SVG metadata with the active custom role label', async () => {
@@ -500,7 +627,7 @@ describe('TonalBuilderHomeView', () => {
     );
     expect(svg).toContain('"label":"Secondary &amp; \\"Accent\\" &lt;Role&gt;"');
     expect(svg).toContain('"baseHex":"#224466"');
-    expect(svg).toContain('#v2=');
+    expect(svg).not.toContain('#v2=');
   });
 
   it('exports all roles from the export menu in role order', async () => {
@@ -538,8 +665,46 @@ describe('TonalBuilderHomeView', () => {
       `"roleOrder":["surface","primary","secondary","tertiary","error","${customRole}"]`,
     );
     expect(svg).toContain('"baseHex":"#224466"');
-    expect(svg).toContain('#v2=');
+    expect(svg).not.toContain('#v2=');
     expect(svg).toContain('<metadata>');
+  });
+
+  it('exports customized surface card tones independently for all roles', async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const store = useTonalScaleStore();
+    const primaryTone = 51;
+    const secondaryTone = 82;
+    store.updateRolePreviewSettings('primary', {
+      lightCustomSurfaceTones: {
+        outline: primaryTone,
+      },
+    });
+    store.updateRolePreviewSettings('secondary', {
+      lightCustomSurfaceTones: {
+        container_highest: secondaryTone,
+      },
+    });
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+
+    const wrapper = mount(TonalBuilderHomeView, {
+      global: { plugins: [pinia] },
+    });
+
+    await wrapper.get('[data-cy="tonal-builder-copy"]').trigger('click');
+    await nextTick();
+    await wrapper.get('[data-cy="export-all-roles"]').trigger('click');
+    await vi.waitFor(() => expect(writeText).toHaveBeenCalledOnce());
+
+    const svg = writeText.mock.calls[0]?.[0] as string;
+    expect(svg).toMatch(/Primary Outline<\/text>[\s\S]*Tone 51<\/text>/);
+    expect(svg).toMatch(/Secondary Surface container highest<\/text>[\s\S]*Tone 82<\/text>/);
+    expect(svg).toContain('"lightCustomSurfaceTones":{"outline":51}');
+    expect(svg).toContain('"lightCustomSurfaceTones":{"container_highest":82}');
   });
 
   it('resizes the color controls panel with the split-pane handle', async () => {

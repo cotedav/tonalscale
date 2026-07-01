@@ -97,7 +97,7 @@ describe('useTonalExport', () => {
     expect(svg).toContain('Primary Outline');
   });
 
-  it('preserves long share links and import payloads in full', () => {
+  it('uses a clean page URL while preserving import payloads in full', () => {
     const longHash = `#${'s'.repeat(260)}tail`;
     const longUrl = `http://test.com/${longHash}`;
     const longMetadata = JSON.stringify({
@@ -134,9 +134,10 @@ describe('useTonalExport', () => {
     });
 
     expect(svg).toContain(`class="footer-text" style="inline-size: `);
-    expect(svg).toContain(`>${longUrl}</text>`);
+    expect(svg).toContain(`>http://test.com/</text>`);
+    expect(svg).not.toContain(`>${longUrl}</text>`);
     expect(svg).toContain(`>${longMetadata}</text>`);
-    expect(svg).toContain(`${'s'.repeat(260)}tail`);
+    expect(svg).not.toContain(`${'s'.repeat(260)}tail`);
     expect(svg).toContain(`${'payload'.repeat(45)}end`);
     expect(svg).not.toContain('<foreignObject');
     expect(svg).not.toContain('footer-frame');

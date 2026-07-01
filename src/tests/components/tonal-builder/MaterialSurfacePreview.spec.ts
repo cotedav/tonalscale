@@ -371,10 +371,12 @@ describe('MaterialSurfacePreview', () => {
       props: { tones: buildTones('77') },
     });
 
-    await wrapper.get('[data-surface-role="on-surface"]').trigger('pointermove', {
-      clientX: 220,
-      clientY: 120,
-    });
+    await wrapper
+      .get('.preview-table-tools [data-surface-role="on-surface"]')
+      .trigger('pointermove', {
+        clientX: 220,
+        clientY: 120,
+      });
     expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('On surface');
     expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 10');
 
@@ -391,6 +393,110 @@ describe('MaterialSurfacePreview', () => {
     });
     expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Outline variant');
     expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Tone 70');
+  });
+
+  it('reports exact foreground roles for shell, actions, validation, and inspector elements', async () => {
+    const wrapper = mount(MaterialSurfacePreview, {
+      props: {
+        tones: buildTones('77'),
+        rolePalettes: [
+          { role: 'surface', label: 'Surface', kind: 'surface', tones: buildTones('77') },
+          {
+            role: 'primary',
+            label: 'Primary',
+            kind: 'accent',
+            baseTone: 50,
+            tones: buildTones('88'),
+          },
+          {
+            role: 'secondary',
+            label: 'Secondary',
+            kind: 'accent',
+            baseTone: 50,
+            tones: buildTones('99'),
+          },
+          { role: 'error', label: 'Error', kind: 'accent', baseTone: 50, tones: buildTones('aa') },
+        ],
+      },
+    });
+
+    await wrapper.get('.preview-nav-active').trigger('pointermove', { clientX: 220, clientY: 80 });
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('On surface container');
+
+    await wrapper.get('[data-cy="secondary-action"] span').trigger('pointermove', {
+      clientX: 520,
+      clientY: 150,
+    });
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Secondary On surface');
+
+    await wrapper.get('.preview-validation-helper').trigger('pointermove', {
+      clientX: 140,
+      clientY: 340,
+    });
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Error Surface');
+
+    await wrapper.get('.preview-health-card small').trigger('pointermove', {
+      clientX: 830,
+      clientY: 500,
+    });
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain(
+      'On surface container variant',
+    );
+
+    await wrapper
+      .get('.preview-role-showcase [data-surface-role="container"]')
+      .trigger('pointermove', {
+        clientX: 420,
+        clientY: 640,
+      });
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Primary container');
+  });
+
+  it('keeps preview icon, activity, and payment roles readable and hoverable', async () => {
+    const wrapper = mount(MaterialSurfacePreview, {
+      props: {
+        tones: buildTones('77'),
+        rolePalettes: [
+          { role: 'surface', label: 'Surface', kind: 'surface', tones: buildTones('77') },
+          {
+            role: 'primary',
+            label: 'Primary',
+            kind: 'accent',
+            baseTone: 50,
+            tones: buildTones('88'),
+          },
+          {
+            role: 'tertiary',
+            label: 'Tertiary',
+            kind: 'accent',
+            baseTone: 50,
+            tones: buildTones('99'),
+          },
+          { role: 'error', label: 'Error', kind: 'accent', baseTone: 50, tones: buildTones('aa') },
+        ],
+      },
+    });
+
+    await wrapper.get('.preview-health-heading svg').trigger('pointermove', {
+      clientX: 820,
+      clientY: 460,
+    });
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('On surface container');
+
+    const activityRows = wrapper.findAll('.preview-activity p');
+    expect(activityRows).toHaveLength(4);
+    expect(activityRows[0].get('.preview-activity-dot').attributes('data-surface-role')).toBe(
+      'surface',
+    );
+    expect(activityRows[0].text()).toContain('Invoice approved by Finance');
+
+    expect(wrapper.get('.preview-payment-card dd').text()).toContain('•••• 4832');
+
+    await wrapper.get('.preview-validation-helper').trigger('pointermove', {
+      clientX: 140,
+      clientY: 340,
+    });
+    expect(wrapper.get('[data-cy="surface-tooltip"]').text()).toContain('Error Surface');
   });
 
   it('keeps the app shell surface-based while showcasing an independent primary surface family', async () => {

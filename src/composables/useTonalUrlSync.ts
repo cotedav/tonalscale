@@ -2,7 +2,9 @@ import { useEventListener } from '@vueuse/core';
 import { onBeforeUnmount, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import type { useTonalScaleStore } from '@/stores/tonalScale';
-import { decodeShareState, encodeShareState } from '@/utils/tonal/share-state';
+import decodeLegacyShareState from '@/utils/tonal/legacy-share-state';
+
+export const TONAL_LOCAL_STORAGE_KEY = 'tonal-scale:state';
 
 export default function useTonalUrlSync(store: ReturnType<typeof useTonalScaleStore>) {
   const route = useRoute();
@@ -11,62 +13,92 @@ export default function useTonalUrlSync(store: ReturnType<typeof useTonalScaleSt
   let pendingState: string | null = null;
   let updateTimer: ReturnType<typeof setTimeout> | null = null;
 
+  const storage =
+    typeof window !== 'undefined' && typeof window.localStorage?.getItem === 'function'
+      ? window.localStorage
+      : null;
+
   const clearUpdateTimer = () => {
     if (updateTimer === null) return;
     clearTimeout(updateTimer);
     updateTimer = null;
   };
 
-  const flushUrlUpdate = () => {
+  const persistState = (serializedState: string) => {
+    storage?.setItem(TONAL_LOCAL_STORAGE_KEY, serializedState);
+  };
+
+  const flushLocalStorageUpdate = () => {
     if (!pendingState) return;
     clearUpdateTimer();
     const serializedState = pendingState;
     pendingState = null;
-    router.replace({ query: {}, hash: encodeShareState(serializedState) }).catch(() => undefined);
+    persistState(serializedState);
   };
 
-  const scheduleUrlUpdate = (serializedState: string) => {
+  const scheduleLocalStorageUpdate = (serializedState: string) => {
     pendingState = serializedState;
     clearUpdateTimer();
-    updateTimer = setTimeout(flushUrlUpdate, idleDelay);
+    updateTimer = setTimeout(flushLocalStorageUpdate, idleDelay);
   };
 
-  // Restore state from URL on mount
+  const clearLegacyUrlState = () => {
+    if (!route.hash && Object.keys(route.query).length === 0) return;
+    router.replace({ query: {}, hash: '' }).catch(() => undefined);
+  };
+
+  const importAndPersist = (payload: string | Record<string, unknown>) => {
+    if (!store.importState(payload)) return false;
+    persistState(store.serializedState);
+    clearLegacyUrlState();
+    return true;
+  };
+
+  // Restore state from local storage, with one-time migration from old URL payloads.
   onMounted(() => {
-    const hashState = decodeShareState(route.hash);
-    if (hashState && store.importState(hashState)) return;
+    const hashState = decodeLegacyShareState(route.hash);
+    if (hashState && importAndPersist(hashState)) return;
 
     const { query } = route;
-    if (Object.keys(query).length === 0) return;
+    if (Object.keys(query).length > 0) {
+      const encodedState = Array.isArray(query.config) ? query.config[0] : query.config;
+      if (typeof encodedState === 'string' && importAndPersist(encodedState)) return;
 
-    const encodedState = Array.isArray(query.config) ? query.config[0] : query.config;
-    if (typeof encodedState === 'string' && store.importState(encodedState)) return;
+      const payload: Record<string, unknown> = {};
 
-    const payload: Record<string, unknown> = {};
+      Object.keys(query).forEach((key) => {
+        const value = query[key];
+        // Take the first value if it's an array
+        if (Array.isArray(value)) {
+          const [first] = value;
+          payload[key] = first;
+        } else {
+          payload[key] = value;
+        }
+      });
 
-    Object.keys(query).forEach((key) => {
-      const value = query[key];
-      // Take the first value if it's an array
-      if (Array.isArray(value)) {
-        const [first] = value;
-        payload[key] = first;
-      } else {
-        payload[key] = value;
-      }
-    });
+      if (importAndPersist(payload)) return;
+    }
 
-    store.importState(payload);
+    const storedState = storage?.getItem(TONAL_LOCAL_STORAGE_KEY);
+    if (storedState) {
+      store.importState(storedState);
+    }
   });
 
-  // Sync state to URL
+  // Sync state to local storage
   watch(
     () => store.serializedState,
     (serializedState) => {
-      scheduleUrlUpdate(serializedState);
+      scheduleLocalStorageUpdate(serializedState);
     },
     { flush: 'post' },
   );
 
-  useEventListener(window, ['pointerup', 'pointercancel', 'touchend', 'change'], flushUrlUpdate);
+  useEventListener(
+    window,
+    ['pointerup', 'pointercancel', 'touchend', 'change'],
+    flushLocalStorageUpdate,
+  );
   onBeforeUnmount(clearUpdateTimer);
 }
